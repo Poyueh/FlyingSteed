@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>飛天神駒 DX - 900x1600版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #000;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        #game-wrapper {
+            position: relative;
+            width: 900px;
+            height: 1600px;
+            background-color: #1a1a2e;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            overflow: hidden;
+            opacity: 0; 
+            transition: opacity 0.5s;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .ui-font {
+            font-family: 'Black Ops One', cursive;
+            letter-spacing: 1px;
+        }
+        
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* 上下分開 */
+            z-index: 10;
+        }
+        
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+        
+        .neon-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.1s;
+        }
+        .neon-btn:active {
+            transform: scale(0.95);
+        }
+        .neon-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        .neon-btn:hover::after {
+            left: 100%;
+        }
+
+        .shake {
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        /* 底部控制面板背景 */
+        .control-panel {
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+            padding-bottom: 2rem;
+            padding-top: 4rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 遊戲容器 Wrapper -->
+<div id="game-wrapper">
+    <!-- Canvas 遊戲層 -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI 層 -->
+    <div class="ui-layer safe-area-inset">
+        <!-- 頂部 HUD (資訊區) -->
+        <div class="flex justify-between items-start p-8">
+            <!-- 餘額 -->
+            <div class="bg-black/60 backdrop-blur-md p-5 rounded-2xl border-l-8 border-yellow-500 shadow-lg">
+                <div class="text-lg text-yellow-300 font-bold tracking-wider">BALANCE</div>
+                <div class="text-4xl text-white ui-font text-shadow mt-1 tracking-tight" id="balanceDisplay">$1,000.00</div>
+            </div>
+            
+            <!-- 倍率顯示 -->
+            <div class="bg-black/60 backdrop-blur-md p-5 rounded-2xl border-r-8 border-blue-500 shadow-lg min-w-[140px] text-right">
+                <div class="text-lg text-blue-300 font-bold tracking-wider">BONUS</div>
+                <div class="text-6xl text-blue-400 ui-font mt-1" id="multiplierDisplay">x1</div>
+            </div>
+        </div>
+        
+        <!-- 天空提示 (位置調整) -->
+        <div id="skyHUD" class="absolute top-48 left-1/2 transform -translate-x-1/2 w-full px-12 pointer-events-none opacity-0 transition-opacity duration-500">
+            <!-- 飛行倒數條 -->
+            <div class="w-full h-8 bg-black/50 rounded-full overflow-hidden border-2 border-white/20 relative shadow-lg">
+                <div id="skyTimerBar" class="h-full bg-gradient-to-r from-yellow-400 to-red-500 w-full transition-all duration-[16ms] ease-linear"></div>
+                <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-lg text-white font-bold tracking-widest uppercase shadow-black drop-shadow-md">Flight Time</div>
+            </div>
+            <div class="text-center mt-4">
+                <span class="text-white text-3xl font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] animate-pulse">狂點螢幕射擊賺獎金!</span>
+            </div>
+        </div>
+
+        <!-- 底部 HUD (操作區) -->
+        <div class="control-panel flex flex-col items-center justify-end pointer-events-none">
+            
+            <!-- 地面操作提示 (放在按鈕上方) -->
+            <div id="groundControls" class="mb-6 pointer-events-none transition-opacity duration-300">
+                <div id="startHint" class="text-white/90 text-3xl font-bold bg-black/60 px-8 py-3 rounded-full animate-bounce backdrop-blur-md border border-white/20">
+                    👇 點擊移動的彈簧起飛! 👇
+                </div>
+            </div>
+
+            <!-- 下注按鈕 -->
+            <div class="pointer-events-auto flex flex-col items-center gap-2 pb-8 w-full">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl text-gray-300 bg-black/50 px-3 py-1 rounded">當前注額</span>
+                    <span id="currentBetDisplay" class="ui-font text-4xl text-yellow-400 drop-shadow-md">$10.00</span>
+                </div>
+                
+                <div class="flex bg-black/80 p-4 rounded-3xl border-2 border-gray-600 shadow-2xl gap-6 mt-2">
+                    <button onclick="game.setBet(10)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
+                        <span class="text-xs text-gray-400 mb-1">COIN</span>10
+                    </button>
+                    <button onclick="game.setBet(50)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
+                        <span class="text-xs text-gray-400 mb-1">COIN</span>50
+                    </button>
+                    <button onclick="game.setBet(100)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
+                        <span class="text-xs text-gray-400 mb-1">COIN</span>100
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.width = 900;
+        this.height = 1600;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+
+        // 核心狀態
+        this.state = 'GROUND'; 
+        this.balance = 9999999999;
+        this.betAmount = 10;
+        this.currentMultiplier = 1;
+        
+        // 畫面參數
+        this.camera = { y: 0, shake: 0 };
+        this.gameTick = 0;
+        this.bgScroll = 0;
+        this.groundSpeed = 6;
+        
+        // 地板高度
+        this.groundLevel = this.height * 0.65;
+        this.horseBaseY = this.groundLevel - 70; // 馬匹站立基準點
+
+        // 實體
+        this.horse = {
+            x: this.width * 0.3,
+            y: this.horseBaseY,
+            vy: 0,
+            angle: 0,
+            state: 'RUN', 
+            spinTimer: 0, // 新增：控制旋轉時間
+            scale: 2.2 
+        };
+
+        this.springs = []; 
+        this.springSpawnTimer = 0;
+        this.bullets = [];
+        this.particles = [];
+        this.texts = [];
+        this.clouds = [];
+
+        this.skyDurationMax = 900;
+        this.skyTimer = 0;
+
+        for(let i=0; i<8; i++) {
+            this.clouds.push({
+                x: Math.random() * this.width,
+                y: Math.random() * this.groundLevel, 
+                speed: 1 + Math.random() * 2,
+                size: 50 + Math.random() * 80,
+                alpha: 0.3 + Math.random() * 0.4
+            });
+        }
+
+        window.addEventListener('resize', () => this.resize());
+        this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
+        
+        this.resize();
+        this.updateUI();
+        this.loop();
+        
+        setTimeout(() => {
+            document.getElementById('game-wrapper').style.opacity = 1;
+        }, 100);
+    }
+
+    formatCurrency(value) {
+        return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    resize() {
+        const wrapper = document.getElementById('game-wrapper');
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const scale = Math.min(winW / 900, winH / 1600);
+        wrapper.style.transform = `scale(${scale})`;
+    }
+
+    setBet(amount) {
+        this.betAmount = amount;
+        const display = document.getElementById('currentBetDisplay');
+        display.classList.remove('shake');
+        void display.offsetWidth;
+        display.classList.add('shake');
+        this.updateUI();
+    }
+
+    updateUI() {
+        document.getElementById('balanceDisplay').innerText = this.formatCurrency(this.balance);
+        document.getElementById('multiplierDisplay').innerText = 'x' + this.currentMultiplier;
+        document.getElementById('currentBetDisplay').innerText = this.formatCurrency(this.betAmount);
+
+        const skyHUD = document.getElementById('skyHUD');
+        const groundControls = document.getElementById('groundControls');
+        
+        if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+            skyHUD.style.opacity = 1;
+            groundControls.style.opacity = 0;
+            const pct = (this.skyTimer / this.skyDurationMax) * 100;
+            document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+        } else {
+            skyHUD.style.opacity = 0;
+            groundControls.style.opacity = 1;
+        }
+    }
+
+    handleInput(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        const scaleY = this.height / rect.height;
+
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        if (y > this.height - 300 && this.state !== 'SKY') { 
+            return; 
+        }
+
+        if (this.state === 'GROUND') {
+            let hitSpring = null;
+            for (let s of this.springs) {
+                if (Math.abs(x - s.x) < 80 && Math.abs(y - s.y) < 80) {
+                    hitSpring = s;
+                    break;
+                }
+            }
+            if (hitSpring) this.attemptLaunch(hitSpring);
+
+        } else if (this.state === 'SKY') {
+            if (this.balance >= this.betAmount) {
+                this.balance -= this.betAmount;
+                this.shakeScreen(2);
+                this.createBullet(x, y);
+                this.updateUI();
+            } else {
+                this.spawnText("餘額不足!", this.horse.x, this.horse.y, '#ef4444', 40);
+            }
+        }
+    }
+
+    spawnSpring() {
+        const types = [
+            { mul: 2, color: '#4ADE80', label: 'x2', weight: 60 },
+            { mul: 5, color: '#FACC15', label: 'x5', weight: 30 },
+            { mul: 10, color: '#ef4444', label: 'x10', weight: 10 }
+        ];
+        
+        let rand = Math.random() * 100;
+        let selected = types[0];
+        let acc = 0;
+        for(let t of types) {
+            acc += t.weight;
+            if(rand <= acc) {
+                selected = t;
+                break;
+            }
+        }
+
+        this.springs.push({
+            x: this.width + 100, 
+            y: this.groundLevel + 20, 
+            w: 100, 
+            h: 60,
+            mul: selected.mul,
+            color: selected.color,
+            label: selected.label,
+            active: true
+        });
+    }
+
+    attemptLaunch(spring) {
+        if (this.balance < this.betAmount) {
+             this.spawnText("餘額不足!", spring.x, spring.y - 100, '#ef4444', 40);
+             return;
+        }
+        
+        this.balance -= this.betAmount;
+        this.updateUI();
+
+        this.createParticles(spring.x, spring.y, 10, spring.color, 'spark');
+
+        let chance = 0.8;
+        if (spring.mul === 5) chance = 0.55;
+        if (spring.mul === 10) chance = 0.35;
+
+        spring.active = false;
+
+        if (Math.random() < chance) {
+            this.state = 'LAUNCHING';
+            this.currentMultiplier = spring.mul;
+            this.horse.vy = -15; 
+            this.horse.state = 'FLY';
+            this.skyTimer = this.skyDurationMax; 
+            this.shakeScreen(15);
+            this.spawnText("TAKEOFF!", this.width/2, this.height/2, '#FACC15', 100);
+            
+            for(let i=0; i<20; i++) {
+                this.particles.push({
+                    type: 'line',
+                    x: this.width + Math.random()*100,
+                    y: this.horse.y + (Math.random()-0.5)*150,
+                    vx: -20 - Math.random()*20,
+                    vy: 0,
+                    life: 40,
+                    color: 'white',
+                    w: 60, h: 4
+                });
+            }
+
+        } else {
+            this.spawnText("MISS...", spring.x, spring.y - 80, '#94a3b8', 40);
+            this.horse.vy = -10; 
+            setTimeout(() => { 
+                if(this.state === 'GROUND') {
+                    this.horse.y = this.horseBaseY; 
+                    this.horse.vy = 0;
+                }
+            }, 500);
+        }
+    }
+
+    createBullet(tx, ty) {
+        this.bullets.push({
+            x: Math.random() * this.width,
+            y: this.height, 
+            tx: tx,
+            ty: ty,
+            vx: (tx - (Math.random() * this.width)) * 0.08,
+            vy: (ty - this.height) * 0.08,
+            active: true,
+            color: `hsl(${Math.random()*60 + 40}, 100%, 70%)`
+        });
+    }
+
+    checkHit(b) {
+        const dx = b.x - this.horse.x;
+        const dy = b.y - this.horse.y;
+        if (Math.abs(dx) < 120 && Math.abs(dy) < 80) return true;
+        return false;
+    }
+
+    triggerWin(x, y) {
+        if (Math.random() < 0.4) {
+            const win = this.betAmount * this.currentMultiplier;
+            this.balance += win;
+            
+            const bonusTime = 120;
+            this.skyTimer = Math.min(this.skyTimer + bonusTime, this.skyDurationMax);
+            
+            this.spawnText(`+${this.formatCurrency(win)}`, x, y - 80, '#FACC15', 60);
+            this.spawnText(`+TIME`, x, y - 140, '#60A5FA', 40); 
+            
+            this.createParticles(x, y, 12, '#FACC15', 'coin');
+            this.createParticles(x, y, 8, '#FFF', 'spark');
+            
+            // 修正：使用計時器控制狀態，避免衝突
+            this.horse.state = 'SPIN';
+            this.horse.spinTimer = 40; // 旋轉 40 幀 (約0.7秒)
+            
+            this.shakeScreen(5); // 降低震動幅度
+        } else {
+             this.createParticles(x, y, 3, '#ccc', 'spark');
+        }
+        this.updateUI();
+    }
+
+    shakeScreen(intensity) {
+        // 非累積震動，避免畫面過度晃動
+        this.camera.shake = Math.max(this.camera.shake, intensity);
+    }
+
+    spawnText(str, x, y, color, size=32) {
+        this.texts.push({
+            str, x, y, color, size,
+            vy: -3, life: 60, maxLife: 60
+        });
+    }
+
+    createParticles(x, y, count, color, type='spark') {
+        for(let i=0; i<count; i++) {
+            let p = {
+                x, y,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15,
+                life: 30 + Math.random() * 20,
+                color,
+                type,
+                size: Math.random() * 5 + 3,
+                gravity: 0.5
+            };
+            
+            if (type === 'coin') {
+                p.vx = (Math.random() - 0.5) * 20;
+                p.vy = -20 - Math.random() * 15;
+                p.gravity = 1.0;
+                p.life = 60;
+                p.size = 12;
+            }
+            this.particles.push(p);
+        }
+    }
+
+    update() {
+        this.gameTick++;
+        
+        if (this.camera.shake > 0) {
+            this.camera.shake *= 0.9;
+            if (this.camera.shake < 0.5) this.camera.shake = 0;
+        }
+
+        if (this.state !== 'LAUNCHING') {
+            this.bgScroll += this.groundSpeed;
+        }
+
+        this.clouds.forEach(c => {
+            c.x -= c.speed;
+            if (c.x < -200) {
+                c.x = this.width + 200;
+                if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+                     c.y = Math.random() * this.height; 
+                } else {
+                     c.y = Math.random() * this.groundLevel * 0.8; 
+                }
+            }
+        });
+
+        if (this.state === 'GROUND') {
+            this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 5;
+            this.horse.x = this.width * 0.3; // 強制鎖定 X
+            
+            this.springSpawnTimer++;
+            if (this.springSpawnTimer > 60) {
+                this.spawnSpring();
+                this.springSpawnTimer = 0;
+                this.springSpawnTimer -= Math.random() * 20; 
+            }
+
+            for (let i = this.springs.length - 1; i >= 0; i--) {
+                let s = this.springs[i];
+                s.x -= this.groundSpeed;
+                if (s.x < -150) {
+                    this.springs.splice(i, 1);
+                }
+            }
+        }
+        else if (this.state === 'LAUNCHING') {
+            let targetY = this.height * 0.4; 
+            this.horse.y += (targetY - this.horse.y) * 0.08;
+            this.horse.x += (this.width * 0.5 - this.horse.x) * 0.05; // 發射時先飛向中間
+            
+            this.springs.forEach(s => s.x -= this.groundSpeed * 3);
+            
+            if (Math.abs(this.horse.y - targetY) < 10) {
+                this.state = 'SKY';
+            }
+        }
+        else if (this.state === 'SKY') {
+            // --- 修改部分開始：天空亂飛邏輯 ---
+            
+            // 基礎中心點
+            let centerX = this.width * 0.5;
+            let centerY = this.height * 0.35; // 稍微偏上
+
+            // 產生不規則偏移量 (利用不同頻率的 sin/cos 疊加)
+            // X軸：大幅度左右擺動 + 小幅度快速抖動
+            let wanderX = Math.sin(this.gameTick * 0.03) * 250 + Math.cos(this.gameTick * 0.08) * 80;
+            
+            // Y軸：上下浮動 + 隨機突波
+            let wanderY = Math.cos(this.gameTick * 0.04) * 150 + Math.sin(this.gameTick * 0.1) * 50;
+
+            let targetX = centerX + wanderX;
+            let targetY = centerY + wanderY;
+
+            // 邊界限制 (Padding)
+            const padding = 100;
+            targetX = Math.max(padding, Math.min(this.width - padding, targetX));
+            targetY = Math.max(padding, Math.min(this.height * 0.6, targetY));
+
+            // 平滑追隨目標 (Lerp)
+            this.horse.x += (targetX - this.horse.x) * 0.08;
+            this.horse.y += (targetY - this.horse.y) * 0.08;
+
+            // 根據移動方向微調角度，增加動態感
+            let moveTilt = (targetX - this.horse.x) * 0.002;
+            
+            // --- 修改部分結束 ---
+
+            // 旋轉邏輯修正
+            if (this.horse.state === 'SPIN') {
+                this.horse.angle += 0.25; 
+                this.horse.spinTimer--;
+                if (this.horse.spinTimer <= 0) {
+                    this.horse.state = 'FLY';
+                }
+            } else {
+                // 飛行時加入一點隨移動的傾斜感
+                this.horse.angle = moveTilt;
+            }
+
+            this.skyTimer--;
+            this.updateUI();
+
+            if (this.skyTimer <= 0) {
+                this.state = 'FALLING';
+                this.horse.vy = 0;
+                this.currentMultiplier = 1;
+                this.updateUI();
+            }
+        }
+        else if (this.state === 'FALLING') {
+            let targetY = this.horseBaseY;
+            this.horse.y += (targetY - this.horse.y) * 0.05;
+            this.horse.x = this.width * 0.3; // 強制鎖定 X
+            
+            if (Math.abs(this.horse.y - targetY) < 5) {
+                this.state = 'GROUND';
+                this.horse.y = this.horseBaseY;
+                this.horse.state = 'RUN';
+                this.horse.angle = 0;
+                this.shakeScreen(15);
+                this.createParticles(this.horse.x, this.horse.y+80, 40, '#5c4033', 'spark');
+                
+                this.springs = [];
+                this.springSpawnTimer = 30;
+                this.updateUI();
+            }
+        }
+
+        this.updateBullets();
+        this.updateParticles();
+        this.updateTexts();
+    }
+
+    updateBullets() {
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            let b = this.bullets[i];
+            b.x += b.vx;
+            b.y += b.vy;
+            b.vx *= 0.98;
+            b.vy *= 0.98;
+
+            if (this.state === 'SKY' && this.checkHit(b)) {
+                this.triggerWin(b.x, b.y);
+                this.bullets.splice(i, 1);
+                continue;
+            }
+
+            if (b.x < 0 || b.x > this.width || b.y < 0 || b.y > this.height + 50) {
+                this.bullets.splice(i, 1);
+            }
+        }
+    }
+
+    updateParticles() {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            
+            if (p.type === 'coin') {
+                p.vy += p.gravity;
+            } else {
+                p.vx *= 0.9;
+                if (this.state === 'GROUND') {
+                     p.x -= this.groundSpeed;
+                }
+            }
+            if (p.life <= 0) this.particles.splice(i, 1);
+        }
+    }
+
+    updateTexts() {
+        for (let i = this.texts.length - 1; i >= 0; i--) {
+            let t = this.texts[i];
+            t.y += t.vy;
+            t.life--;
+            t.vy *= 0.95;
+            if (this.state === 'GROUND' || this.state === 'SKY') {
+                t.x -= 3; 
+            }
+            if (t.life <= 0) this.texts.splice(i, 1);
+        }
+    }
+
+    draw() {
+        let shakeX = (Math.random() - 0.5) * this.camera.shake;
+        let shakeY = (Math.random() - 0.5) * this.camera.shake;
+
+        this.ctx.save();
+        this.ctx.translate(shakeX, shakeY);
+
+        this.drawBackground();
+        
+        if (this.state === 'GROUND') this.drawGroundElements();
+        
+        this.drawHorse();
+        this.drawEffects();
+
+        this.ctx.restore();
+    }
+
+    drawBackground() {
+        let grd = this.ctx.createLinearGradient(0, 0, 0, this.height);
+        
+        if (this.state === 'GROUND') {
+            grd.addColorStop(0, "#3b82f6");
+            grd.addColorStop(1, "#93c5fd");
+        } else if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+            grd.addColorStop(0, "#1e3a8a");
+            grd.addColorStop(1, "#60a5fa");
+        } else {
+            grd.addColorStop(0, "#2563eb");
+            grd.addColorStop(1, "#bfdbfe");
+        }
+        this.ctx.fillStyle = grd;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        this.clouds.forEach(c => {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${c.alpha})`;
+            this.ctx.beginPath();
+            this.ctx.arc(c.x, c.y, c.size, 0, Math.PI*2);
+            this.ctx.arc(c.x + c.size*0.8, c.y + c.size*0.3, c.size*0.7, 0, Math.PI*2);
+            this.ctx.arc(c.x - c.size*0.8, c.y + c.size*0.3, c.size*0.7, 0, Math.PI*2);
+            this.ctx.fill();
+        });
+
+        if (this.state === 'LAUNCHING') {
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            for(let i=0; i<this.height; i+=120) {
+                let xOffset = (this.gameTick * 40 + i) % this.width;
+                this.ctx.moveTo(xOffset, i);
+                this.ctx.lineTo(xOffset + 150, i);
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    drawGroundElements() {
+        this.ctx.fillStyle = '#166534';
+        this.ctx.fillRect(0, this.groundLevel, this.width, this.height - this.groundLevel);
+        
+        this.ctx.fillStyle = '#14532d';
+        let stripeWidth = 80;
+        let offset = -(this.bgScroll % stripeWidth);
+        for (let x = offset; x < this.width; x += stripeWidth) {
+             this.ctx.beginPath();
+             this.ctx.moveTo(x, this.height);
+             this.ctx.lineTo(x + 40, this.groundLevel);
+             this.ctx.lineTo(x + 20, this.groundLevel);
+             this.ctx.lineTo(x - 20, this.height);
+             this.ctx.fill();
+        }
+
+        this.ctx.fillStyle = '#facc15';
+        let dashWidth = 100;
+        let dashGap = 100;
+        let dashOffset = -(this.bgScroll % (dashWidth + dashGap));
+        for (let x = dashOffset; x < this.width; x += (dashWidth + dashGap)) {
+            this.ctx.fillRect(x, this.groundLevel + 20, dashWidth, 15);
+        }
+
+        this.springs.forEach(s => {
+            if (!s.active) this.ctx.globalAlpha = 0.5; 
+
+            this.ctx.fillStyle = '#1f2937';
+            this.ctx.beginPath();
+            this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5);
+            this.ctx.fill();
+
+            this.ctx.strokeStyle = s.color;
+            this.ctx.lineWidth = 10;
+            this.ctx.lineCap = 'round';
+            this.ctx.beginPath();
+            let y = s.y;
+            let h = s.h;
+            this.ctx.moveTo(s.x - 30, y);
+            this.ctx.lineTo(s.x + 30, y - h*0.3);
+            this.ctx.lineTo(s.x - 30, y - h*0.6);
+            this.ctx.lineTo(s.x + 30, y - h);
+            this.ctx.moveTo(s.x, y-h);
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = s.color;
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowColor = s.color;
+            this.ctx.fillRect(s.x - s.w/2 - 5, s.y - h - 5, s.w + 10, 20);
+            this.ctx.shadowBlur = 0;
+
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = 'bold 36px "Black Ops One"';
+            this.ctx.textAlign = 'center';
+            this.ctx.shadowColor = 'black';
+            this.ctx.shadowBlur = 5;
+            this.ctx.fillText(s.label, s.x, s.y + 70);
+            this.ctx.shadowBlur = 0;
+
+            this.ctx.globalAlpha = 1.0;
+        });
+    }
+
+    drawHorse() {
+        this.ctx.save();
+        this.ctx.translate(this.horse.x, this.horse.y);
+        
+        this.ctx.scale(this.horse.scale, this.horse.scale); 
+        this.ctx.rotate(this.horse.angle);
+
+        if (this.state === 'GROUND') {
+            this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            this.ctx.beginPath();
+            this.ctx.ellipse(0, 45, 40, 8, 0, 0, Math.PI*2);
+            this.ctx.fill();
+        }
+
+        const bob = Math.sin(this.gameTick * 0.4) * 3; 
+        const legSwing = Math.sin(this.gameTick * 0.8) * 0.8; 
+        
+        this.ctx.save();
+        this.ctx.fillStyle = '#5D4037';
+        this.ctx.translate(-20, 10 + bob);
+        this.ctx.rotate(-legSwing); 
+        this.ctx.fillRect(-5, 0, 10, 30);
+        this.ctx.translate(0, 30);
+        this.ctx.rotate(legSwing * 0.5 + 0.5); 
+        this.ctx.fillRect(-4, 0, 8, 20);
+        this.ctx.restore();
+
+        this.ctx.save();
+        this.ctx.fillStyle = '#5D4037';
+        this.ctx.translate(20, 10 + bob);
+        this.ctx.rotate(legSwing);
+        this.ctx.fillRect(-5, 0, 10, 30);
+        this.ctx.translate(0, 30);
+        this.ctx.rotate(-legSwing * 0.5 + 0.5);
+        this.ctx.fillRect(-4, 0, 8, 20);
+        this.ctx.restore();
+
+        if (this.horse.state !== 'RUN') {
+            this.ctx.save();
+            this.ctx.translate(0, bob - 10);
+            let flap = Math.sin(this.gameTick * 0.8) * 0.5;
+            this.ctx.scale(1, 1 - flap * 0.5);
+            this.ctx.fillStyle = '#bfdbfe';
+            this.ctx.beginPath();
+            this.ctx.moveTo(5, 0);
+            this.ctx.lineTo(-30, -50); 
+            this.ctx.lineTo(20, -20);
+            this.ctx.fill();
+            this.ctx.restore();
+        }
+
+        this.ctx.fillStyle = '#854d0e'; 
+        this.ctx.beginPath();
+        this.ctx.roundRect(-40, -20 + bob, 80, 40, 20);
+        this.ctx.fill();
+
+        this.ctx.save();
+        this.ctx.translate(-40, -10 + bob);
+        this.ctx.rotate(Math.sin(this.gameTick * 0.5) * 0.5 + 0.5); 
+        this.ctx.fillStyle = '#3f1f10';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, 0);
+        this.ctx.quadraticCurveTo(-20, 10, -10, 30);
+        this.ctx.lineTo(0, 10);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        this.ctx.save();
+        this.ctx.translate(30, -15 + bob); 
+        this.ctx.rotate(-0.5 + Math.sin(this.gameTick * 0.4) * 0.1); 
+        this.ctx.fillStyle = '#854d0e';
+        this.ctx.fillRect(-10, -30, 20, 40);
+        this.ctx.translate(0, -30);
+        this.ctx.beginPath();
+        this.ctx.roundRect(-12, -20, 35, 25, 8); 
+        this.ctx.fill();
+        this.ctx.fillStyle = '#3f1f10';
+        this.ctx.beginPath();
+        this.ctx.moveTo(-5, -20);
+        this.ctx.lineTo(0, -35);
+        this.ctx.lineTo(5, -20);
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.moveTo(-10, 0);
+        this.ctx.quadraticCurveTo(-20, 20, -10, 40); 
+        this.ctx.lineTo(10, 0);
+        this.ctx.fill();
+        this.ctx.fillStyle = 'white';
+        this.ctx.beginPath();
+        this.ctx.arc(5, -12, 5, 0, Math.PI*2);
+        this.ctx.fill();
+        this.ctx.fillStyle = 'black';
+        this.ctx.beginPath();
+        this.ctx.arc(7, -12, 2, 0, Math.PI*2);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        if (this.horse.state !== 'RUN') {
+            this.ctx.save();
+            this.ctx.translate(5, bob - 15);
+            let flap = Math.sin(this.gameTick * 0.8) * 0.5;
+            this.ctx.scale(1, 1 - flap * 0.5);
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(-40, -60); 
+            this.ctx.lineTo(30, -25);
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#cbd5e1';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
+
+        this.ctx.save();
+        this.ctx.fillStyle = '#854d0e';
+        this.ctx.translate(-20, 10 + bob);
+        this.ctx.rotate(legSwing);
+        this.ctx.fillRect(-5, 0, 10, 30);
+        this.ctx.translate(0, 30);
+        this.ctx.rotate(-legSwing * 0.5 + 0.5);
+        this.ctx.fillRect(-4, 0, 8, 20);
+        this.ctx.restore();
+
+        this.ctx.save();
+        this.ctx.fillStyle = '#854d0e';
+        this.ctx.translate(20, 10 + bob);
+        this.ctx.rotate(-legSwing);
+        this.ctx.fillRect(-5, 0, 10, 30);
+        this.ctx.translate(0, 30);
+        this.ctx.rotate(legSwing * 0.5 + 0.5);
+        this.ctx.fillRect(-4, 0, 8, 20);
+        this.ctx.restore();
+
+        this.ctx.restore();
+    }
+
+    drawEffects() {
+        this.bullets.forEach(b => {
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = b.color;
+            this.ctx.fillStyle = b.color;
+            this.ctx.beginPath();
+            this.ctx.arc(b.x, b.y, 10, 0, Math.PI*2);
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+            
+            this.ctx.lineWidth = 5;
+            this.ctx.strokeStyle = b.color;
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(b.x, b.y);
+            this.ctx.lineTo(b.x - b.vx*4, b.y - b.vy*4);
+            this.ctx.stroke();
+            this.ctx.globalAlpha = 1.0;
+        });
+
+        this.particles.forEach(p => {
+            this.ctx.save();
+            this.ctx.globalAlpha = p.life / 60;
+            this.ctx.translate(p.x, p.y);
+            
+            if (p.type === 'coin') {
+                this.ctx.fillStyle = '#FACC15';
+                this.ctx.strokeStyle = '#B45309';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
+                this.ctx.fill();
+                this.ctx.stroke();
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillRect(-4, -4, 4, 4);
+            } else if (p.type === 'line') {
+                this.ctx.fillStyle = p.color;
+                this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            } else {
+                this.ctx.fillStyle = p.color;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
+                this.ctx.fill();
+            }
+            this.ctx.restore();
+        });
+
+        this.texts.forEach(t => {
+            this.ctx.globalAlpha = t.life / t.maxLife;
+            this.ctx.strokeStyle = 'black';
+            this.ctx.lineWidth = 6;
+            this.ctx.font = `900 ${t.size}px "Black Ops One", sans-serif`;
+            this.ctx.strokeText(t.str, t.x - 40, t.y);
+            this.ctx.fillStyle = t.color;
+            this.ctx.fillText(t.str, t.x - 40, t.y);
+            this.ctx.globalAlpha = 1.0;
+        });
+    }
+
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
+    }
+}
+
+window.onload = () => {
+    window.game = new Game();
+};
+</script>
+</body>
+</html>
