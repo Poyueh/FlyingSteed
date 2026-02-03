@@ -2,8 +2,9 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>飛天神駒 DX - 900x1600版</title>
+    <!-- 加入 viewport-fit=cover 以適應全面屏手機 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>飛天神駒 DX - 全平台通用版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -11,26 +12,32 @@
         body {
             margin: 0;
             overflow: hidden;
-            touch-action: none;
+            touch-action: none; /* 禁止手機預設觸控行為 */
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #000;
+            background-color: #050505; /* 背景改為深色，讓黑邊不突兀 */
             user-select: none;
+            -webkit-user-select: none; /* iOS Safari 兼容 */
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             width: 100vw;
+            /* 增加細微的網格背景讓寬螢幕時兩側不單調 */
+            background-image: radial-gradient(#1f2937 1px, transparent 1px);
+            background-size: 20px 20px;
         }
         
         #game-wrapper {
             position: relative;
-            width: 900px;
-            height: 1600px;
+            width: 900px;  /* 遊戲內部邏輯寬度 */
+            height: 1600px; /* 遊戲內部邏輯高度 */
             background-color: #1a1a2e;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            box-shadow: 0 0 100px rgba(0,0,0,0.9); /* 加深陰影 */
             overflow: hidden;
             opacity: 0; 
             transition: opacity 0.5s;
+            /* 確保縮放中心點在正中間 */
+            transform-origin: center center;
         }
 
         canvas {
@@ -53,7 +60,7 @@
             pointer-events: none;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* 上下分開 */
+            justify-content: space-between;
             z-index: 10;
         }
         
@@ -65,6 +72,8 @@
             position: relative;
             overflow: hidden;
             transition: all 0.1s;
+            /* 增加觸控回饋感 */
+            touch-action: manipulation;
         }
         .neon-btn:active {
             transform: scale(0.95);
@@ -91,7 +100,6 @@
             40%, 60% { transform: translate3d(4px, 0, 0); }
         }
         
-        /* 底部控制面板背景 */
         .control-panel {
             background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
             padding-bottom: 2rem;
@@ -174,6 +182,7 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
+        // 內部邏輯解析度 (Fixed Logic Resolution)
         this.width = 900;
         this.height = 1600;
         this.canvas.width = this.width;
@@ -202,8 +211,10 @@ class Game {
             vy: 0,
             angle: 0,
             state: 'RUN', 
-            spinTimer: 0, // 新增：控制旋轉時間
-            scale: 2.2 
+            spinTimer: 0,
+            scale: 2.2,
+            targetX: this.width * 0.3, // 新增：飛行時的目標 X 座標
+            moveTimer: 0 // 新增：控制隨機移動的計時器
         };
 
         this.springs = []; 
@@ -226,9 +237,14 @@ class Game {
             });
         }
 
+        // 綁定視窗事件
         window.addEventListener('resize', () => this.resize());
+        window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
+        
+        // 綁定輸入事件 (使用 pointerdown 兼容滑鼠與觸控)
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
+        // 初始化尺寸與 UI
         this.resize();
         this.updateUI();
         this.loop();
@@ -242,11 +258,30 @@ class Game {
         return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    // 手機響應式核心：智慧縮放 (Universal Fit)
+    // 這裡的邏輯是「永遠保持遊戲的 900x1600 比例」，
+    // 如果是電腦或橫屏手機，遊戲會縮放至「符合螢幕高度」，左右留黑邊。
+    // 這達成了「強制直向」的效果，不管裝置如何轉，遊戲本身永遠是直立的長方形。
     resize() {
         const wrapper = document.getElementById('game-wrapper');
         const winW = window.innerWidth;
         const winH = window.innerHeight;
-        const scale = Math.min(winW / 900, winH / 1600);
+        
+        // 計算寬高比
+        const gameRatio = this.width / this.height;
+        const winRatio = winW / winH;
+        
+        let scale;
+        
+        // 如果螢幕比遊戲更寬 (桌機、平板、橫屏手機)，以「高度」為基準進行縮放
+        if (winRatio > gameRatio) {
+            scale = winH / this.height;
+        } else {
+            // 如果螢幕比遊戲更窄 (直向手機)，以「寬度」為基準進行縮放
+            scale = winW / this.width;
+        }
+
+        // 設定縮放與置中
         wrapper.style.transform = `scale(${scale})`;
     }
 
@@ -279,12 +314,19 @@ class Game {
     }
 
     handleInput(e) {
+        e.preventDefault(); // 防止某些瀏覽器的預設行為
+
+        // 座標轉換邏輯：從視覺座標轉回 Canvas 900x1600 座標
+        // 因為使用了 CSS transform: scale()，getBoundingClientRect 會自動處理縮放後的偏移與大小
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = this.width / rect.width;
         const scaleY = this.height / rect.height;
 
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
+
+        // 確保點擊在遊戲區域內 (雖然 CSS overflow: hidden 已經處理視覺，但邏輯上多一層保護)
+        if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
         if (y > this.height - 300 && this.state !== 'SKY') { 
             return; 
@@ -293,7 +335,8 @@ class Game {
         if (this.state === 'GROUND') {
             let hitSpring = null;
             for (let s of this.springs) {
-                if (Math.abs(x - s.x) < 80 && Math.abs(y - s.y) < 80) {
+                // 加大一點判定範圍給觸控使用
+                if (Math.abs(x - s.x) < 90 && Math.abs(y - s.y) < 90) {
                     hitSpring = s;
                     break;
                 }
@@ -365,6 +408,11 @@ class Game {
             this.horse.vy = -15; 
             this.horse.state = 'FLY';
             this.skyTimer = this.skyDurationMax; 
+            
+            // 起飛時重置目標為中心
+            this.horse.targetX = this.width * 0.3;
+            this.horse.moveTimer = 0;
+
             this.shakeScreen(15);
             this.spawnText("TAKEOFF!", this.width/2, this.height/2, '#FACC15', 100);
             
@@ -427,11 +475,10 @@ class Game {
             this.createParticles(x, y, 12, '#FACC15', 'coin');
             this.createParticles(x, y, 8, '#FFF', 'spark');
             
-            // 修正：使用計時器控制狀態，避免衝突
             this.horse.state = 'SPIN';
-            this.horse.spinTimer = 40; // 旋轉 40 幀 (約0.7秒)
+            this.horse.spinTimer = 40; 
             
-            this.shakeScreen(5); // 降低震動幅度
+            this.shakeScreen(5); 
         } else {
              this.createParticles(x, y, 3, '#ccc', 'spark');
         }
@@ -439,7 +486,6 @@ class Game {
     }
 
     shakeScreen(intensity) {
-        // 非累積震動，避免畫面過度晃動
         this.camera.shake = Math.max(this.camera.shake, intensity);
     }
 
@@ -491,16 +537,16 @@ class Game {
             if (c.x < -200) {
                 c.x = this.width + 200;
                 if (this.state === 'SKY' || this.state === 'LAUNCHING') {
-                     c.y = Math.random() * this.height; 
+                      c.y = Math.random() * this.height; 
                 } else {
-                     c.y = Math.random() * this.groundLevel * 0.8; 
+                      c.y = Math.random() * this.groundLevel * 0.8; 
                 }
             }
         });
 
         if (this.state === 'GROUND') {
             this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 5;
-            this.horse.x = this.width * 0.3; // 強制鎖定 X
+            this.horse.x = this.width * 0.3; // 地面時保持在跑道
             
             this.springSpawnTimer++;
             if (this.springSpawnTimer > 60) {
@@ -520,7 +566,7 @@ class Game {
         else if (this.state === 'LAUNCHING') {
             let targetY = this.height * 0.4; 
             this.horse.y += (targetY - this.horse.y) * 0.08;
-            this.horse.x += (this.width * 0.5 - this.horse.x) * 0.05; // 發射時先飛向中間
+            this.horse.x = this.width * 0.3; // 發射時保持居中
             
             this.springs.forEach(s => s.x -= this.groundSpeed * 3);
             
@@ -529,37 +575,25 @@ class Game {
             }
         }
         else if (this.state === 'SKY') {
-            // --- 修改部分開始：天空亂飛邏輯 ---
+            // Y 軸懸浮
+            let targetY = this.height * 0.4;
+            let hoverY = targetY + Math.sin(this.gameTick * 0.05) * 15;
+            this.horse.y += (hoverY - this.horse.y) * 0.1;
+
+            // X 軸隨機移動邏輯 (新增)
+            this.horse.moveTimer--;
+            if (this.horse.moveTimer <= 0) {
+                // 在螢幕 10% 到 90% 之間隨機選一個點
+                this.horse.targetX = this.width * 0.1 + Math.random() * (this.width * 0.8);
+                // 下一次移動的時間間隔 (60~120 tick)
+                this.horse.moveTimer = 60 + Math.random() * 60;
+            }
             
-            // 基礎中心點
-            let centerX = this.width * 0.5;
-            let centerY = this.height * 0.35; // 稍微偏上
+            // 平滑移動到目標 X
+            let dx = this.horse.targetX - this.horse.x;
+            this.horse.x += dx * 0.05;
 
-            // 產生不規則偏移量 (利用不同頻率的 sin/cos 疊加)
-            // X軸：大幅度左右擺動 + 小幅度快速抖動
-            let wanderX = Math.sin(this.gameTick * 0.03) * 250 + Math.cos(this.gameTick * 0.08) * 80;
-            
-            // Y軸：上下浮動 + 隨機突波
-            let wanderY = Math.cos(this.gameTick * 0.04) * 150 + Math.sin(this.gameTick * 0.1) * 50;
-
-            let targetX = centerX + wanderX;
-            let targetY = centerY + wanderY;
-
-            // 邊界限制 (Padding)
-            const padding = 100;
-            targetX = Math.max(padding, Math.min(this.width - padding, targetX));
-            targetY = Math.max(padding, Math.min(this.height * 0.6, targetY));
-
-            // 平滑追隨目標 (Lerp)
-            this.horse.x += (targetX - this.horse.x) * 0.08;
-            this.horse.y += (targetY - this.horse.y) * 0.08;
-
-            // 根據移動方向微調角度，增加動態感
-            let moveTilt = (targetX - this.horse.x) * 0.002;
-            
-            // --- 修改部分結束 ---
-
-            // 旋轉邏輯修正
+            // 狀態處理
             if (this.horse.state === 'SPIN') {
                 this.horse.angle += 0.25; 
                 this.horse.spinTimer--;
@@ -567,8 +601,13 @@ class Game {
                     this.horse.state = 'FLY';
                 }
             } else {
-                // 飛行時加入一點隨移動的傾斜感
-                this.horse.angle = moveTilt;
+                // 根據移動方向增加一點傾斜 (Banking) 效果
+                let bankAngle = dx * 0.003; 
+                // 限制最大傾斜角度
+                bankAngle = Math.max(-0.3, Math.min(0.3, bankAngle));
+                
+                // 平滑轉動角度
+                this.horse.angle += (bankAngle - this.horse.angle) * 0.1;
             }
 
             this.skyTimer--;
@@ -584,13 +623,24 @@ class Game {
         else if (this.state === 'FALLING') {
             let targetY = this.horseBaseY;
             this.horse.y += (targetY - this.horse.y) * 0.05;
-            this.horse.x = this.width * 0.3; // 強制鎖定 X
+            
+            // 落下時自動飛回跑道中心 (修正 X)
+            let targetX = this.width * 0.3;
+            this.horse.x += (targetX - this.horse.x) * 0.05;
+            
+            // 角度回正
+            if (Math.abs(this.horse.angle) > 0.01) {
+                this.horse.angle *= 0.8;
+            } else {
+                this.horse.angle = 0;
+            }
             
             if (Math.abs(this.horse.y - targetY) < 5) {
                 this.state = 'GROUND';
                 this.horse.y = this.horseBaseY;
                 this.horse.state = 'RUN';
                 this.horse.angle = 0;
+                this.horse.x = this.width * 0.3; // 確保完全歸位
                 this.shakeScreen(15);
                 this.createParticles(this.horse.x, this.horse.y+80, 40, '#5c4033', 'spark');
                 
@@ -637,7 +687,7 @@ class Game {
             } else {
                 p.vx *= 0.9;
                 if (this.state === 'GROUND') {
-                     p.x -= this.groundSpeed;
+                      p.x -= this.groundSpeed;
                 }
             }
             if (p.life <= 0) this.particles.splice(i, 1);
