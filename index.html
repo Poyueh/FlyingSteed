@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <!-- 加入 viewport-fit=cover 以適應全面屏手機 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>飛天神駒 DX - 全平台通用版</title>
+    <title>飛天神駒 DX - 全螢幕滿版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -12,31 +12,39 @@
         body {
             margin: 0;
             overflow: hidden;
-            touch-action: none; /* 禁止手機預設觸控行為 */
+            touch-action: none;
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #050505; /* 背景改為深色，讓黑邊不突兀 */
+            background-color: #000;
             user-select: none;
-            -webkit-user-select: none; /* iOS Safari 兼容 */
+            -webkit-user-select: none;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             width: 100vw;
-            /* 增加細微的網格背景讓寬螢幕時兩側不單調 */
-            background-image: radial-gradient(#1f2937 1px, transparent 1px);
-            background-size: 20px 20px;
         }
         
+        /* 動態背景層 */
+        #ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: linear-gradient(to bottom, #3b82f6, #93c5fd);
+            transition: background 1s ease;
+        }
+
         #game-wrapper {
             position: relative;
-            width: 900px;  /* 遊戲內部邏輯寬度 */
-            height: 1600px; /* 遊戲內部邏輯高度 */
-            background-color: #1a1a2e;
-            box-shadow: 0 0 100px rgba(0,0,0,0.9); /* 加深陰影 */
+            /* 寬度固定，高度由 JS 動態計算 */
+            width: 900px;  
+            background-color: transparent; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
             overflow: hidden;
             opacity: 0; 
             transition: opacity 0.5s;
-            /* 確保縮放中心點在正中間 */
             transform-origin: center center;
         }
 
@@ -72,7 +80,6 @@
             position: relative;
             overflow: hidden;
             transition: all 0.1s;
-            /* 增加觸控回饋感 */
             touch-action: manipulation;
         }
         .neon-btn:active {
@@ -101,13 +108,16 @@
         }
         
         .control-panel {
-            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
-            padding-bottom: 2rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0));
+            padding-bottom: 2rem; /* 增加底部安全距離 */
             padding-top: 4rem;
         }
     </style>
 </head>
 <body>
+
+<!-- 背景氣氛層 -->
+<div id="ambient-bg"></div>
 
 <!-- 遊戲容器 Wrapper -->
 <div id="game-wrapper">
@@ -117,21 +127,21 @@
     <!-- UI 層 -->
     <div class="ui-layer safe-area-inset">
         <!-- 頂部 HUD (資訊區) -->
-        <div class="flex justify-between items-start p-8">
+        <div class="flex justify-between items-start p-8 pt-12"> <!-- 增加頂部間距適應瀏海 -->
             <!-- 餘額 -->
-            <div class="bg-black/60 backdrop-blur-md p-5 rounded-2xl border-l-8 border-yellow-500 shadow-lg">
+            <div class="bg-black/40 backdrop-blur-md p-5 rounded-2xl border-l-8 border-yellow-500 shadow-lg">
                 <div class="text-lg text-yellow-300 font-bold tracking-wider">BALANCE</div>
                 <div class="text-4xl text-white ui-font text-shadow mt-1 tracking-tight" id="balanceDisplay">$1,000.00</div>
             </div>
             
             <!-- 倍率顯示 -->
-            <div class="bg-black/60 backdrop-blur-md p-5 rounded-2xl border-r-8 border-blue-500 shadow-lg min-w-[140px] text-right">
+            <div class="bg-black/40 backdrop-blur-md p-5 rounded-2xl border-r-8 border-blue-500 shadow-lg min-w-[140px] text-right">
                 <div class="text-lg text-blue-300 font-bold tracking-wider">BONUS</div>
                 <div class="text-6xl text-blue-400 ui-font mt-1" id="multiplierDisplay">x1</div>
             </div>
         </div>
         
-        <!-- 天空提示 (位置調整) -->
+        <!-- 天空提示 -->
         <div id="skyHUD" class="absolute top-48 left-1/2 transform -translate-x-1/2 w-full px-12 pointer-events-none opacity-0 transition-opacity duration-500">
             <!-- 飛行倒數條 -->
             <div class="w-full h-8 bg-black/50 rounded-full overflow-hidden border-2 border-white/20 relative shadow-lg">
@@ -146,7 +156,7 @@
         <!-- 底部 HUD (操作區) -->
         <div class="control-panel flex flex-col items-center justify-end pointer-events-none">
             
-            <!-- 地面操作提示 (放在按鈕上方) -->
+            <!-- 地面操作提示 -->
             <div id="groundControls" class="mb-6 pointer-events-none transition-opacity duration-300">
                 <div id="startHint" class="text-white/90 text-3xl font-bold bg-black/60 px-8 py-3 rounded-full animate-bounce backdrop-blur-md border border-white/20">
                     👇 點擊移動的彈簧起飛! 👇
@@ -160,7 +170,7 @@
                     <span id="currentBetDisplay" class="ui-font text-4xl text-yellow-400 drop-shadow-md">$10.00</span>
                 </div>
                 
-                <div class="flex bg-black/80 p-4 rounded-3xl border-2 border-gray-600 shadow-2xl gap-6 mt-2">
+                <div class="flex bg-black/60 p-4 rounded-3xl border-2 border-gray-600 shadow-2xl gap-6 mt-2">
                     <button onclick="game.setBet(10)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
                         <span class="text-xs text-gray-400 mb-1">COIN</span>10
                     </button>
@@ -182,11 +192,32 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
-        // 內部邏輯解析度 (Fixed Logic Resolution)
+        // --- 動態解析度系統 (Dynamic Resolution System) ---
+        // 核心寬度固定為 900
         this.width = 900;
-        this.height = 1600;
+
+        // 偵測裝置螢幕長寬比
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const screenRatio = winH / winW;
+
+        // 計算目標高度：
+        // 1. 基本高度至少 1600 (確保在短螢幕/平板上也能玩)
+        // 2. 如果是長手機 (Portrait)，高度會根據螢幕比例自動延伸
+        // 這樣可以確保遊戲「填滿」螢幕，而不是縮放後留下黑邊
+        let targetHeight = 1600;
+        
+        // 只有在直向模式時才啟用動態高度延伸
+        if (winH > winW) {
+             targetHeight = Math.max(1600, this.width * screenRatio);
+        }
+
+        this.height = targetHeight;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+
+        // 將 HTML 容器高度同步為計算出的高度
+        document.getElementById('game-wrapper').style.height = this.height + 'px';
 
         // 核心狀態
         this.state = 'GROUND'; 
@@ -200,7 +231,7 @@ class Game {
         this.bgScroll = 0;
         this.groundSpeed = 6;
         
-        // 地板高度
+        // 地板高度：根據動態高度調整，保持在畫面下方 35% 處
         this.groundLevel = this.height * 0.65;
         this.horseBaseY = this.groundLevel - 70; // 馬匹站立基準點
 
@@ -213,8 +244,8 @@ class Game {
             state: 'RUN', 
             spinTimer: 0,
             scale: 2.2,
-            targetX: this.width * 0.3, // 新增：飛行時的目標 X 座標
-            moveTimer: 0 // 新增：控制隨機移動的計時器
+            targetX: this.width * 0.3,
+            moveTimer: 0 
         };
 
         this.springs = []; 
@@ -227,6 +258,7 @@ class Game {
         this.skyDurationMax = 900;
         this.skyTimer = 0;
 
+        // 雲朵分佈在整個動態高度中
         for(let i=0; i<8; i++) {
             this.clouds.push({
                 x: Math.random() * this.width,
@@ -241,7 +273,7 @@ class Game {
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 200));
         
-        // 綁定輸入事件 (使用 pointerdown 兼容滑鼠與觸控)
+        // 綁定輸入事件
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
         // 初始化尺寸與 UI
@@ -258,10 +290,6 @@ class Game {
         return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // 手機響應式核心：智慧縮放 (Universal Fit)
-    // 這裡的邏輯是「永遠保持遊戲的 900x1600 比例」，
-    // 如果是電腦或橫屏手機，遊戲會縮放至「符合螢幕高度」，左右留黑邊。
-    // 這達成了「強制直向」的效果，不管裝置如何轉，遊戲本身永遠是直立的長方形。
     resize() {
         const wrapper = document.getElementById('game-wrapper');
         const winW = window.innerWidth;
@@ -273,15 +301,18 @@ class Game {
         
         let scale;
         
-        // 如果螢幕比遊戲更寬 (桌機、平板、橫屏手機)，以「高度」為基準進行縮放
+        // 縮放邏輯：
+        // 因為我們已經動態調整了 this.height 來符合螢幕比例 (在直向模式下)
+        // 所以這裡理論上會達成 Perfect Fit (縮放比例 = winW / 900)
+        
         if (winRatio > gameRatio) {
+            // 螢幕比遊戲寬 (例如平板或電腦)，以高度為準
             scale = winH / this.height;
         } else {
-            // 如果螢幕比遊戲更窄 (直向手機)，以「寬度」為基準進行縮放
+            // 螢幕比遊戲窄 (例如長手機)，以寬度為準
             scale = winW / this.width;
         }
 
-        // 設定縮放與置中
         wrapper.style.transform = `scale(${scale})`;
     }
 
@@ -301,33 +332,40 @@ class Game {
 
         const skyHUD = document.getElementById('skyHUD');
         const groundControls = document.getElementById('groundControls');
+        const bg = document.getElementById('ambient-bg');
         
+        // 同步背景顏色
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
             skyHUD.style.opacity = 1;
             groundControls.style.opacity = 0;
             const pct = (this.skyTimer / this.skyDurationMax) * 100;
             document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+            
+            // 天空背景色 (深藍)
+            bg.style.background = 'linear-gradient(to bottom, #1e3a8a, #60a5fa)';
         } else {
             skyHUD.style.opacity = 0;
             groundControls.style.opacity = 1;
+            
+            // 地面背景色 (亮藍)
+            bg.style.background = 'linear-gradient(to bottom, #3b82f6, #93c5fd)';
         }
     }
 
     handleInput(e) {
-        e.preventDefault(); // 防止某些瀏覽器的預設行為
+        e.preventDefault(); 
 
-        // 座標轉換邏輯：從視覺座標轉回 Canvas 900x1600 座標
-        // 因為使用了 CSS transform: scale()，getBoundingClientRect 會自動處理縮放後的偏移與大小
         const rect = this.canvas.getBoundingClientRect();
+        // 使用計算後的 this.height 進行座標換算
         const scaleX = this.width / rect.width;
         const scaleY = this.height / rect.height;
 
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
 
-        // 確保點擊在遊戲區域內 (雖然 CSS overflow: hidden 已經處理視覺，但邏輯上多一層保護)
         if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
+        // 點擊判定也根據動態高度調整
         if (y > this.height - 300 && this.state !== 'SKY') { 
             return; 
         }
@@ -335,7 +373,6 @@ class Game {
         if (this.state === 'GROUND') {
             let hitSpring = null;
             for (let s of this.springs) {
-                // 加大一點判定範圍給觸控使用
                 if (Math.abs(x - s.x) < 90 && Math.abs(y - s.y) < 90) {
                     hitSpring = s;
                     break;
@@ -409,7 +446,6 @@ class Game {
             this.horse.state = 'FLY';
             this.skyTimer = this.skyDurationMax; 
             
-            // 起飛時重置目標為中心
             this.horse.targetX = this.width * 0.3;
             this.horse.moveTimer = 0;
 
@@ -546,7 +582,7 @@ class Game {
 
         if (this.state === 'GROUND') {
             this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 5;
-            this.horse.x = this.width * 0.3; // 地面時保持在跑道
+            this.horse.x = this.width * 0.3;
             
             this.springSpawnTimer++;
             if (this.springSpawnTimer > 60) {
@@ -566,7 +602,7 @@ class Game {
         else if (this.state === 'LAUNCHING') {
             let targetY = this.height * 0.4; 
             this.horse.y += (targetY - this.horse.y) * 0.08;
-            this.horse.x = this.width * 0.3; // 發射時保持居中
+            this.horse.x = this.width * 0.3; 
             
             this.springs.forEach(s => s.x -= this.groundSpeed * 3);
             
@@ -575,25 +611,19 @@ class Game {
             }
         }
         else if (this.state === 'SKY') {
-            // Y 軸懸浮
             let targetY = this.height * 0.4;
             let hoverY = targetY + Math.sin(this.gameTick * 0.05) * 15;
             this.horse.y += (hoverY - this.horse.y) * 0.1;
 
-            // X 軸隨機移動邏輯 (新增)
             this.horse.moveTimer--;
             if (this.horse.moveTimer <= 0) {
-                // 在螢幕 10% 到 90% 之間隨機選一個點
                 this.horse.targetX = this.width * 0.1 + Math.random() * (this.width * 0.8);
-                // 下一次移動的時間間隔 (60~120 tick)
                 this.horse.moveTimer = 60 + Math.random() * 60;
             }
             
-            // 平滑移動到目標 X
             let dx = this.horse.targetX - this.horse.x;
             this.horse.x += dx * 0.05;
 
-            // 狀態處理
             if (this.horse.state === 'SPIN') {
                 this.horse.angle += 0.25; 
                 this.horse.spinTimer--;
@@ -601,12 +631,8 @@ class Game {
                     this.horse.state = 'FLY';
                 }
             } else {
-                // 根據移動方向增加一點傾斜 (Banking) 效果
                 let bankAngle = dx * 0.003; 
-                // 限制最大傾斜角度
                 bankAngle = Math.max(-0.3, Math.min(0.3, bankAngle));
-                
-                // 平滑轉動角度
                 this.horse.angle += (bankAngle - this.horse.angle) * 0.1;
             }
 
@@ -624,11 +650,9 @@ class Game {
             let targetY = this.horseBaseY;
             this.horse.y += (targetY - this.horse.y) * 0.05;
             
-            // 落下時自動飛回跑道中心 (修正 X)
             let targetX = this.width * 0.3;
             this.horse.x += (targetX - this.horse.x) * 0.05;
             
-            // 角度回正
             if (Math.abs(this.horse.angle) > 0.01) {
                 this.horse.angle *= 0.8;
             } else {
@@ -640,7 +664,7 @@ class Game {
                 this.horse.y = this.horseBaseY;
                 this.horse.state = 'RUN';
                 this.horse.angle = 0;
-                this.horse.x = this.width * 0.3; // 確保完全歸位
+                this.horse.x = this.width * 0.3;
                 this.shakeScreen(15);
                 this.createParticles(this.horse.x, this.horse.y+80, 40, '#5c4033', 'spark');
                 
