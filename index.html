@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <!-- 加入 viewport-fit=cover 與 user-scalable=no 以適應全面屏手機並禁止縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>飛天神駒 DX - 自適應加強版</title>
+    <title>飛天神駒</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -103,6 +103,12 @@
             padding-bottom: max(2rem, env(safe-area-inset-bottom)); /* 適應 iPhone 底部橫條 */
             padding-top: 6rem;
         }
+        
+        /* 掃光動畫 */
+        @keyframes slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
     </style>
 </head>
 <body>
@@ -112,7 +118,7 @@
 
     <div class="ui-layer safe-area-inset">
         <!-- 頂部 HUD -->
-        <div class="flex justify-between items-start p-6 pt-12"> <!-- 增加頂部間距適應瀏海 -->
+        <div class="flex justify-between items-start p-6 pt-12 relative z-20"> <!-- 增加頂部間距適應瀏海 -->
             <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
                 <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
                 <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$1,000</div>
@@ -124,13 +130,22 @@
             </div>
         </div>
         
-        <!-- 天空飛行 HUD -->
-        <div id="skyHUD" class="absolute top-[20%] left-1/2 transform -translate-x-1/2 w-full px-8 pointer-events-none opacity-0 transition-opacity duration-500">
-            <div class="w-full h-6 bg-gray-900 rounded-full overflow-hidden border border-white/30 relative shadow-[0_0_15px_rgba(0,0,0,1)]">
-                <div id="skyTimerBar" class="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-600 w-full transition-all duration-[16ms] ease-linear"></div>
-            </div>
-            <div class="text-center mt-3">
-                <span class="text-white text-2xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,1)] tracking-widest bg-black/40 px-4 py-1 rounded-full">FLIGHT TIME</span>
+        <!-- [修改1] 天空飛行計時條：移至頂部中央，位於 HUD 下方 -->
+        <div id="skyHUD" class="absolute top-[140px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
+            <!-- 外框與發光效果 -->
+            <div class="relative">
+                <div class="absolute inset-0 bg-blue-500 blur-md opacity-30 rounded-full"></div>
+                <div class="w-full h-8 bg-gray-900/90 rounded-full overflow-hidden border-2 border-blue-400/50 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center p-1">
+                    <!-- 進度條本身 -->
+                    <div id="skyTimerBar" class="h-full rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-white w-full shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all duration-[16ms] ease-linear relative overflow-hidden">
+                        <!-- 掃光動畫 -->
+                        <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEwIDAgTDAgMjAgTDEwIDIwIEwyMCAwIFoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIvPjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
+                    </div>
+                </div>
+                <!-- 文字標籤 -->
+                <div class="absolute -top-7 left-1/2 -translate-x-1/2">
+                    <span class="text-blue-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">FLIGHT FUEL</span>
+                </div>
             </div>
         </div>
 
@@ -326,8 +341,9 @@ class Game {
             if (y > this.height - 300) return;
 
             let hitSpring = null;
+            // 稍微放大判定範圍方便點擊
             for (let s of this.springs) {
-                if (Math.abs(x - s.x) < 120 && Math.abs(y - (s.y - 40)) < 120) {
+                if (Math.abs(x - s.x) < 140 && Math.abs(y - (s.y - 40)) < 140) {
                     hitSpring = s;
                     break;
                 }
@@ -339,6 +355,7 @@ class Game {
                 this.balance -= this.betAmount;
                 this.shakeScreen(3);
                 this.createBullet(x, y);
+                this.spawnText(`-$${this.betAmount}`, x, y, '#ef4444', 30); // 子彈射擊也顯示扣款
                 this.updateUI();
             } else {
                 this.spawnText("NO MONEY!", this.horse.x, this.horse.y, '#ef4444', 50);
@@ -374,7 +391,8 @@ class Game {
             textColor: selected.textColor,
             label: selected.label,
             active: true,
-            pulse: 0
+            pulse: 0,
+            compress: 0 // 新增：用於點擊時的壓縮動畫
         });
     }
 
@@ -387,49 +405,63 @@ class Game {
         this.balance -= this.betAmount;
         this.updateUI();
 
-        this.createParticles(spring.x, spring.y, 15, spring.color, 'spark');
+        // --- [修改2] 增強點擊反饋 ---
+        // 1. 扣款文字
+        this.spawnText(`-$${this.betAmount}`, spring.x, spring.y - 80, '#ef4444', 45);
+        
+        // 2. 衝擊波特效
+        this.createParticles(spring.x, spring.y + 10, 1, 'rgba(255,255,255,0.8)', 'shockwave');
+        
+        // 3. 火花特效 (保留原本)
+        this.createParticles(spring.x, spring.y, 20, spring.color, 'spark');
+
+        // 4. 彈簧劇烈壓縮動畫
+        spring.compress = 20;
 
         let chance = 0.85;
         if (spring.mul === 5) chance = 0.6;
         if (spring.mul === 10) chance = 0.4;
 
-        spring.active = false;
+        spring.active = false; // 先停用，無論是否成功
 
-        if (Math.random() < chance) {
-            this.state = 'LAUNCHING';
-            this.currentMultiplier = spring.mul;
-            this.horse.vy = -18;
-            this.horse.state = 'FLY';
-            this.skyTimer = this.skyDurationMax; 
-            this.horse.targetX = this.width * 0.3;
-            this.horse.moveTimer = 0;
+        // 延遲一點點判斷結果，讓玩家看到彈簧被壓下去
+        setTimeout(() => {
+            if (Math.random() < chance) {
+                this.state = 'LAUNCHING';
+                this.currentMultiplier = spring.mul;
+                this.horse.vy = -18;
+                this.horse.state = 'FLY';
+                this.skyTimer = this.skyDurationMax; 
+                this.horse.targetX = this.width * 0.3;
+                this.horse.moveTimer = 0;
 
-            this.shakeScreen(20);
-            this.spawnText(`x${spring.mul} BOOST!`, this.width/2, this.height/2, spring.color, 120);
-            
-            for(let i=0; i<25; i++) {
-                this.particles.push({
-                    type: 'line',
-                    x: this.width + Math.random()*200,
-                    y: this.horse.y + (Math.random()-0.5)*200,
-                    vx: -25 - Math.random()*25,
-                    vy: 0,
-                    life: 45,
-                    color: 'white',
-                    w: 80, h: 4
-                });
-            }
-
-        } else {
-            this.spawnText("MISS...", spring.x, spring.y - 100, '#94a3b8', 50);
-            this.horse.vy = -12; 
-            setTimeout(() => { 
-                if(this.state === 'GROUND') {
-                    this.horse.y = this.horseBaseY; 
-                    this.horse.vy = 0;
+                this.shakeScreen(20);
+                this.spawnText(`x${spring.mul} BOOST!`, this.width/2, this.height/2, spring.color, 120);
+                
+                for(let i=0; i<25; i++) {
+                    this.particles.push({
+                        type: 'line',
+                        x: this.width + Math.random()*200,
+                        y: this.horse.y + (Math.random()-0.5)*200,
+                        vx: -25 - Math.random()*25,
+                        vy: 0,
+                        life: 45,
+                        color: 'white',
+                        w: 80, h: 4
+                    });
                 }
-            }, 500);
-        }
+
+            } else {
+                this.spawnText("MISS...", spring.x, spring.y - 100, '#94a3b8', 50);
+                this.horse.vy = -12; 
+                setTimeout(() => { 
+                    if(this.state === 'GROUND') {
+                        this.horse.y = this.horseBaseY; 
+                        this.horse.vy = 0;
+                    }
+                }, 500);
+            }
+        }, 100);
     }
 
     createBullet(tx, ty) {
@@ -495,6 +527,7 @@ class Game {
                 vx: (Math.random() - 0.5) * 15,
                 vy: (Math.random() - 0.5) * 15,
                 life: 30 + Math.random() * 20,
+                maxLife: 30 + Math.random() * 20, // 新增 maxLife
                 color,
                 type,
                 size: Math.random() * 6 + 4,
@@ -507,6 +540,15 @@ class Game {
                 p.gravity = 1.2;
                 p.life = 70;
                 p.size = 14;
+            } else if (type === 'shockwave') {
+                // 衝擊波邏輯
+                p.vx = 0;
+                p.vy = 0;
+                p.gravity = 0;
+                p.life = 20;
+                p.maxLife = 20;
+                p.size = 10;
+                p.growth = 15; // 擴散速度
             }
             this.particles.push(p);
         }
@@ -550,6 +592,10 @@ class Game {
             for (let i = this.springs.length - 1; i >= 0; i--) {
                 let s = this.springs[i];
                 s.x -= this.groundSpeed;
+                
+                // 處理壓縮恢復
+                if (s.compress > 0) s.compress *= 0.8;
+                
                 s.pulse = Math.sin(this.gameTick * 0.2) * 0.1 + 1; 
 
                 if (s.x < -200) {
@@ -668,15 +714,21 @@ class Game {
     updateParticles() {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             let p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
             p.life--;
             
             if (p.type === 'coin') {
+                p.x += p.vx;
+                p.y += p.vy;
                 p.vy += p.gravity;
+            } else if (p.type === 'shockwave') {
+                p.size += p.growth; // 擴大圈圈
+                p.growth *= 0.9;
             } else if (p.type === 'line') {
-                // do nothing for velocity
+                p.x += p.vx;
+                p.y += p.vy;
             } else {
+                p.x += p.vx;
+                p.y += p.vy;
                 p.vx *= 0.9;
                 if (this.state === 'GROUND') p.x -= this.groundSpeed;
             }
@@ -790,8 +842,12 @@ class Game {
             this.ctx.beginPath();
             let y = s.y;
             let h = s.h;
-            let ph = h * s.pulse;
+            // 結合原有的脈動動畫與新的點擊壓縮動畫
+            let ph = h * s.pulse - s.compress; 
             
+            // 限制高度不要變負的
+            ph = Math.max(10, ph);
+
             this.ctx.moveTo(s.x - 40, y);
             this.ctx.lineTo(s.x + 40, y - ph*0.3);
             this.ctx.lineTo(s.x - 40, y - ph*0.6);
@@ -805,7 +861,9 @@ class Game {
             
             this.ctx.save();
             this.ctx.translate(s.x, boxY);
-            this.ctx.scale(s.pulse, s.pulse);
+            // 壓縮時文字方塊也稍微變扁
+            let scaleY = 1 - (s.compress / 60);
+            this.ctx.scale(s.pulse, s.pulse * scaleY);
             
             this.ctx.shadowBlur = 30;
             this.ctx.shadowColor = s.color;
@@ -992,6 +1050,13 @@ class Game {
             } else if (p.type === 'line') {
                 this.ctx.fillStyle = p.color;
                 this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            } else if (p.type === 'shockwave') {
+                // 衝擊波繪製
+                this.ctx.strokeStyle = p.color;
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
+                this.ctx.stroke();
             } else {
                 this.ctx.fillStyle = p.color;
                 this.ctx.beginPath();
