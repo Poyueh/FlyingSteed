@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <!-- 加入 viewport-fit=cover 與 user-scalable=no 以適應全面屏手機並禁止縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>飛天神駒 DX - 手機加強版</title>
+    <title>飛天神駒 DX - 自適應加強版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -13,28 +13,24 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            touch-action: none; /* 禁止手機預設觸控行為(滾動/縮放) */
+            touch-action: none;
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #050505; 
+            background-color: #000; 
             user-select: none;
-            -webkit-user-select: none; /* iOS Safari 兼容 */
+            -webkit-user-select: none;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             width: 100vw;
-            /* 網格背景 */
-            background-image: radial-gradient(#1f2937 1px, transparent 1px);
-            background-size: 20px 20px;
         }
         
         #game-wrapper {
             position: relative;
-            /* 鎖定遊戲邏輯解析度為 900x1600 (9:16) */
+            /* 寬度固定 900，高度由 JS 動態決定以適應 9:16 ~ 9:21 */
             width: 900px;  
-            height: 1600px;
             background-color: #1a1a2e;
-            box-shadow: 0 0 100px rgba(0,0,0,0.9);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
             overflow: hidden;
             opacity: 0; 
             transition: opacity 0.5s;
@@ -69,15 +65,16 @@
             pointer-events: auto;
         }
         
+        /* 按鈕樣式優化 */
         .neon-btn {
             position: relative;
             overflow: hidden;
             transition: all 0.1s;
             touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent; /* 移除手機點擊高亮 */
+            -webkit-tap-highlight-color: transparent;
         }
         .neon-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
         }
         .neon-btn::after {
             content: '';
@@ -102,74 +99,72 @@
         }
         
         .control-panel {
-            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
-            padding-bottom: 2rem;
-            padding-top: 4rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
+            padding-bottom: max(2rem, env(safe-area-inset-bottom)); /* 適應 iPhone 底部橫條 */
+            padding-top: 6rem;
         }
     </style>
 </head>
 <body>
 
-<!-- 遊戲容器 Wrapper -->
 <div id="game-wrapper">
-    <!-- Canvas 遊戲層 -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- UI 層 -->
     <div class="ui-layer safe-area-inset">
-        <!-- 頂部 HUD (資訊區) -->
-        <div class="flex justify-between items-start p-8">
-            <!-- 餘額 -->
-            <div class="bg-black/60 backdrop-blur-md p-5 rounded-2xl border-l-8 border-yellow-500 shadow-lg">
-                <div class="text-lg text-yellow-300 font-bold tracking-wider">BALANCE</div>
-                <div class="text-4xl text-white ui-font text-shadow mt-1 tracking-tight" id="balanceDisplay">$1,000.00</div>
+        <!-- 頂部 HUD -->
+        <div class="flex justify-between items-start p-6 pt-12"> <!-- 增加頂部間距適應瀏海 -->
+            <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
+                <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
+                <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$1,000</div>
             </div>
             
-            <!-- 倍率顯示 -->
-            <div class="bg-black/60 backdrop-blur-md p-5 rounded-2xl border-r-8 border-blue-500 shadow-lg min-w-[140px] text-right">
-                <div class="text-lg text-blue-300 font-bold tracking-wider">BONUS</div>
-                <div class="text-6xl text-blue-400 ui-font mt-1" id="multiplierDisplay">x1</div>
+            <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
+                <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80">Bonus</div>
+                <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
             </div>
         </div>
         
-        <!-- 天空提示 -->
-        <div id="skyHUD" class="absolute top-48 left-1/2 transform -translate-x-1/2 w-full px-12 pointer-events-none opacity-0 transition-opacity duration-500">
-            <!-- 飛行倒數條 -->
-            <div class="w-full h-8 bg-black/50 rounded-full overflow-hidden border-2 border-white/20 relative shadow-lg">
-                <div id="skyTimerBar" class="h-full bg-gradient-to-r from-yellow-400 to-red-500 w-full transition-all duration-[16ms] ease-linear"></div>
-                <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-lg text-white font-bold tracking-widest uppercase shadow-black drop-shadow-md">Flight Time</div>
+        <!-- 天空飛行 HUD -->
+        <div id="skyHUD" class="absolute top-[20%] left-1/2 transform -translate-x-1/2 w-full px-8 pointer-events-none opacity-0 transition-opacity duration-500">
+            <div class="w-full h-6 bg-gray-900 rounded-full overflow-hidden border border-white/30 relative shadow-[0_0_15px_rgba(0,0,0,1)]">
+                <div id="skyTimerBar" class="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-600 w-full transition-all duration-[16ms] ease-linear"></div>
             </div>
-            <div class="text-center mt-4">
-                <span class="text-white text-3xl font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] animate-pulse">點擊馬匹射擊補時!</span>
+            <div class="text-center mt-3">
+                <span class="text-white text-2xl font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,1)] tracking-widest bg-black/40 px-4 py-1 rounded-full">FLIGHT TIME</span>
             </div>
         </div>
 
-        <!-- 底部 HUD (操作區) -->
-        <div class="control-panel flex flex-col items-center justify-end pointer-events-none">
+        <!-- 底部控制區 -->
+        <div class="control-panel flex flex-col items-center justify-end w-full">
             
-            <!-- 地面操作提示 -->
-            <div id="groundControls" class="mb-6 pointer-events-none transition-opacity duration-300">
-                <div id="startHint" class="text-white/90 text-3xl font-bold bg-black/60 px-8 py-3 rounded-full animate-bounce backdrop-blur-md border border-white/20">
-                    👇 點擊移動的彈簧起飛! 👇
+            <!-- 提示文字 -->
+            <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
+                <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
+                    TAP SPRING TO JUMP
                 </div>
             </div>
 
-            <!-- 下注按鈕 -->
-            <div class="pointer-events-auto flex flex-col items-center gap-2 pb-8 w-full">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl text-gray-300 bg-black/50 px-3 py-1 rounded">當前注額</span>
-                    <span id="currentBetDisplay" class="ui-font text-4xl text-yellow-400 drop-shadow-md">$10.00</span>
+            <!-- 下注操作區 -->
+            <div class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6">
+                <!-- 當前下注顯示 -->
+                <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
+                    <span class="text-gray-400 text-sm font-bold uppercase">BET</span>
+                    <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10</span>
                 </div>
                 
-                <div class="flex bg-black/80 p-4 rounded-3xl border-2 border-gray-600 shadow-2xl gap-6 mt-2">
-                    <button onclick="game.setBet(10)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
-                        <span class="text-xs text-gray-400 mb-1">COIN</span>10
+                <!-- 按鈕群組 -->
+                <div class="grid grid-cols-3 gap-4 w-full max-w-md">
+                    <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-8 h-8 rounded-full bg-yellow-500 mb-2 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-xl">10</span>
                     </button>
-                    <button onclick="game.setBet(50)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
-                        <span class="text-xs text-gray-400 mb-1">COIN</span>50
+                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                         <div class="w-10 h-10 rounded-full bg-blue-500 mb-2 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-2xl">50</span>
                     </button>
-                    <button onclick="game.setBet(100)" class="neon-btn w-24 h-24 rounded-2xl bg-slate-700 border-b-8 border-slate-900 text-white font-bold text-2xl flex flex-col items-center justify-center hover:bg-slate-600 hover:border-yellow-500 active:border-b-0 active:translate-y-2 transition-all">
-                        <span class="text-xs text-gray-400 mb-1">COIN</span>100
+                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-12 h-12 rounded-full bg-red-500 mb-2 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-3xl">100</span>
                     </button>
                 </div>
             </div>
@@ -183,15 +178,23 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
-        // 內部邏輯解析度 (Fixed Logic Resolution) - 9:16
-        this.width = 900;
-        this.height = 1600;
+        // --- 核心：自適應解析度邏輯 ---
+        this.width = 900; // 固定邏輯寬度
+        
+        // 計算螢幕比例
+        const screenRatio = window.innerHeight / window.innerWidth;
+        
+        // 限制比例在 16:9 (1.77) 到 21:9 (2.33) 之間
+        const targetRatio = Math.min(Math.max(screenRatio, 1.77), 2.33);
+        
+        this.height = Math.floor(this.width * targetRatio);
+        
         this.canvas.width = this.width;
         this.canvas.height = this.height;
 
         // 核心狀態
         this.state = 'GROUND'; 
-        this.balance = 5000;
+        this.balance = 1000;
         this.betAmount = 10;
         this.currentMultiplier = 1;
         
@@ -199,11 +202,12 @@ class Game {
         this.camera = { y: 0, shake: 0 };
         this.gameTick = 0;
         this.bgScroll = 0;
-        this.groundSpeed = 6;
+        this.groundSpeed = 8;
         
-        // 地板高度
-        this.groundLevel = this.height * 0.65;
-        this.horseBaseY = this.groundLevel - 70; // 馬匹站立基準點
+        // --- [修改1] 地板與馬匹位置動態計算 ---
+        // 提高地板高度：從原本的 -550 改為 -680，讓馬匹遠離底部UI按鈕
+        this.groundLevel = this.height - 680; 
+        this.horseBaseY = this.groundLevel - 70; 
 
         // 實體
         this.horse = {
@@ -214,7 +218,8 @@ class Game {
             state: 'RUN', 
             spinTimer: 0,
             scale: 2.2,
-            targetX: this.width * 0.3, 
+            targetX: this.width * 0.3,
+            targetY: this.height * 0.3, // 新增 Y 軸目標
             moveTimer: 0 
         };
 
@@ -228,25 +233,21 @@ class Game {
         this.skyDurationMax = 900;
         this.skyTimer = 0;
 
+        // 初始化雲朵
         for(let i=0; i<8; i++) {
             this.clouds.push({
                 x: Math.random() * this.width,
-                y: Math.random() * this.groundLevel, 
+                y: Math.random() * this.height * 0.6,
                 speed: 1 + Math.random() * 2,
                 size: 50 + Math.random() * 80,
-                alpha: 0.3 + Math.random() * 0.4
+                alpha: 0.2 + Math.random() * 0.3
             });
         }
 
-        // 綁定視窗事件
         window.addEventListener('resize', () => this.resize());
-        // 手機轉向監聽
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
-        
-        // 綁定輸入事件 (pointerdown 兼容 PC 滑鼠與 Mobile 觸控)
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
-        // 初始化尺寸與 UI
         this.resize();
         this.updateUI();
         this.loop();
@@ -256,11 +257,12 @@ class Game {
         }, 100);
     }
 
+    // UI 格式化 helper
     formatCurrency(value) {
-        return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return '$' + Math.floor(value).toLocaleString();
     }
 
-    // 核心：自適應縮放邏輯
+    // --- 核心：縮放邏輯 ---
     resize() {
         const wrapper = document.getElementById('game-wrapper');
         const winW = window.innerWidth;
@@ -271,9 +273,6 @@ class Game {
         
         let scale;
         
-        // 確保遊戲永遠維持 9:16 的比例顯示
-        // 如果螢幕比遊戲寬 (PC 或 橫向手機)，以高度為準 (左右留黑邊)
-        // 如果螢幕比遊戲窄 (直向手機)，以寬度為準 (上下可能留黑邊，或填滿)
         if (winRatio > gameRatio) {
             scale = winH / this.height;
         } else {
@@ -312,52 +311,46 @@ class Game {
     }
 
     handleInput(e) {
-        e.preventDefault(); // 防止手機上的預設行為 (如反白、滾動)
+        e.preventDefault();
 
-        // 座標轉換：視覺座標 -> Canvas 邏輯座標
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = this.width / rect.width;
         const scaleY = this.height / rect.height;
-
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
 
-        // 邊界檢查
         if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
-        // 地面階段：點擊彈簧
         if (this.state === 'GROUND') {
-            // 下方UI區域保護，避免誤觸
+            // UI 防誤觸區調整
             if (y > this.height - 300) return;
 
             let hitSpring = null;
             for (let s of this.springs) {
-                // 加大觸控判定範圍
-                if (Math.abs(x - s.x) < 100 && Math.abs(y - s.y) < 100) {
+                if (Math.abs(x - s.x) < 120 && Math.abs(y - (s.y - 40)) < 120) {
                     hitSpring = s;
                     break;
                 }
             }
             if (hitSpring) this.attemptLaunch(hitSpring);
         } 
-        // 天空階段：射擊
         else if (this.state === 'SKY') {
             if (this.balance >= this.betAmount) {
                 this.balance -= this.betAmount;
-                this.shakeScreen(2);
-                this.createBullet(x, y); // x, y 為玩家點擊的目標點
+                this.shakeScreen(3);
+                this.createBullet(x, y);
                 this.updateUI();
             } else {
-                this.spawnText("餘額不足!", this.horse.x, this.horse.y, '#ef4444', 40);
+                this.spawnText("NO MONEY!", this.horse.x, this.horse.y, '#ef4444', 50);
             }
         }
     }
 
     spawnSpring() {
         const types = [
-            { mul: 2, color: '#4ADE80', label: 'x2', weight: 60 },
-            { mul: 5, color: '#FACC15', label: 'x5', weight: 30 },
-            { mul: 10, color: '#ef4444', label: 'x10', weight: 10 }
+            { mul: 2, color: '#22c55e', label: 'x2', weight: 55, textColor: '#ffffff' },
+            { mul: 5, color: '#fbbf24', label: 'x5', weight: 35, textColor: '#000000' },
+            { mul: 10, color: '#ef4444', label: 'x10', weight: 10, textColor: '#ffffff' }
         ];
         
         let rand = Math.random() * 100;
@@ -372,64 +365,64 @@ class Game {
         }
 
         this.springs.push({
-            x: this.width + 100, 
+            x: this.width + 150, 
             y: this.groundLevel + 20, 
-            w: 100, 
-            h: 60,
+            w: 120,
+            h: 70,
             mul: selected.mul,
             color: selected.color,
+            textColor: selected.textColor,
             label: selected.label,
-            active: true
+            active: true,
+            pulse: 0
         });
     }
 
     attemptLaunch(spring) {
         if (this.balance < this.betAmount) {
-             this.spawnText("餘額不足!", spring.x, spring.y - 100, '#ef4444', 40);
+             this.spawnText("NO MONEY!", spring.x, spring.y - 120, '#ef4444', 50);
              return;
         }
         
         this.balance -= this.betAmount;
         this.updateUI();
 
-        this.createParticles(spring.x, spring.y, 10, spring.color, 'spark');
+        this.createParticles(spring.x, spring.y, 15, spring.color, 'spark');
 
-        let chance = 0.8;
-        if (spring.mul === 5) chance = 0.55;
-        if (spring.mul === 10) chance = 0.35;
+        let chance = 0.85;
+        if (spring.mul === 5) chance = 0.6;
+        if (spring.mul === 10) chance = 0.4;
 
         spring.active = false;
 
         if (Math.random() < chance) {
             this.state = 'LAUNCHING';
             this.currentMultiplier = spring.mul;
-            this.horse.vy = -15; 
+            this.horse.vy = -18;
             this.horse.state = 'FLY';
             this.skyTimer = this.skyDurationMax; 
-            
-            // 起飛時重置
             this.horse.targetX = this.width * 0.3;
             this.horse.moveTimer = 0;
 
-            this.shakeScreen(15);
-            this.spawnText("TAKEOFF!", this.width/2, this.height/2, '#FACC15', 100);
+            this.shakeScreen(20);
+            this.spawnText(`x${spring.mul} BOOST!`, this.width/2, this.height/2, spring.color, 120);
             
-            for(let i=0; i<20; i++) {
+            for(let i=0; i<25; i++) {
                 this.particles.push({
                     type: 'line',
-                    x: this.width + Math.random()*100,
-                    y: this.horse.y + (Math.random()-0.5)*150,
-                    vx: -20 - Math.random()*20,
+                    x: this.width + Math.random()*200,
+                    y: this.horse.y + (Math.random()-0.5)*200,
+                    vx: -25 - Math.random()*25,
                     vy: 0,
-                    life: 40,
+                    life: 45,
                     color: 'white',
-                    w: 60, h: 4
+                    w: 80, h: 4
                 });
             }
 
         } else {
-            this.spawnText("MISS...", spring.x, spring.y - 80, '#94a3b8', 40);
-            this.horse.vy = -10; 
+            this.spawnText("MISS...", spring.x, spring.y - 100, '#94a3b8', 50);
+            this.horse.vy = -12; 
             setTimeout(() => { 
                 if(this.state === 'GROUND') {
                     this.horse.y = this.horseBaseY; 
@@ -440,13 +433,10 @@ class Game {
     }
 
     createBullet(tx, ty) {
-        // 子彈生成位置：隨機從下方發射，但朝向目標
         const startX = Math.random() * this.width;
         const startY = this.height;
-        
-        // 計算向量
         const angle = Math.atan2(ty - startY, tx - startX);
-        const speed = 25; // 子彈速度
+        const speed = 30;
 
         this.bullets.push({
             x: startX,
@@ -454,39 +444,36 @@ class Game {
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             active: true,
-            color: `hsl(${Math.random()*60 + 40}, 100%, 70%)`
+            color: `hsl(${Math.random()*60 + 40}, 100%, 75%)`
         });
     }
 
     checkHit(b) {
-        // 馬的判定框
         const dx = b.x - this.horse.x;
         const dy = b.y - this.horse.y;
-        if (Math.abs(dx) < 120 && Math.abs(dy) < 80) return true;
+        if (Math.abs(dx) < 130 && Math.abs(dy) < 90) return true;
         return false;
     }
 
-    // 新增：只要打中就補時
     addTimeBonus(x, y) {
-        const bonusTime = 100; // 每次命中補回的 Tick 數
+        const bonusTime = 80;
         this.skyTimer = Math.min(this.skyTimer + bonusTime, this.skyDurationMax);
-        this.spawnText("+TIME", x, y - 50, '#60A5FA', 40); // 藍色提示
+        this.spawnText("+TIME", x, y - 60, '#60A5FA', 45);
     }
 
-    // 修改：中獎僅給錢，時間由 addTimeBonus 處理
     triggerWin(x, y) {
         const win = this.betAmount * this.currentMultiplier;
         this.balance += win;
         
-        this.spawnText(`+${this.formatCurrency(win)}`, x, y - 100, '#FACC15', 60); // 金色提示
+        this.spawnText(`+${win}`, x, y - 120, '#FACC15', 70);
         
-        this.createParticles(x, y, 12, '#FACC15', 'coin');
-        this.createParticles(x, y, 8, '#FFF', 'spark');
+        this.createParticles(x, y, 15, '#FACC15', 'coin');
+        this.createParticles(x, y, 10, '#FFF', 'spark');
         
         this.horse.state = 'SPIN';
-        this.horse.spinTimer = 40; 
+        this.horse.spinTimer = 30; 
         
-        this.shakeScreen(5); 
+        this.shakeScreen(8); 
         this.updateUI();
     }
 
@@ -497,7 +484,7 @@ class Game {
     spawnText(str, x, y, color, size=32) {
         this.texts.push({
             str, x, y, color, size,
-            vy: -3, life: 60, maxLife: 60
+            vy: -4, life: 50, maxLife: 50
         });
     }
 
@@ -510,16 +497,16 @@ class Game {
                 life: 30 + Math.random() * 20,
                 color,
                 type,
-                size: Math.random() * 5 + 3,
-                gravity: 0.5
+                size: Math.random() * 6 + 4,
+                gravity: 0.6
             };
             
             if (type === 'coin') {
-                p.vx = (Math.random() - 0.5) * 20;
-                p.vy = -20 - Math.random() * 15;
-                p.gravity = 1.0;
-                p.life = 60;
-                p.size = 12;
+                p.vx = (Math.random() - 0.5) * 25;
+                p.vy = -25 - Math.random() * 20;
+                p.gravity = 1.2;
+                p.life = 70;
+                p.size = 14;
             }
             this.particles.push(p);
         }
@@ -541,70 +528,77 @@ class Game {
             c.x -= c.speed;
             if (c.x < -200) {
                 c.x = this.width + 200;
-                if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+                if (this.state === 'SKY') {
                       c.y = Math.random() * this.height; 
                 } else {
-                      c.y = Math.random() * this.groundLevel * 0.8; 
+                      c.y = Math.random() * (this.height * 0.4); 
                 }
             }
         });
 
         if (this.state === 'GROUND') {
-            this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 5;
+            this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 6;
             this.horse.x = this.width * 0.3; 
             
             this.springSpawnTimer++;
-            if (this.springSpawnTimer > 60) {
+            if (this.springSpawnTimer > 70) {
                 this.spawnSpring();
                 this.springSpawnTimer = 0;
-                this.springSpawnTimer -= Math.random() * 20; 
+                this.springSpawnTimer -= Math.random() * 30; 
             }
 
             for (let i = this.springs.length - 1; i >= 0; i--) {
                 let s = this.springs[i];
                 s.x -= this.groundSpeed;
-                if (s.x < -150) {
+                s.pulse = Math.sin(this.gameTick * 0.2) * 0.1 + 1; 
+
+                if (s.x < -200) {
                     this.springs.splice(i, 1);
                 }
             }
         }
         else if (this.state === 'LAUNCHING') {
-            let targetY = this.height * 0.4; 
+            let targetY = this.height * 0.3;
             this.horse.y += (targetY - this.horse.y) * 0.08;
             this.horse.x = this.width * 0.3; 
             
             this.springs.forEach(s => s.x -= this.groundSpeed * 3);
             
-            if (Math.abs(this.horse.y - targetY) < 10) {
+            if (Math.abs(this.horse.y - targetY) < 20) {
                 this.state = 'SKY';
             }
         }
         else if (this.state === 'SKY') {
-            // Y 軸懸浮
-            let targetY = this.height * 0.4;
-            let hoverY = targetY + Math.sin(this.gameTick * 0.05) * 15;
-            this.horse.y += (hoverY - this.horse.y) * 0.1;
-
-            // X 軸隨機移動
+            // --- [修改2] 飛行邏輯更新：全方位隨機移動 ---
             this.horse.moveTimer--;
             if (this.horse.moveTimer <= 0) {
+                // X軸目標
                 this.horse.targetX = this.width * 0.1 + Math.random() * (this.width * 0.8);
-                this.horse.moveTimer = 60 + Math.random() * 60;
+                // Y軸目標：限制在上方 10% ~ 55% 區域，避免飛太低被UI擋住
+                this.horse.targetY = this.height * 0.1 + Math.random() * (this.height * 0.45);
+                
+                // 設定下次移動的間隔
+                this.horse.moveTimer = 40 + Math.random() * 40; 
             }
             
+            // 平滑移動至目標
             let dx = this.horse.targetX - this.horse.x;
+            let dy = this.horse.targetY - this.horse.y;
+            
             this.horse.x += dx * 0.05;
+            this.horse.y += dy * 0.05;
 
-            // 狀態處理
+            // 旋轉與傾斜
             if (this.horse.state === 'SPIN') {
-                this.horse.angle += 0.25; 
+                this.horse.angle += 0.3; 
                 this.horse.spinTimer--;
                 if (this.horse.spinTimer <= 0) {
                     this.horse.state = 'FLY';
                 }
             } else {
-                let bankAngle = dx * 0.003; 
-                bankAngle = Math.max(-0.3, Math.min(0.3, bankAngle));
+                // 根據水平移動產生傾斜感
+                let bankAngle = dx * 0.004; 
+                bankAngle = Math.max(-0.4, Math.min(0.4, bankAngle));
                 this.horse.angle += (bankAngle - this.horse.angle) * 0.1;
             }
 
@@ -620,29 +614,25 @@ class Game {
         }
         else if (this.state === 'FALLING') {
             let targetY = this.horseBaseY;
-            this.horse.y += (targetY - this.horse.y) * 0.05;
+            this.horse.y += (targetY - this.horse.y) * 0.06;
             
-            // 落下時歸位
             let targetX = this.width * 0.3;
-            this.horse.x += (targetX - this.horse.x) * 0.05;
+            this.horse.x += (targetX - this.horse.x) * 0.06;
             
-            if (Math.abs(this.horse.angle) > 0.01) {
-                this.horse.angle *= 0.8;
-            } else {
-                this.horse.angle = 0;
-            }
+            if (Math.abs(this.horse.angle) > 0.01) this.horse.angle *= 0.8;
+            else this.horse.angle = 0;
             
-            if (Math.abs(this.horse.y - targetY) < 5) {
+            if (Math.abs(this.horse.y - targetY) < 10) {
                 this.state = 'GROUND';
                 this.horse.y = this.horseBaseY;
                 this.horse.state = 'RUN';
                 this.horse.angle = 0;
                 this.horse.x = this.width * 0.3;
                 this.shakeScreen(15);
-                this.createParticles(this.horse.x, this.horse.y+80, 40, '#5c4033', 'spark');
+                this.createParticles(this.horse.x, this.horse.y+80, 50, '#5c4033', 'spark');
                 
                 this.springs = [];
-                this.springSpawnTimer = 30;
+                this.springSpawnTimer = 40;
                 this.updateUI();
             }
         }
@@ -657,21 +647,14 @@ class Game {
             let b = this.bullets[i];
             b.x += b.vx;
             b.y += b.vy;
-            // 輕微阻力
-            // b.vx *= 0.99; 
-            // b.vy *= 0.99;
 
             if (this.state === 'SKY' && this.checkHit(b)) {
-                // 1. 必定觸發：補時間
                 this.addTimeBonus(b.x, b.y);
-
-                // 2. 機率觸發：贏獎金 (40% 機率)
-                if (Math.random() < 0.4) {
+                if (Math.random() < 0.35) {
                     this.triggerWin(b.x, b.y);
                 } else {
-                    this.createParticles(b.x, b.y, 3, '#ccc', 'spark');
+                    this.createParticles(b.x, b.y, 5, '#ccc', 'spark');
                 }
-
                 this.bullets.splice(i, 1);
                 continue;
             }
@@ -691,11 +674,11 @@ class Game {
             
             if (p.type === 'coin') {
                 p.vy += p.gravity;
+            } else if (p.type === 'line') {
+                // do nothing for velocity
             } else {
                 p.vx *= 0.9;
-                if (this.state === 'GROUND') {
-                      p.x -= this.groundSpeed;
-                }
+                if (this.state === 'GROUND') p.x -= this.groundSpeed;
             }
             if (p.life <= 0) this.particles.splice(i, 1);
         }
@@ -706,9 +689,9 @@ class Game {
             let t = this.texts[i];
             t.y += t.vy;
             t.life--;
-            t.vy *= 0.95;
+            t.vy *= 0.92;
             if (this.state === 'GROUND' || this.state === 'SKY') {
-                t.x -= 3; 
+                t.x -= 4; 
             }
             if (t.life <= 0) this.texts.splice(i, 1);
         }
@@ -735,14 +718,14 @@ class Game {
         let grd = this.ctx.createLinearGradient(0, 0, 0, this.height);
         
         if (this.state === 'GROUND') {
-            grd.addColorStop(0, "#3b82f6");
-            grd.addColorStop(1, "#93c5fd");
-        } else if (this.state === 'SKY' || this.state === 'LAUNCHING') {
-            grd.addColorStop(0, "#1e3a8a");
+            grd.addColorStop(0, "#1e40af");
             grd.addColorStop(1, "#60a5fa");
+        } else if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+            grd.addColorStop(0, "#0f172a");
+            grd.addColorStop(1, "#3b82f6");
         } else {
-            grd.addColorStop(0, "#2563eb");
-            grd.addColorStop(1, "#bfdbfe");
+            grd.addColorStop(0, "#1d4ed8");
+            grd.addColorStop(1, "#93c5fd");
         }
         this.ctx.fillStyle = grd;
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -751,19 +734,19 @@ class Game {
             this.ctx.fillStyle = `rgba(255, 255, 255, ${c.alpha})`;
             this.ctx.beginPath();
             this.ctx.arc(c.x, c.y, c.size, 0, Math.PI*2);
-            this.ctx.arc(c.x + c.size*0.8, c.y + c.size*0.3, c.size*0.7, 0, Math.PI*2);
-            this.ctx.arc(c.x - c.size*0.8, c.y + c.size*0.3, c.size*0.7, 0, Math.PI*2);
+            this.ctx.arc(c.x + c.size*0.7, c.y + c.size*0.2, c.size*0.6, 0, Math.PI*2);
+            this.ctx.arc(c.x - c.size*0.7, c.y + c.size*0.2, c.size*0.6, 0, Math.PI*2);
             this.ctx.fill();
         });
 
         if (this.state === 'LAUNCHING') {
-            this.ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
             this.ctx.lineWidth = 4;
             this.ctx.beginPath();
-            for(let i=0; i<this.height; i+=120) {
+            for(let i=0; i<this.height; i+=150) {
                 let xOffset = (this.gameTick * 40 + i) % this.width;
                 this.ctx.moveTo(xOffset, i);
-                this.ctx.lineTo(xOffset + 150, i);
+                this.ctx.lineTo(xOffset + 200, i);
             }
             this.ctx.stroke();
         }
@@ -779,9 +762,9 @@ class Game {
         for (let x = offset; x < this.width; x += stripeWidth) {
              this.ctx.beginPath();
              this.ctx.moveTo(x, this.height);
-             this.ctx.lineTo(x + 40, this.groundLevel);
+             this.ctx.lineTo(x + 50, this.groundLevel);
              this.ctx.lineTo(x + 20, this.groundLevel);
-             this.ctx.lineTo(x - 20, this.height);
+             this.ctx.lineTo(x - 30, this.height);
              this.ctx.fill();
         }
 
@@ -801,33 +784,54 @@ class Game {
             this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5);
             this.ctx.fill();
 
-            this.ctx.strokeStyle = s.color;
-            this.ctx.lineWidth = 10;
+            this.ctx.strokeStyle = '#9ca3af';
+            this.ctx.lineWidth = 12;
             this.ctx.lineCap = 'round';
             this.ctx.beginPath();
             let y = s.y;
             let h = s.h;
-            this.ctx.moveTo(s.x - 30, y);
-            this.ctx.lineTo(s.x + 30, y - h*0.3);
-            this.ctx.lineTo(s.x - 30, y - h*0.6);
-            this.ctx.lineTo(s.x + 30, y - h);
-            this.ctx.moveTo(s.x, y-h);
+            let ph = h * s.pulse;
+            
+            this.ctx.moveTo(s.x - 40, y);
+            this.ctx.lineTo(s.x + 40, y - ph*0.3);
+            this.ctx.lineTo(s.x - 40, y - ph*0.6);
+            this.ctx.lineTo(s.x + 40, y - ph);
+            this.ctx.moveTo(s.x, y - ph);
             this.ctx.stroke();
 
-            this.ctx.fillStyle = s.color;
-            this.ctx.shadowBlur = 20;
+            let boxY = s.y - ph - 25;
+            let boxW = 110;
+            let boxH = 70;
+            
+            this.ctx.save();
+            this.ctx.translate(s.x, boxY);
+            this.ctx.scale(s.pulse, s.pulse);
+            
+            this.ctx.shadowBlur = 30;
             this.ctx.shadowColor = s.color;
-            this.ctx.fillRect(s.x - s.w/2 - 5, s.y - h - 5, s.w + 10, 20);
+            
+            this.ctx.fillStyle = s.color;
+            this.ctx.beginPath();
+            this.ctx.roundRect(-boxW/2, -boxH/2, boxW, boxH, 15);
+            this.ctx.fill();
+            
+            this.ctx.strokeStyle = 'white';
+            this.ctx.lineWidth = 4;
+            this.ctx.stroke();
+            
             this.ctx.shadowBlur = 0;
 
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 36px "Black Ops One"';
+            this.ctx.fillStyle = s.textColor;
+            this.ctx.font = '900 48px "Black Ops One"'; 
             this.ctx.textAlign = 'center';
-            this.ctx.shadowColor = 'black';
-            this.ctx.shadowBlur = 5;
-            this.ctx.fillText(s.label, s.x, s.y + 70);
-            this.ctx.shadowBlur = 0;
+            this.ctx.textBaseline = 'middle';
+            this.ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            this.ctx.shadowBlur = 4;
+            this.ctx.shadowOffsetX = 2;
+            this.ctx.shadowOffsetY = 2;
+            this.ctx.fillText(s.label, 0, 4); 
 
+            this.ctx.restore();
             this.ctx.globalAlpha = 1.0;
         });
     }
@@ -835,7 +839,6 @@ class Game {
     drawHorse() {
         this.ctx.save();
         this.ctx.translate(this.horse.x, this.horse.y);
-        
         this.ctx.scale(this.horse.scale, this.horse.scale); 
         this.ctx.rotate(this.horse.angle);
 
@@ -946,26 +949,6 @@ class Game {
             this.ctx.restore();
         }
 
-        this.ctx.save();
-        this.ctx.fillStyle = '#854d0e';
-        this.ctx.translate(-20, 10 + bob);
-        this.ctx.rotate(legSwing);
-        this.ctx.fillRect(-5, 0, 10, 30);
-        this.ctx.translate(0, 30);
-        this.ctx.rotate(-legSwing * 0.5 + 0.5);
-        this.ctx.fillRect(-4, 0, 8, 20);
-        this.ctx.restore();
-
-        this.ctx.save();
-        this.ctx.fillStyle = '#854d0e';
-        this.ctx.translate(20, 10 + bob);
-        this.ctx.rotate(-legSwing);
-        this.ctx.fillRect(-5, 0, 10, 30);
-        this.ctx.translate(0, 30);
-        this.ctx.rotate(legSwing * 0.5 + 0.5);
-        this.ctx.fillRect(-4, 0, 8, 20);
-        this.ctx.restore();
-
         this.ctx.restore();
     }
 
@@ -984,14 +967,14 @@ class Game {
             this.ctx.globalAlpha = 0.5;
             this.ctx.beginPath();
             this.ctx.moveTo(b.x, b.y);
-            this.ctx.lineTo(b.x - b.vx*4, b.y - b.vy*4);
+            this.ctx.lineTo(b.x - b.vx*3, b.y - b.vy*3);
             this.ctx.stroke();
             this.ctx.globalAlpha = 1.0;
         });
 
         this.particles.forEach(p => {
             this.ctx.save();
-            this.ctx.globalAlpha = p.life / 60;
+            this.ctx.globalAlpha = p.life / 50;
             this.ctx.translate(p.x, p.y);
             
             if (p.type === 'coin') {
@@ -1003,7 +986,9 @@ class Game {
                 this.ctx.fill();
                 this.ctx.stroke();
                 this.ctx.fillStyle = 'white';
-                this.ctx.fillRect(-4, -4, 4, 4);
+                this.ctx.beginPath();
+                this.ctx.arc(-3, -3, 2, 0, Math.PI*2);
+                this.ctx.fill();
             } else if (p.type === 'line') {
                 this.ctx.fillStyle = p.color;
                 this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
@@ -1021,6 +1006,7 @@ class Game {
             this.ctx.strokeStyle = 'black';
             this.ctx.lineWidth = 6;
             this.ctx.font = `900 ${t.size}px "Black Ops One", sans-serif`;
+            this.ctx.lineJoin = 'round';
             this.ctx.strokeText(t.str, t.x - 40, t.y);
             this.ctx.fillStyle = t.color;
             this.ctx.fillText(t.str, t.x - 40, t.y);
