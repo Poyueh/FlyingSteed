@@ -188,23 +188,26 @@
             </div>
         </div>
         
-        <!-- 擊打冷卻指示器 -->
-        <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center">
-            <div class="relative w-24 h-24">
-                <!-- 背景圓 -->
-                <div class="absolute inset-0 rounded-full bg-black/60 border-4 border-gray-600"></div>
-                <!-- 填充圓 -->
-                <div class="absolute inset-0 rounded-full overflow-hidden flex items-end justify-center">
-                    <div id="cdOverlay" class="w-full bg-red-500/80 h-0 transition-all duration-75"></div>
+        <!-- 左輪彈夾冷卻指示器 -->
+        <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center scale-110">
+            <div class="relative w-32 h-32">
+                <!-- 彈夾主體 -->
+                <div class="absolute inset-0 rounded-full bg-gray-900 border-[6px] border-gray-600 shadow-2xl overflow-hidden">
+                    <!-- 背景裝飾 -->
+                    <div class="absolute inset-0 rounded-full border-[20px] border-gray-800 opacity-50"></div>
+                    
+                    <!-- 彈巢容器 (旋轉部分) -->
+                    <div id="revolverContainer" class="absolute inset-0 w-full h-full transition-transform duration-100 ease-out origin-center">
+                        <!-- 子彈將由 JS 生成 -->
+                    </div>
+                    
+                    <!-- 中心軸 -->
+                    <div class="absolute top-1/2 left-1/2 w-12 h-12 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
+                        <span id="ammoText" class="text-[10px] font-black text-gray-400">RDY</span>
+                    </div>
                 </div>
-                <!-- 圖示 -->
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="text-4xl" id="hammerIcon">🔨</span>
-                </div>
-                <!-- 讀取中轉圈 (模擬網路) -->
-                <div id="loadingSpinner" class="absolute inset-0 rounded-full border-4 border-t-white border-transparent animate-spin opacity-0"></div>
             </div>
-            <span class="mt-2 text-white font-bold text-sm bg-black/50 px-2 rounded">SMASH!</span>
+            <span class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
         </div>
 
         <!-- 底部控制區 -->
@@ -219,7 +222,7 @@
             <!-- 下注操作區 -->
             <div id="betPanel" class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6 transition-opacity duration-200">
                 <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
-                    <span class="text-gray-400 text-sm font-bold uppercase">HIT COST</span>
+                    <span class="text-gray-400 text-sm font-bold uppercase">CLIP COST</span>
                     <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10.00</span>
                 </div>
                 
@@ -257,11 +260,11 @@ class AudioController {
         this.ctx = null;
         this.enabled = false;
         this.bgmTimer = null;
-        this.currentBPM = 110; // Ground BPM
+        this.currentBPM = 110; 
         this.targetBPM = 110;
         this.nextNoteTime = 0;
         this.bassLine = [110, 110, 130, 110, 146, 130, 110, 98];
-        this.melodyLine = [330, 0, 392, 0, 440, 392, 330, 293]; // Sky melody
+        this.melodyLine = [330, 0, 392, 0, 440, 392, 330, 293]; 
         this.noteIdx = 0;
         this.isSkyMode = false;
     }
@@ -320,6 +323,16 @@ class AudioController {
         this.playTone(100, 'sawtooth', 0.1, 0.2, 50);
     }
 
+    playShoot() {
+        this.playNoise(0.05, 0.2);
+        this.playTone(200, 'sawtooth', 0.05, 0.2, 50);
+    }
+
+    playReload() {
+        this.playTone(400, 'sine', 0.1, 0.1, 600);
+        setTimeout(() => this.playTone(600, 'sine', 0.1, 0.1, 800), 150);
+    }
+
     playWin() {
         this.playTone(1200, 'sine', 0.1, 0.1);
         setTimeout(() => this.playTone(1800, 'sine', 0.2, 0.1), 50);
@@ -337,13 +350,11 @@ class AudioController {
 
     startLoop() {
         if (this.nextNoteTime === 0) this.nextNoteTime = this.ctx.currentTime + 0.1;
-        
         const scheduler = () => {
             if (!this.enabled || this.ctx.state === 'suspended') {
                 requestAnimationFrame(scheduler);
                 return;
             }
-
             while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
                 this.scheduleNote(this.noteIdx, this.nextNoteTime);
                 this.noteIdx++;
@@ -399,7 +410,6 @@ class Game {
         
         this.state = 'GROUND'; 
         
-        // 需求1: 破產救濟邏輯
         let savedBalance = localStorage.getItem('cp_balance');
         this.balance = savedBalance ? parseFloat(savedBalance) : 5000;
         if (this.balance <= 0) {
@@ -410,8 +420,11 @@ class Game {
         this.betAmount = 10;
         this.currentMultiplier = 1;
         
-        // 需求4: 網路延遲模擬變數
-        this.isProcessingHit = false; 
+        // 射擊邏輯變數
+        this.isFiring = false;
+        this.fireQueue = 0; // 待發射子彈數
+        this.fireTimer = 0; // 射速控制
+        this.pendingResult = null; // 預存的結果
 
         this.camera = { y: 0, shake: 0 };
         this.flashAlpha = 0; 
@@ -442,6 +455,7 @@ class Game {
 
         this.springs = []; 
         this.springSpawnTimer = 0;
+        this.bullets = []; 
         this.particles = [];
         this.texts = [];
         this.clouds = [];
@@ -449,7 +463,7 @@ class Game {
         this.skyDurationMax = 300;
         this.skyTimer = 0;
 
-        this.hitCooldownMax = 60;
+        this.hitCooldownMax = 60; // 1秒 CD
         this.hitCooldown = 0;
 
         this.roadmapFuture = [];
@@ -467,6 +481,9 @@ class Game {
                 alpha: 0.2 + Math.random() * 0.3
             });
         }
+
+        // 初始化左輪彈夾 UI
+        this.initRevolverUI();
 
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
@@ -497,6 +514,25 @@ class Game {
         }, 100);
     }
 
+    initRevolverUI() {
+        const container = document.getElementById('revolverContainer');
+        container.innerHTML = '';
+        
+        for(let i=0; i<6; i++) {
+            const angle = i * 60;
+            const slot = document.createElement('div');
+            slot.className = 'absolute top-0 left-0 w-full h-full pointer-events-none';
+            slot.style.transform = `rotate(${angle}deg)`;
+            
+            slot.innerHTML = `
+                <div class="absolute left-1/2 -translate-x-1/2 top-2 w-8 h-8 rounded-full bg-gray-950 border border-gray-700 flex items-center justify-center shadow-inner overflow-hidden">
+                    <div id="bullet-slot-${i}" class="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 shadow-[0_0_5px_rgba(234,179,8,0.8)] scale-100 transition-transform duration-150"></div>
+                </div>
+            `;
+            container.appendChild(slot);
+        }
+    }
+
     formatCurrency(value) {
         return '$' + value.toLocaleString('en-US', {
             minimumFractionDigits: 2,
@@ -517,8 +553,8 @@ class Game {
             { mul: 50, color: '#db2777', label: 'x50', weight: 40, textColor: '#fff' },
             { mul: 100, color: '#9333ea', label: 'x100', weight: 20, textColor: '#fff', glow: true },
             { mul: 500, color: '#2563eb', label: 'x500', weight: 8, textColor: '#fff', glow: true },
-            { mul: 1000, color: '#ffffff', label: 'x1K', weight: 1.5, textColor: '#000', glow: true },
-            { mul: 10000, color: '#00ffff', label: 'MAX', weight: 0.5, textColor: '#000', glow: true }
+            { mul: 1000, color: '#ffffff', label: 'x1K', weight: 6.0, textColor: '#000', glow: true },
+            { mul: 10000, color: '#00ffff', label: 'MAX', weight: 2.0, textColor: '#000', glow: true }
         ];
         
         const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
@@ -607,7 +643,7 @@ class Game {
     }
 
     setBet(amount) {
-        if (this.isProcessingHit) return; // 處理中鎖定
+        if (this.hitCooldown > 0 || this.isFiring) return; 
         this.betAmount = amount;
         const display = document.getElementById('currentBetDisplay');
         display.classList.remove('shake');
@@ -625,8 +661,6 @@ class Game {
         const groundControls = document.getElementById('groundControls');
         const hitUI = document.getElementById('hitCooldownUI');
         const betPanel = document.getElementById('betPanel');
-        const hammerIcon = document.getElementById('hammerIcon');
-        const spinner = document.getElementById('loadingSpinner');
         
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
             skyHUD.style.opacity = 1;
@@ -635,19 +669,51 @@ class Game {
             const pct = (this.skyTimer / this.skyDurationMax) * 100;
             document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
             
-            // CD 視覺更新
-            let cdPct = (this.hitCooldown / this.hitCooldownMax) * 100;
-            document.getElementById('cdOverlay').style.height = `${cdPct}%`;
+            const ring = document.getElementById('ammoRing');
+            const ammoText = document.getElementById('ammoText');
+            const revolverContainer = document.getElementById('revolverContainer');
+            
+            let bulletsLoaded = 6;
+            let rotation = 0;
 
-            // 處理中視覺狀態
-            if (this.isProcessingHit) {
+            if (this.hitCooldown > 0) {
+                const progress = 1 - (this.hitCooldown / this.hitCooldownMax);
+                bulletsLoaded = Math.floor(progress * 6); 
+                rotation = bulletsLoaded * 60;
+                
+                ammoText.innerText = "LOAD";
+                ammoText.style.color = "#fbbf24"; 
                 betPanel.classList.add('processing');
-                hammerIcon.style.opacity = 0;
-                spinner.style.opacity = 1;
+
+            } else if (this.isFiring) {
+                bulletsLoaded = 0;
+                rotation = this.gameTick * 30; 
+                
+                ammoText.innerText = "FIRE";
+                ammoText.style.color = "#ef4444"; 
+                betPanel.classList.add('processing');
             } else {
+                bulletsLoaded = 6;
+                rotation = 0;
+                
+                ammoText.innerText = "RDY";
+                ammoText.style.color = "#4ade80"; 
                 betPanel.classList.remove('processing');
-                hammerIcon.style.opacity = 1;
-                spinner.style.opacity = 0;
+            }
+
+            revolverContainer.style.transform = `rotate(${rotation}deg)`;
+
+            for (let i = 0; i < 6; i++) {
+                const bullet = document.getElementById(`bullet-slot-${i}`);
+                if (bullet) {
+                    if (i < bulletsLoaded) {
+                        bullet.classList.remove('scale-0');
+                        bullet.classList.add('scale-100');
+                    } else {
+                        bullet.classList.remove('scale-100');
+                        bullet.classList.add('scale-0');
+                    }
+                }
             }
 
         } else {
@@ -683,22 +749,10 @@ class Game {
             if (hitSpring) this.attemptLaunch(hitSpring);
         } 
         else if (this.state === 'SKY') {
-            // 需求4: 模擬網路延遲與冷卻檢查
-            if (this.hitCooldown > 0 || this.isProcessingHit) return; 
+            if (this.hitCooldown > 0 || this.isFiring) return; 
 
             if (this.balance >= this.betAmount) {
-                // 開始模擬請求
-                this.isProcessingHit = true;
-                this.updateUI();
-                
-                // 模擬 200~500ms 延遲
-                const latency = 200 + Math.random() * 300;
-                setTimeout(() => {
-                    this.executeHit(x, y);
-                    this.isProcessingHit = false;
-                    this.updateUI();
-                }, latency);
-
+                this.startShootingRound(x, y);
             } else {
                 this.spawnText("NO MONEY!", this.horse.x, this.horse.y, '#ef4444', 50);
             }
@@ -773,91 +827,73 @@ class Game {
         }, 50);
     }
 
-    // 真正執行打擊 (在模擬延遲後呼叫)
-    executeHit(inputX, inputY) {
+    startShootingRound(inputX, inputY) {
         this.balance -= this.betAmount;
-        this.saveBalance(); 
-        this.hitCooldown = this.hitCooldownMax; 
-        
-        this.skyTimer = this.skyDurationMax; 
-        this.horse.pinataHits++;
-        
-        this.horse.animScaleX = 1.7; 
-        this.horse.animScaleY = 0.4; 
-        this.horse.scaleVx = (Math.random() - 0.5) * 0.3;
-        this.horse.scaleVy = 0.2; 
-        
-        this.horse.faceTimer = 25; 
-        this.horse.tongueOut = 0; 
-
-        this.audio.playHit();
-
-        this.horse.state = 'SPIN';
-        this.horse.spinTimer = 15;
-
-        const comicWords = ["POW!", "BAM!", "WHACK!", "OOF!", "SMASH!", "BOOM!"];
-        const randWord = comicWords[Math.floor(Math.random() * comicWords.length)];
-        
-        // 需求3: 更多樣的打擊特效
-        const effectType = Math.floor(Math.random() * 6); // 增加到 6 種
-        const hx = this.horse.x;
-        const hy = this.horse.y;
-
-        switch(effectType) {
-            case 0: // 基本重擊
-                this.shakeScreen(40);
-                this.createParticles(hx, hy, 40, '#fff', 'spark');
-                this.createParticles(hx, hy, 5, '#ef4444', 'shockwave');
-                this.spawnText(randWord, hx, hy - 120, '#fff', 70, 'comic');
-                break;
-            case 1: // 派對紙屑
-                this.shakeScreen(30);
-                this.createParticles(hx, hy, 60, '#f472b6', 'confetti');
-                this.spawnText(randWord, hx, hy - 120, '#f472b6', 70, 'comic');
-                break;
-            case 2: // 閃電速度
-                this.shakeScreen(35);
-                this.flashAlpha = 0.6; 
-                this.createParticles(hx, hy, 25, '#ffff00', 'line');
-                this.spawnText(randWord, hx, hy - 120, '#ffff00', 70, 'comic');
-                break;
-            case 3: // 金幣雨 (純視覺)
-                this.shakeScreen(30);
-                this.createParticles(hx, hy, 35, '#FACC15', 'coin');
-                this.createParticles(hx, hy, 20, '#fff', 'spark');
-                this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
-                break;
-            case 4: // 雷電 (Electric)
-                this.shakeScreen(45);
-                this.createParticles(hx, hy, 15, '#00ffff', 'line'); // 藍色線條
-                this.createParticles(hx, hy, 20, '#fff', 'spark');
-                this.spawnText("ZAP!", hx, hy - 120, '#00ffff', 70, 'comic');
-                break;
-            case 5: // 故障 (Glitch)
-                this.shakeScreen(20);
-                this.createParticles(hx, hy, 30, '#00ff00', 'confetti'); // 綠色矩陣雨
-                this.spawnText("ERROR", hx, hy - 120, '#00ff00', 60, 'comic');
-                break;
-        }
-        
-        if (effectType !== 3) {
-            this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
-        }
+        this.saveBalance();
+        this.updateUI();
 
         let winChance = 0.96 / this.currentMultiplier;
         let roll = Math.random();
-
+        
+        let result = 'MISS';
         if (roll < winChance) {
-            this.triggerWin();
+            result = 'WIN';
         } else {
             let explodeRisk = 0.0 + (this.horse.pinataHits * 0.015);
             if (this.currentMultiplier >= 100) explodeRisk += 0.01;
+            if (Math.random() < explodeRisk) result = 'EXPLODE';
+        }
+        
+        this.pendingResult = result;
+        this.isFiring = true;
+        this.fireQueue = 6; 
+        this.fireTimer = 0; 
+    }
 
-            if (Math.random() < explodeRisk) {
-                setTimeout(() => { this.explodePinata(); }, 300);
+    spawnBullet() {
+        this.audio.playShoot();
+        // 需求1: KUSO 風格子彈
+        // 將 betAmount 存入子彈物件
+        this.bullets.push({
+            x: this.width / 2 + (Math.random() - 0.5) * 100,
+            y: this.height + 20,
+            targetX: this.horse.x, 
+            targetY: this.horse.y,
+            speed: 45, 
+            isLast: this.fireQueue === 1,
+            betAmount: this.betAmount // 用於區分樣式
+        });
+        this.fireQueue--;
+    }
+
+    bulletHit(b) {
+        this.horse.pinataHits++;
+        
+        this.horse.animScaleX = 1.3; 
+        this.horse.animScaleY = 0.7; 
+        this.horse.scaleVx = (Math.random() - 0.5) * 0.3;
+        this.horse.scaleVy = 0.2; 
+        this.horse.faceTimer = 20; 
+        this.shakeScreen(15);
+        this.audio.playHit();
+        
+        this.createParticles(this.horse.x, this.horse.y, 20, '#fff', 'spark');
+
+        if (b.isLast) {
+            this.isFiring = false;
+            this.hitCooldown = this.hitCooldownMax;
+            this.audio.playReload();
+
+            this.skyTimer = this.skyDurationMax; 
+
+            if (this.pendingResult === 'WIN') {
+                this.triggerWin();
+            } else if (this.pendingResult === 'EXPLODE') {
+                setTimeout(() => { this.explodePinata(); }, 200);
             } else {
-                this.spawnText("TIME RESET!", hx, hy - 80, '#60a5fa', 40);
+                this.spawnText("TIME RESET!", this.horse.x, this.horse.y - 80, '#60a5fa', 40);
             }
+            this.updateUI();
         }
     }
 
@@ -885,7 +921,8 @@ class Game {
         this.audio.playWin(); 
         
         this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x, this.horse.y - 100, '#FACC15', 60);
-        this.createParticles(this.horse.x, this.horse.y, 20, '#FACC15', 'coin');
+        this.createParticles(this.horse.x, this.horse.y, 40, '#FACC15', 'coin');
+        this.createParticles(this.horse.x, this.horse.y, 20, '#ffff00', 'line'); 
     }
 
     shakeScreen(intensity) {
@@ -959,7 +996,7 @@ class Game {
 
         if (this.hitCooldown > 0) {
             this.hitCooldown--;
-            if (this.hitCooldown % 5 === 0) this.updateUI(); 
+            if (this.hitCooldown % 2 === 0) this.updateUI(); 
         }
 
         // Q彈物理
@@ -979,17 +1016,13 @@ class Game {
 
         if (this.horse.faceTimer > 0) this.horse.faceTimer--;
 
-        // 需求2: 欠打表演極致誇張化
         if (this.state === 'SKY' && this.horse.faceTimer <= 0) {
-            // 呼吸感 (像氣球一樣) - 振幅 0.05 -> 0.1
             const breath = Math.sin(this.gameTick * 0.15); 
             this.horse.animScaleX = 1.0 + breath * 0.1; 
             this.horse.animScaleY = 1.0 - breath * 0.1;
             
-            // 漂浮感 (上下移動)
             this.horse.y += Math.sin(this.gameTick * 0.1) * 2;
 
-            // 隨機觸發動作 (頻率變高)
             if (Math.random() < 0.03) {
                 this.horse.tongueOut = 1.0; 
                 setTimeout(() => { this.horse.tongueOut = 0; }, 1200);
@@ -999,16 +1032,14 @@ class Game {
                 setTimeout(() => { this.horse.buttWiggle = 0; }, 1000);
             }
             
-            // 隨機旋轉 (搖頭晃腦)
             if (this.horse.buttWiggle > 0 || this.horse.tongueOut > 0) {
-                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; // 角度變大
+                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; 
             }
         } else {
             this.horse.tongueOut = 0;
             this.horse.buttWiggle = 0;
         }
 
-        // 2. 音樂狀態同步
         this.audio.setSkyMode(this.state === 'SKY' || this.state === 'LAUNCHING');
 
         this.clouds.forEach(c => {
@@ -1022,6 +1053,33 @@ class Game {
                 }
             }
         });
+
+        // 射擊循環
+        if (this.isFiring && this.fireQueue > 0) {
+            this.fireTimer++;
+            if (this.fireTimer >= 3) { // 每 3 幀發射一發 (高速)
+                this.spawnBullet();
+                this.fireTimer = 0;
+            }
+        }
+
+        // 子彈更新
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            let b = this.bullets[i];
+            let dx = this.horse.x - b.x;
+            let dy = this.horse.y - b.y;
+            let angle = Math.atan2(dy, dx);
+            b.x += Math.cos(angle) * b.speed;
+            b.y += Math.sin(angle) * b.speed;
+            
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 60) {
+                this.bulletHit(b);
+                this.bullets.splice(i, 1);
+            } else if (b.y < -100 || b.x < -100 || b.x > this.width + 100) {
+                this.bullets.splice(i, 1);
+            }
+        }
 
         if (this.state === 'GROUND') {
             this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 6;
@@ -1083,7 +1141,9 @@ class Game {
                 this.horse.angle = Math.sin(this.horse.wobble) * 0.1;
             }
 
-            this.skyTimer--;
+            if (!this.isFiring && this.hitCooldown === 0) {
+                this.skyTimer--;
+            }
             this.updateUI();
 
             if (this.skyTimer <= 0) {
@@ -1184,6 +1244,98 @@ class Game {
             this.drawHorse();
         }
         
+        // 繪製 KUSO 子彈
+        this.bullets.forEach(b => {
+            this.ctx.save();
+            this.ctx.translate(b.x, b.y);
+            
+            // 計算朝向角度
+            const dx = this.horse.x - b.x;
+            const dy = this.horse.y - b.y;
+            const angle = Math.atan2(dy, dx);
+            this.ctx.rotate(angle);
+
+            if (b.betAmount === 1) {
+                // $1: 豌豆 (Green Pea)
+                this.ctx.fillStyle = '#4ade80';
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 8, 0, Math.PI*2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#bbf7d0';
+                this.ctx.beginPath();
+                this.ctx.arc(-3, -3, 3, 0, Math.PI*2);
+                this.ctx.fill();
+
+            } else if (b.betAmount === 10) {
+                // $10: 藍白拖 (Blue Slipper)
+                this.ctx.rotate(Math.PI/2); // 橫向飛
+                this.ctx.fillStyle = '#3b82f6';
+                this.ctx.beginPath();
+                this.ctx.roundRect(-15, -25, 30, 50, 10);
+                this.ctx.fill();
+                this.ctx.strokeStyle = 'white';
+                this.ctx.lineWidth = 5;
+                this.ctx.beginPath();
+                this.ctx.moveTo(-15, -10);
+                this.ctx.lineTo(0, -25);
+                this.ctx.lineTo(15, -10);
+                this.ctx.stroke();
+
+            } else if (b.betAmount === 50) {
+                // $50: 紅磚頭 (Red Brick)
+                this.ctx.fillStyle = '#b91c1c';
+                this.ctx.fillRect(-20, -12, 40, 24);
+                // 磚孔
+                this.ctx.fillStyle = '#7f1d1d';
+                this.ctx.beginPath();
+                this.ctx.arc(-10, 0, 4, 0, Math.PI*2);
+                this.ctx.arc(10, 0, 4, 0, Math.PI*2);
+                this.ctx.fill();
+
+            } else if (b.betAmount === 100) {
+                // $100: 鈔票磚 (Money)
+                this.ctx.fillStyle = '#22c55e';
+                this.ctx.fillRect(-20, -12, 40, 24);
+                this.ctx.strokeStyle = '#dcfce7';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(-20, -12, 40, 24);
+                this.ctx.fillStyle = '#dcfce7';
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('$', 0, 2);
+
+            } else { // $1000 & Default
+                // $1000: 飛彈 (Missile)
+                this.ctx.fillStyle = '#e5e7eb'; // 銀身
+                this.ctx.beginPath();
+                this.ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#ef4444'; // 紅頭
+                this.ctx.beginPath();
+                this.ctx.moveTo(15, -7);
+                this.ctx.lineTo(30, 0);
+                this.ctx.lineTo(15, 7);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#374151'; // 尾翼
+                this.ctx.beginPath();
+                this.ctx.moveTo(-15, -8); this.ctx.lineTo(-25, -15); this.ctx.lineTo(-20, -2);
+                this.ctx.fill();
+                this.ctx.beginPath();
+                this.ctx.moveTo(-15, 8); this.ctx.lineTo(-25, 15); this.ctx.lineTo(-20, 2);
+                this.ctx.fill();
+                // 尾焰
+                this.ctx.strokeStyle = '#f59e0b';
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(-25, 0);
+                this.ctx.lineTo(-40 - Math.random()*10, 0);
+                this.ctx.stroke();
+            }
+
+            this.ctx.restore();
+        });
+
         this.drawEffects();
 
         if (this.flashAlpha > 0) {
@@ -1209,8 +1361,17 @@ class Game {
                 grd.addColorStop(0, `hsl(${hue}, 70%, 20%)`);
                 grd.addColorStop(1, `hsl(${hue + 60}, 70%, 40%)`);
             } else {
-                grd.addColorStop(0, "#4a044e");
-                grd.addColorStop(1, "#c026d3");
+                // 3. 尊爵不凡背景：根據倍率改變背景色調
+                if (this.currentMultiplier >= 1000) {
+                    grd.addColorStop(0, "#000000");
+                    grd.addColorStop(1, "#2e1065"); // 深紫宇宙
+                } else if (this.currentMultiplier >= 50) {
+                    grd.addColorStop(0, "#451a03"); // 金色氛圍
+                    grd.addColorStop(1, "#b45309");
+                } else {
+                    grd.addColorStop(0, "#4a044e");
+                    grd.addColorStop(1, "#c026d3");
+                }
             }
         } else {
             grd.addColorStop(0, "#1d4ed8");
@@ -1352,88 +1513,104 @@ class Game {
         this.ctx.lineTo(0, -1000); 
         this.ctx.stroke();
 
-        const colors = ['#ec4899', '#a855f7', '#3b82f6', '#22c55e', '#eab308'];
+        // 3. 尊爵不凡 PINATA 外觀切換
+        let colors = ['#ec4899', '#a855f7', '#3b82f6', '#22c55e', '#eab308']; // 預設 x2
+        let isMetal = false;
+        let isGold = false;
+        let isCosmic = false;
+
+        if (this.currentMultiplier >= 1000) {
+            isCosmic = true;
+            colors = ['#000', '#1e1b4b', '#312e81', '#4338ca', '#000']; 
+        } else if (this.currentMultiplier >= 50) {
+            isGold = true;
+            colors = ['#f59e0b', '#fbbf24', '#fcd34d', '#b45309', '#78350f']; 
+        } else if (this.currentMultiplier >= 10) {
+            isMetal = true;
+            // 3. 視覺調整：機械版改為 Cyberpunk 風格
+            colors = ['#1e293b', '#334155', '#475569', '#06b6d4', '#0891b2'];
+        }
         
+        // 繪製身體
         for(let i=0; i<5; i++) {
             this.ctx.fillStyle = colors[i % colors.length];
             let offset = Math.sin(this.gameTick * 0.2 + i) * 2;
             this.ctx.beginPath();
             this.ctx.roundRect(-35 + offset, -30 + i*12, 70, 15, 2);
             this.ctx.fill();
+            
+            if (isGold) { // 黃金光澤
+                this.ctx.strokeStyle = '#fef08a';
+                this.ctx.lineWidth = 1;
+                this.ctx.stroke();
+            }
+            if (isMetal) { // 3. 機械版：增加能量線條
+                this.ctx.strokeStyle = '#06b6d4';
+                this.ctx.lineWidth = 2;
+                this.ctx.shadowBlur = 5;
+                this.ctx.shadowColor = '#06b6d4';
+                this.ctx.beginPath();
+                this.ctx.moveTo(-35 + offset + 10, -30 + i*12 + 7);
+                this.ctx.lineTo(-35 + offset + 60, -30 + i*12 + 7);
+                this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
+            }
+        }
+
+        // 神聖光環 (宇宙版)
+        if (isCosmic) {
+            this.ctx.shadowBlur = 30;
+            this.ctx.shadowColor = '#8b5cf6';
+            this.ctx.strokeStyle = 'white';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 80, 0, Math.PI*2);
+            this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
         }
 
         this.ctx.save();
         this.ctx.translate(35, -20);
         this.ctx.rotate(-0.2);
-        this.ctx.fillStyle = '#ec4899';
+        this.ctx.fillStyle = colors[0]; // 頭部顏色
         this.ctx.beginPath();
         this.ctx.roundRect(-10, -30, 40, 30, 5);
         this.ctx.fill();
         
-        // 1. PINATA 表情繪製
-        if (this.horse.faceTimer > 0) {
-            // 被打：凸眼
-            this.ctx.fillStyle = 'white';
+        // 眼睛
+        if (isMetal) {
+            // 機械眼
+            this.ctx.fillStyle = '#06b6d4'; // 青光眼
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = '#06b6d4';
             this.ctx.beginPath();
-            this.ctx.arc(10, -15, 12, 0, Math.PI*2);
-            this.ctx.arc(25, -15, 8, 0, Math.PI*2);
+            this.ctx.rect(10, -20, 20, 8);
             this.ctx.fill();
-            this.ctx.fillStyle = 'black';
-            this.ctx.beginPath();
-            this.ctx.arc(12, -18, 3, 0, Math.PI*2);
-            this.ctx.arc(23, -13, 2, 0, Math.PI*2);
-            this.ctx.fill();
-            
-            // 暈眩嘴
-            this.ctx.strokeStyle = 'black';
-            this.ctx.lineWidth = 2;
-            this.ctx.beginPath();
-            this.ctx.moveTo(5, 5);
-            this.ctx.bezierCurveTo(10, 15, 20, -5, 30, 5);
-            this.ctx.stroke();
-
+            this.ctx.shadowBlur = 0;
         } else {
-            // 閒置狀態
-            this.ctx.fillStyle = 'white';
-            // 隨機眨眼 (根據 gameTick)
-            let blink = Math.sin(this.gameTick * 0.1) > 0.95;
-            
-            if (blink) {
-                // 閉眼
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeStyle = 'black';
+            // 一般眼
+            if (this.horse.faceTimer > 0) {
+                // 暈眩
+                this.ctx.strokeStyle = isCosmic ? 'cyan' : 'black';
                 this.ctx.beginPath();
-                this.ctx.moveTo(10, -15);
-                this.ctx.lineTo(20, -15);
-                this.ctx.moveTo(22, -15);
-                this.ctx.lineTo(32, -15);
+                this.ctx.moveTo(12, -18); this.ctx.lineTo(18, -12);
+                this.ctx.moveTo(18, -18); this.ctx.lineTo(12, -12);
                 this.ctx.stroke();
             } else {
-                // 正常眼
+                // 正常
+                this.ctx.fillStyle = 'white';
                 this.ctx.beginPath();
                 this.ctx.arc(15, -15, 6, 0, Math.PI*2);
                 this.ctx.fill();
                 this.ctx.fillStyle = 'black';
                 this.ctx.beginPath();
-                // 眼珠跟著滑鼠或隨機亂動
                 let lookX = Math.sin(this.gameTick * 0.05) * 2;
                 this.ctx.arc(17 + lookX, -15, 2, 0, Math.PI*2);
                 this.ctx.fill();
             }
-
-            // 吐舌頭表演
-            if (this.horse.tongueOut > 0) {
-                this.ctx.fillStyle = '#ff6b6b';
-                this.ctx.beginPath();
-                this.ctx.moveTo(10, 0);
-                // 舌頭長度隨 tongueOut 變化
-                let len = this.horse.tongueOut * 15;
-                this.ctx.quadraticCurveTo(20, len, 30, 0);
-                this.ctx.fill();
-            }
         }
         
-        this.ctx.fillStyle = '#a855f7';
+        this.ctx.fillStyle = colors[1]; // 耳朵
         this.ctx.beginPath();
         this.ctx.moveTo(0, -30);
         this.ctx.lineTo(10, -50);
@@ -1451,7 +1628,7 @@ class Game {
             legWiggle = Math.sin(this.gameTick * 0.5) * 15 * this.horse.buttWiggle;
         }
 
-        this.ctx.fillStyle = '#eab308';
+        this.ctx.fillStyle = colors[4];
         this.ctx.save();
         this.ctx.translate(-20, 30);
         this.ctx.rotate(legWiggle * 0.05);
@@ -1464,7 +1641,7 @@ class Game {
         this.ctx.fillRect(-5, 0, 10, 30);
         this.ctx.restore();
         
-        this.ctx.fillStyle = '#3b82f6';
+        this.ctx.fillStyle = colors[2];
         this.ctx.beginPath();
         this.ctx.moveTo(-35, -10);
         this.ctx.lineTo(-55, 10 + legWiggle); 
