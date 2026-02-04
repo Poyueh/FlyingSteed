@@ -627,6 +627,9 @@ class Game {
         const pastContainer = document.getElementById('roadmapPast');
         const futureContainer = document.getElementById('roadmapFuture');
         
+        // 新增邏輯：將場景上尚未錯過的彈簧加入 Upcoming 列表最前端，實現同步
+        const activeSprings = this.springs.filter(s => s.active && s.x > 180);
+        
         const showPast = this.roadmapPast.slice(-5);
         let pastHTML = '';
         showPast.forEach(item => {
@@ -638,7 +641,10 @@ class Game {
         });
         pastContainer.innerHTML = pastHTML;
 
-        const showFuture = this.roadmapFuture.slice(0, 10);
+        // 合併 Active + Future
+        const combinedFuture = [...activeSprings, ...this.roadmapFuture];
+        const showFuture = combinedFuture.slice(0, 10);
+        
         let futureHTML = '';
         showFuture.forEach((item, index) => {
             const sizeClass = index === 0 ? 'w-12 h-12 text-xl border-2 border-white animate-pulse' : 'w-9 h-9 text-xs opacity-80';
@@ -1218,7 +1224,11 @@ class Game {
             }
             
             // 加入動態更新 UI，確保 TARGET 倍數即時同步
-            this.updateUI();
+            // 每 15 幀更新一次路途 UI，避免過度消耗效能
+            if (this.gameTick % 15 === 0) {
+                this.updateUI();
+                this.updateRoadmapUI();
+            }
         }
         else if (this.state === 'LAUNCHING') {
             let targetY = this.height * 0.3;
@@ -1583,6 +1593,37 @@ class Game {
 
         this.springs.forEach(s => {
             if (!s.active) this.ctx.globalAlpha = 0.5; 
+
+            // >500倍 特別特效
+            if (s.mul >= 500) {
+                this.ctx.save();
+                this.ctx.translate(s.x, s.y);
+                // 1. 底座光環
+                this.ctx.shadowBlur = 30;
+                this.ctx.shadowColor = s.mul >= 10000 ? '#00ffff' : '#ffd700';
+                
+                // 2. 旋轉光芒背景
+                this.ctx.rotate(this.gameTick * 0.05);
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + Math.sin(this.gameTick * 0.1) * 0.1})`;
+                this.ctx.beginPath();
+                for(let i=0; i<8; i++) {
+                    this.ctx.rotate(Math.PI/4);
+                    this.ctx.rect(-60, -5, 120, 10);
+                }
+                this.ctx.fill();
+                
+                // 3. 向上光束
+                this.ctx.rotate(-this.gameTick * 0.05); // 轉回來
+                this.ctx.fillStyle = `linear-gradient(to top, ${s.color}, transparent)`;
+                // Canvas gradient needs absolute coords, simplified:
+                let grad = this.ctx.createLinearGradient(0, 0, 0, -200);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(-40, -200, 80, 200);
+
+                this.ctx.restore();
+            }
 
             this.ctx.fillStyle = '#1f2937';
             this.ctx.beginPath();
