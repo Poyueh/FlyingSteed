@@ -134,7 +134,7 @@
         <!-- 頂部區域容器 (包含 HUD 和 Roadmap) -->
         <div class="flex flex-col w-full relative z-20 pt-8 pointer-events-none">
             
-            <!-- 需求1: 倍數路途 (Roadmap) - 字體與方塊加大 -->
+            <!-- 路途 (Roadmap) -->
             <div class="w-full flex justify-center items-center mb-2 overflow-hidden px-4">
                 <div class="bg-black/60 backdrop-blur-sm rounded-full px-5 py-3 border border-white/10 flex items-center gap-3 shadow-lg max-w-[98%]">
                     <span class="text-xs text-gray-400 font-bold uppercase mr-1 tracking-wider">HISTORY</span>
@@ -153,7 +153,7 @@
                 </div>
             </div>
 
-            <!-- 原有 HUD (往下移一點) -->
+            <!-- HUD -->
             <div class="flex justify-between items-start px-6"> 
                 <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
                     <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
@@ -182,7 +182,7 @@
             </div>
         </div>
         
-        <!-- 擊打冷卻指示器 (Sky Mode Only) -->
+        <!-- 擊打冷卻指示器 -->
         <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center">
             <div class="relative w-24 h-24">
                 <!-- 背景圓 -->
@@ -204,7 +204,7 @@
             
             <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
                 <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-green-600 to-teal-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
-                    TAP SPRING TO JUMP
+                    TAP ANYWHERE TO START
                 </div>
             </div>
 
@@ -243,17 +243,166 @@
 </div>
 
 <script>
+// --- 音效控制器類別 ---
+class AudioController {
+    constructor() {
+        this.ctx = null;
+        this.enabled = false;
+        this.bgmTimer = null;
+        this.currentBPM = 110; // Ground BPM
+        this.targetBPM = 110;
+        this.nextNoteTime = 0;
+        this.bassLine = [110, 110, 130, 110, 146, 130, 110, 98];
+        this.melodyLine = [330, 0, 392, 0, 440, 392, 330, 293]; // Sky melody
+        this.noteIdx = 0;
+        this.isSkyMode = false;
+    }
+
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.enabled = true;
+            this.startLoop();
+        } else if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    playTone(freq, type, duration, vol = 0.1, slideFreq = null) {
+        if (!this.enabled || !freq) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        if (slideFreq) {
+            osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+        }
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    playNoise(duration, vol = 0.1) {
+        if (!this.enabled) return;
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        noise.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+    }
+
+    playJump() {
+        this.playTone(150, 'square', 0.1, 0.1, 600); 
+    }
+
+    playHit() {
+        this.playNoise(0.1, 0.3); 
+        this.playTone(100, 'sawtooth', 0.1, 0.2, 50);
+    }
+
+    playWin() {
+        this.playTone(1200, 'sine', 0.1, 0.1);
+        setTimeout(() => this.playTone(1800, 'sine', 0.2, 0.1), 50);
+    }
+
+    playExplode() {
+        this.playNoise(0.8, 0.8); 
+        this.playTone(100, 'sawtooth', 0.5, 0.5, 10); 
+    }
+
+    // 2. 動態 BGM 邏輯
+    setSkyMode(isSky) {
+        this.isSkyMode = isSky;
+        // 地面 110 BPM, 天空 160 BPM
+        this.targetBPM = isSky ? 160 : 110; 
+    }
+
+    startLoop() {
+        if (this.nextNoteTime === 0) this.nextNoteTime = this.ctx.currentTime + 0.1;
+        
+        const scheduler = () => {
+            if (!this.enabled || this.ctx.state === 'suspended') {
+                requestAnimationFrame(scheduler);
+                return;
+            }
+
+            while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                this.scheduleNote(this.noteIdx, this.nextNoteTime);
+                this.noteIdx++;
+                // BPM 平滑過渡
+                this.currentBPM += (this.targetBPM - this.currentBPM) * 0.1;
+                const secondsPerBeat = 60.0 / this.currentBPM;
+                // 我們使用 16 分音符為單位 (0.25 beat)
+                this.nextNoteTime += secondsPerBeat * 0.5; 
+            }
+            requestAnimationFrame(scheduler);
+        };
+        scheduler();
+    }
+
+    scheduleNote(idx, time) {
+        // Bassline (始終播放)
+        const bassFreq = this.bassLine[idx % this.bassLine.length];
+        // Sky 模式下 Bass 改為 Square 且更大聲，地面為 Triangle
+        const bassType = this.isSkyMode ? 'square' : 'triangle';
+        const bassVol = this.isSkyMode ? 0.08 : 0.05;
+        this.playToneScheduled(bassFreq, bassType, 0.2, bassVol, time);
+
+        // Melody (僅 Sky 模式播放)
+        if (this.isSkyMode) {
+            const melFreq = this.melodyLine[idx % this.melodyLine.length];
+            if (melFreq > 0) {
+                // 琶音風格
+                this.playToneScheduled(melFreq, 'sawtooth', 0.1, 0.05, time);
+                // 偶爾加個高音
+                if (Math.random() < 0.2) {
+                    this.playToneScheduled(melFreq * 2, 'sine', 0.1, 0.03, time);
+                }
+            }
+        }
+    }
+
+    playToneScheduled(freq, type, duration, vol, time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(vol, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(time);
+        osc.stop(time + duration);
+    }
+}
+
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.wrapper = document.getElementById('game-wrapper');
+        this.audio = new AudioController(); 
         
         this.width = 900; 
         this.height = 1600; 
         
         this.state = 'GROUND'; 
-        this.balance = 5000;
+        
+        const savedBalance = localStorage.getItem('cp_balance');
+        this.balance = savedBalance ? parseFloat(savedBalance) : 5000;
+        
         this.betAmount = 10;
         this.currentMultiplier = 1;
         
@@ -274,7 +423,16 @@ class Game {
             targetX: 0, targetY: 0,
             moveTimer: 0,
             pinataHits: 0,    
-            wobble: 0         
+            wobble: 0,
+            // Pinata 表演參數
+            animScaleX: 1, 
+            animScaleY: 1,
+            scaleVx: 0, 
+            scaleVy: 0,
+            faceTimer: 0,
+            // 1. 欠打表演參數
+            tongueOut: 0, // 吐舌頭程度 0-1
+            buttWiggle: 0 // 扭屁股角度
         };
 
         this.springs = []; 
@@ -289,10 +447,8 @@ class Game {
         this.hitCooldownMax = 60;
         this.hitCooldown = 0;
 
-        // 需求1: 路途 (Roadmap) 系統
         this.roadmapFuture = [];
         this.roadmapPast = [];
-        // 初始化生成 20 個未來倍率
         for(let i=0; i<20; i++) {
             this.roadmapFuture.push(this.generateWeightedMultiplier());
         }
@@ -309,11 +465,21 @@ class Game {
 
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
+        
+        // 3. 自動播放：全域點擊監聽 (Auto-Play Trigger)
+        const unlockAudio = () => {
+            this.audio.init();
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
+
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
         this.resize(); 
         this.updateUI();
-        this.updateRoadmapUI(); // 初始渲染路途
+        this.updateRoadmapUI(); 
         this.loop();
         
         setTimeout(() => {
@@ -321,7 +487,6 @@ class Game {
         }, 100);
     }
 
-    // 需求2: 固定顯示小數點後兩位
     formatCurrency(value) {
         return '$' + value.toLocaleString('en-US', {
             minimumFractionDigits: 2,
@@ -329,7 +494,10 @@ class Game {
         });
     }
 
-    // 抽取倍率生成邏輯
+    saveBalance() {
+        localStorage.setItem('cp_balance', this.balance);
+    }
+
     generateWeightedMultiplier() {
         const types = [
             { mul: 2, color: '#22c55e', label: 'x2', weight: 400, textColor: '#fff' },
@@ -357,12 +525,10 @@ class Game {
         return selected;
     }
 
-    // 更新路途 UI (HTML 渲染) - 增大尺寸版本
     updateRoadmapUI() {
         const pastContainer = document.getElementById('roadmapPast');
         const futureContainer = document.getElementById('roadmapFuture');
         
-        // 渲染過去 (取最後 5 個)
         const showPast = this.roadmapPast.slice(-5);
         let pastHTML = '';
         showPast.forEach(item => {
@@ -374,11 +540,9 @@ class Game {
         });
         pastContainer.innerHTML = pastHTML;
 
-        // 渲染未來 (取前 10 個)
         const showFuture = this.roadmapFuture.slice(0, 10);
         let futureHTML = '';
         showFuture.forEach((item, index) => {
-            // 第一個稍微大一點
             const sizeClass = index === 0 ? 'w-12 h-12 text-xl border-2 border-white animate-pulse' : 'w-9 h-9 text-xs opacity-80';
             const label = item.mul >= 1000 ? (item.mul===10000 ? 'MAX' : '1K') : item.mul;
             
@@ -469,6 +633,7 @@ class Game {
 
     handleInput(e) {
         e.preventDefault();
+        this.audio.init();
 
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = this.width / rect.width;
@@ -502,10 +667,8 @@ class Game {
     }
 
     spawnSpring() {
-        // 從未來隊列取出第一個
         const selected = this.roadmapFuture.shift();
         
-        // 生成實體
         this.springs.push({
             x: this.width + 150, 
             y: this.groundLevel + 20, 
@@ -521,14 +684,14 @@ class Game {
             compress: 0 
         });
 
-        // 更新路途邏輯
-        this.roadmapPast.push(selected); // 移入歷史
-        this.roadmapFuture.push(this.generateWeightedMultiplier()); // 補一個新的到未來
-        this.updateRoadmapUI(); // 更新介面
+        this.roadmapPast.push(selected); 
+        this.roadmapFuture.push(this.generateWeightedMultiplier()); 
+        this.updateRoadmapUI(); 
     }
 
     attemptLaunch(spring) {
         this.updateUI();
+        this.audio.playJump();
 
         this.createParticles(spring.x, spring.y + 10, 1, 'rgba(255,255,255,0.8)', 'shockwave');
         this.createParticles(spring.x, spring.y, 20, spring.color, 'spark');
@@ -545,6 +708,10 @@ class Game {
             this.horse.targetX = this.width * 0.3;
             this.horse.moveTimer = 0;
             this.horse.pinataHits = 0; 
+            this.horse.animScaleX = 1;
+            this.horse.animScaleY = 1;
+            this.horse.scaleVx = 0;
+            this.horse.scaleVy = 0;
 
             this.shakeScreen(20);
             
@@ -569,68 +736,74 @@ class Game {
 
     hitPinata(inputX, inputY) {
         this.balance -= this.betAmount;
+        this.saveBalance(); 
         this.hitCooldown = this.hitCooldownMax; 
         
         this.skyTimer = this.skyDurationMax; 
         this.horse.pinataHits++;
+        
+        this.horse.animScaleX = 1.7; 
+        this.horse.animScaleY = 0.4; 
+        this.horse.scaleVx = (Math.random() - 0.5) * 0.3;
+        this.horse.scaleVy = 0.2; 
+        
+        this.horse.faceTimer = 25; 
+        // 擊中時收回舌頭
+        this.horse.tongueOut = 0; 
+
+        this.audio.playHit();
+
         this.horse.state = 'SPIN';
         this.horse.spinTimer = 15;
 
-        // 隨機特效選擇
-        const effectType = Math.floor(Math.random() * 4); // 0-3
+        const comicWords = ["POW!", "BAM!", "WHACK!", "OOF!", "SMASH!", "BOOM!"];
+        const randWord = comicWords[Math.floor(Math.random() * comicWords.length)];
+        
+        const effectType = Math.floor(Math.random() * 4); 
         const hx = this.horse.x;
         const hy = this.horse.y;
 
         switch(effectType) {
-            case 0: // 重擊 (Heavy)
-                this.shakeScreen(30);
+            case 0: 
+                this.shakeScreen(40);
                 this.createParticles(hx, hy, 40, '#fff', 'spark');
                 this.createParticles(hx, hy, 5, '#ef4444', 'shockwave');
-                this.spawnText(`SMASH!`, hx, hy - 120, '#fff', 50);
+                this.spawnText(randWord, hx, hy - 120, '#fff', 70, 'comic');
                 break;
-            case 1: // 狂歡 (Party)
-                this.shakeScreen(20);
-                this.createParticles(hx, hy, 50, '#f472b6', 'confetti');
-                this.spawnText(`PARTY!`, hx, hy - 120, '#f472b6', 50);
+            case 1: 
+                this.shakeScreen(30);
+                this.createParticles(hx, hy, 60, '#f472b6', 'confetti');
+                this.spawnText(randWord, hx, hy - 120, '#f472b6', 70, 'comic');
                 break;
-            case 2: // 閃光 (Flash)
-                this.shakeScreen(25);
-                this.flashAlpha = 0.5; // 瞬間閃光
-                this.createParticles(hx, hy, 20, '#ffff00', 'line');
-                this.spawnText(`ZAP!`, hx, hy - 120, '#ffff00', 50);
+            case 2: 
+                this.shakeScreen(35);
+                this.flashAlpha = 0.6; 
+                this.createParticles(hx, hy, 25, '#ffff00', 'line');
+                this.spawnText(randWord, hx, hy - 120, '#ffff00', 70, 'comic');
                 break;
-            case 3: // 金幣 (Rich - 視覺爽感)
-                this.shakeScreen(20);
-                this.createParticles(hx, hy, 30, '#FACC15', 'coin');
+            case 3: 
+                this.shakeScreen(30);
+                this.createParticles(hx, hy, 35, '#FACC15', 'coin');
                 this.createParticles(hx, hy, 20, '#fff', 'spark');
                 this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
                 break;
         }
         
-        // 顯示扣款 (如果不是 Rich 特效已經顯示過)
         if (effectType !== 3) {
             this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
         }
 
-        // 爆炸與中獎邏輯
-        let baseChance = 0;
-        let riskFactor = 0.015;
-        if (this.currentMultiplier >= 100) riskFactor = 0.025;
-
-        let explodeChance = baseChance + (this.horse.pinataHits * riskFactor);
-        
+        let winChance = 0.96 / this.currentMultiplier;
         let roll = Math.random();
 
-        if (roll < explodeChance) {
-            setTimeout(() => {
-                this.explodePinata();
-            }, 300); 
+        if (roll < winChance) {
+            this.triggerWin();
         } else {
-            let winChance = 0.4 * (10 / Math.max(10, this.currentMultiplier));
-            winChance = Math.max(0.1, winChance);
+            let explodeRisk = 0.0 + (this.horse.pinataHits * 0.015);
+            if (this.currentMultiplier >= 100) explodeRisk += 0.01;
 
-            if (Math.random() < winChance) {
-                this.triggerWin();
+            if (Math.random() < explodeRisk) {
+                setTimeout(() => { this.explodePinata(); }, 300);
             } else {
                 this.spawnText("TIME RESET!", hx, hy - 80, '#60a5fa', 40);
             }
@@ -640,8 +813,9 @@ class Game {
     }
 
     explodePinata() {
-        this.shakeScreen(50); // 超大震動
-        this.flashAlpha = 1.0; // 全螢幕閃白
+        this.shakeScreen(60); 
+        this.flashAlpha = 1.0; 
+        this.audio.playExplode(); 
         
         this.createParticles(this.horse.x, this.horse.y, 100, '#ec4899', 'confetti');
         this.createParticles(this.horse.x, this.horse.y, 50, '#fff', 'spark');
@@ -658,6 +832,8 @@ class Game {
     triggerWin() {
         const win = this.betAmount * this.currentMultiplier;
         this.balance += win;
+        this.saveBalance(); 
+        this.audio.playWin(); 
         
         this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x, this.horse.y - 100, '#FACC15', 60);
         this.createParticles(this.horse.x, this.horse.y, 20, '#FACC15', 'coin');
@@ -667,10 +843,11 @@ class Game {
         this.camera.shake = Math.max(this.camera.shake, intensity);
     }
 
-    spawnText(str, x, y, color, size=32) {
+    spawnText(str, x, y, color, size=32, type='normal') {
         this.texts.push({
-            str, x, y, color, size,
-            vy: -4, life: 50, maxLife: 50
+            str, x, y, color, size, type,
+            vy: -4, life: 60, maxLife: 60,
+            rotation: type === 'comic' ? (Math.random() - 0.5) * 0.5 : 0 
         });
     }
 
@@ -735,6 +912,48 @@ class Game {
             this.hitCooldown--;
             if (this.hitCooldown % 5 === 0) this.updateUI(); 
         }
+
+        // Q彈物理
+        const targetScale = 1.0;
+        const stiffness = 0.2; 
+        const damping = 0.8;   
+
+        const forceX = (targetScale - this.horse.animScaleX) * stiffness;
+        this.horse.scaleVx += forceX;
+        this.horse.scaleVx *= damping;
+        this.horse.animScaleX += this.horse.scaleVx;
+
+        const forceY = (targetScale - this.horse.animScaleY) * stiffness;
+        this.horse.scaleVy += forceY;
+        this.horse.scaleVy *= damping;
+        this.horse.animScaleY += this.horse.scaleVy;
+
+        if (this.horse.faceTimer > 0) this.horse.faceTimer--;
+
+        // 1. PINATA 欠打表演更新
+        if (this.state === 'SKY' && this.horse.faceTimer <= 0) {
+            // 呼吸感
+            this.horse.animScaleX += Math.sin(this.gameTick * 0.1) * 0.002;
+            this.horse.animScaleY += Math.sin(this.gameTick * 0.1) * 0.002;
+            
+            // 隨機觸發動作 (每 2 秒約一次)
+            if (Math.random() < 0.01) {
+                // 吐舌頭
+                this.horse.tongueOut = 1.0; 
+                setTimeout(() => { this.horse.tongueOut = 0; }, 800);
+            }
+            if (Math.random() < 0.01) {
+                // 扭屁股
+                this.horse.buttWiggle = 1.0;
+                setTimeout(() => { this.horse.buttWiggle = 0; }, 1000);
+            }
+        } else {
+            this.horse.tongueOut = 0;
+            this.horse.buttWiggle = 0;
+        }
+
+        // 2. 音樂狀態同步
+        this.audio.setSkyMode(this.state === 'SKY' || this.state === 'LAUNCHING');
 
         this.clouds.forEach(c => {
             c.x -= c.speed;
@@ -882,8 +1101,11 @@ class Game {
             t.y += t.vy;
             t.life--;
             t.vy *= 0.92;
-            if (this.state === 'GROUND') { 
-                t.x -= 4; 
+            if (t.type === 'comic') {
+                if (t.life > 50) t.size += 2; 
+                else if (t.life < 10) t.size *= 0.8; 
+            } else {
+                if (this.state === 'GROUND') t.x -= 4; 
             }
             if (t.life <= 0) this.texts.splice(i, 1);
         }
@@ -925,8 +1147,15 @@ class Game {
             grd.addColorStop(0, "#1e40af");
             grd.addColorStop(1, "#60a5fa");
         } else if (this.state === 'SKY' || this.state === 'LAUNCHING') {
-            grd.addColorStop(0, "#4a044e");
-            grd.addColorStop(1, "#c026d3");
+            if (this.horse.faceTimer > 0) {
+                const hue = (this.gameTick * 20) % 360;
+                grd = this.ctx.createLinearGradient(0, 0, 0, this.height);
+                grd.addColorStop(0, `hsl(${hue}, 70%, 20%)`);
+                grd.addColorStop(1, `hsl(${hue + 60}, 70%, 40%)`);
+            } else {
+                grd.addColorStop(0, "#4a044e");
+                grd.addColorStop(1, "#c026d3");
+            }
         } else {
             grd.addColorStop(0, "#1d4ed8");
             grd.addColorStop(1, "#93c5fd");
@@ -1054,7 +1283,10 @@ class Game {
     drawPinata() {
         this.ctx.save();
         this.ctx.translate(this.horse.x, this.horse.y);
-        this.ctx.scale(this.horse.scale * 1.8, this.horse.scale * 1.8); 
+        
+        let scaleX = this.horse.scale * 1.8 * this.horse.animScaleX;
+        let scaleY = this.horse.scale * 1.8 * this.horse.animScaleY;
+        this.ctx.scale(scaleX, scaleY); 
         this.ctx.rotate(this.horse.angle);
 
         this.ctx.strokeStyle = '#fff';
@@ -1082,14 +1314,68 @@ class Game {
         this.ctx.roundRect(-10, -30, 40, 30, 5);
         this.ctx.fill();
         
-        this.ctx.fillStyle = 'white';
-        this.ctx.beginPath();
-        this.ctx.arc(15, -15, 6, 0, Math.PI*2);
-        this.ctx.fill();
-        this.ctx.fillStyle = 'black';
-        this.ctx.beginPath();
-        this.ctx.arc(17, -15, 2, 0, Math.PI*2);
-        this.ctx.fill();
+        // 1. PINATA 表情繪製
+        if (this.horse.faceTimer > 0) {
+            // 被打：凸眼
+            this.ctx.fillStyle = 'white';
+            this.ctx.beginPath();
+            this.ctx.arc(10, -15, 12, 0, Math.PI*2);
+            this.ctx.arc(25, -15, 8, 0, Math.PI*2);
+            this.ctx.fill();
+            this.ctx.fillStyle = 'black';
+            this.ctx.beginPath();
+            this.ctx.arc(12, -18, 3, 0, Math.PI*2);
+            this.ctx.arc(23, -13, 2, 0, Math.PI*2);
+            this.ctx.fill();
+            
+            // 暈眩嘴
+            this.ctx.strokeStyle = 'black';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(5, 5);
+            this.ctx.bezierCurveTo(10, 15, 20, -5, 30, 5);
+            this.ctx.stroke();
+
+        } else {
+            // 閒置狀態
+            this.ctx.fillStyle = 'white';
+            // 隨機眨眼 (根據 gameTick)
+            let blink = Math.sin(this.gameTick * 0.1) > 0.95;
+            
+            if (blink) {
+                // 閉眼
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = 'black';
+                this.ctx.beginPath();
+                this.ctx.moveTo(10, -15);
+                this.ctx.lineTo(20, -15);
+                this.ctx.moveTo(22, -15);
+                this.ctx.lineTo(32, -15);
+                this.ctx.stroke();
+            } else {
+                // 正常眼
+                this.ctx.beginPath();
+                this.ctx.arc(15, -15, 6, 0, Math.PI*2);
+                this.ctx.fill();
+                this.ctx.fillStyle = 'black';
+                this.ctx.beginPath();
+                // 眼珠跟著滑鼠或隨機亂動
+                let lookX = Math.sin(this.gameTick * 0.05) * 2;
+                this.ctx.arc(17 + lookX, -15, 2, 0, Math.PI*2);
+                this.ctx.fill();
+            }
+
+            // 吐舌頭表演
+            if (this.horse.tongueOut > 0) {
+                this.ctx.fillStyle = '#ff6b6b';
+                this.ctx.beginPath();
+                this.ctx.moveTo(10, 0);
+                // 舌頭長度隨 tongueOut 變化
+                let len = this.horse.tongueOut * 15;
+                this.ctx.quadraticCurveTo(20, len, 30, 0);
+                this.ctx.fill();
+            }
+        }
         
         this.ctx.fillStyle = '#a855f7';
         this.ctx.beginPath();
@@ -1099,15 +1385,34 @@ class Game {
         this.ctx.fill();
         this.ctx.restore();
 
+        // 1. PINATA 四肢表演
+        let legWiggle = 0;
+        if (this.horse.faceTimer > 0) {
+            // 被打時劇烈晃動
+            legWiggle = Math.sin(this.gameTick * 1.5) * 20; 
+        } else if (this.horse.buttWiggle > 0) {
+            // 欠打時扭屁股
+            legWiggle = Math.sin(this.gameTick * 0.5) * 15 * this.horse.buttWiggle;
+        }
+
         this.ctx.fillStyle = '#eab308';
-        this.ctx.fillRect(-25, 30, 10, 30);
-        this.ctx.fillRect(15, 30, 10, 30);
+        this.ctx.save();
+        this.ctx.translate(-20, 30);
+        this.ctx.rotate(legWiggle * 0.05);
+        this.ctx.fillRect(-5, 0, 10, 30);
+        this.ctx.restore();
+
+        this.ctx.save();
+        this.ctx.translate(20, 30);
+        this.ctx.rotate(-legWiggle * 0.05);
+        this.ctx.fillRect(-5, 0, 10, 30);
+        this.ctx.restore();
         
         this.ctx.fillStyle = '#3b82f6';
         this.ctx.beginPath();
         this.ctx.moveTo(-35, -10);
-        this.ctx.lineTo(-55, 10);
-        this.ctx.lineTo(-45, 20);
+        this.ctx.lineTo(-55, 10 + legWiggle); 
+        this.ctx.lineTo(-45, 20 + legWiggle);
         this.ctx.fill();
 
         this.ctx.restore();
