@@ -7,7 +7,7 @@
     <!-- iOS PWA 相關設置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>飛天神駒 PRO</title>
+    <title>飛天神駒 PRO - PINATA EDITION</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -17,7 +17,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            position: fixed; /* 鎖定視口，這對手機版很重要 */
+            position: fixed; /* 鎖定視口 */
             overflow: hidden;
             background-color: #000; 
             touch-action: none;
@@ -27,10 +27,17 @@
 
         #game-wrapper {
             position: absolute;
+            top: 0;
+            left: 0;
+            /* 寬度固定 900，高度由 JS 動態決定 */
+            width: 900px;  
+            height: 1600px; /* 預設高度 */
             background-color: #1a1a2e;
             overflow: hidden;
             opacity: 0; 
             transition: opacity 0.5s;
+            /* 預設左上角，resize 會動態調整 */
+            transform-origin: 0 0;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
@@ -97,7 +104,7 @@
         
         .control-panel {
             background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
-            padding-bottom: max(2rem, env(safe-area-inset-bottom)); /* 適應 iPhone 底部橫條 */
+            padding-bottom: max(2rem, env(safe-area-inset-bottom)); 
             padding-top: 6rem;
         }
         
@@ -105,6 +112,16 @@
         @keyframes slide {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
+        }
+
+        /* CD ICON 動畫 */
+        .cd-overlay {
+            transition: height 0.1s linear;
+        }
+
+        /* 路途滾動條樣式 */
+        .roadmap-item {
+            transition: all 0.3s ease-out;
         }
     </style>
 </head>
@@ -114,69 +131,110 @@
     <canvas id="gameCanvas"></canvas>
 
     <div class="ui-layer safe-area-inset">
-        <!-- 頂部 HUD -->
-        <div class="flex justify-between items-start p-6 pt-12 relative z-20"> <!-- 增加頂部間距適應瀏海 -->
-            <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
-                <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
-                <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$1,000,000,000</div>
-            </div>
+        <!-- 頂部區域容器 (包含 HUD 和 Roadmap) -->
+        <div class="flex flex-col w-full relative z-20 pt-8 pointer-events-none">
             
-            <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
-                <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80">Bonus</div>
-                <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
+            <!-- 需求1: 倍數路途 (Roadmap) - 字體與方塊加大 -->
+            <div class="w-full flex justify-center items-center mb-2 overflow-hidden px-4">
+                <div class="bg-black/60 backdrop-blur-sm rounded-full px-5 py-3 border border-white/10 flex items-center gap-3 shadow-lg max-w-[98%]">
+                    <span class="text-xs text-gray-400 font-bold uppercase mr-1 tracking-wider">HISTORY</span>
+                    <!-- 過去 -->
+                    <div id="roadmapPast" class="flex gap-2 opacity-60 scale-90 origin-right">
+                        <!-- JS 填充 -->
+                    </div>
+                    
+                    <div class="w-[1px] h-8 bg-white/30 mx-1"></div>
+                    
+                    <!-- 未來 -->
+                    <div id="roadmapFuture" class="flex gap-2 items-center">
+                        <!-- JS 填充 -->
+                    </div>
+                    <span class="text-xs text-blue-400 font-bold uppercase ml-1 tracking-wider">UPCOMING</span>
+                </div>
+            </div>
+
+            <!-- 原有 HUD (往下移一點) -->
+            <div class="flex justify-between items-start px-6"> 
+                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
+                    <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
+                    <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
+                </div>
+                
+                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
+                    <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80">Bonus</div>
+                    <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
+                </div>
             </div>
         </div>
         
         <!-- 天空飛行計時條 -->
-        <div id="skyHUD" class="absolute top-[140px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
-            <!-- 外框與發光效果 -->
+        <div id="skyHUD" class="absolute top-[200px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
             <div class="relative">
-                <div class="absolute inset-0 bg-blue-500 blur-md opacity-30 rounded-full"></div>
-                <div class="w-full h-8 bg-gray-900/90 rounded-full overflow-hidden border-2 border-blue-400/50 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center p-1">
-                    <!-- 進度條本身 -->
-                    <div id="skyTimerBar" class="h-full rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-white w-full shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all duration-[16ms] ease-linear relative overflow-hidden">
-                        <!-- 掃光動畫 -->
+                <div class="absolute inset-0 bg-pink-500 blur-md opacity-30 rounded-full"></div>
+                <div class="w-full h-8 bg-gray-900/90 rounded-full overflow-hidden border-2 border-pink-400/50 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center p-1">
+                    <div id="skyTimerBar" class="h-full rounded-full bg-gradient-to-r from-pink-500 via-purple-400 to-white w-full shadow-[0_0_15px_rgba(236,72,153,0.8)] transition-all duration-[16ms] ease-linear relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEwIDAgTDAgMjAgTDEwIDIwIEwyMCAwIFoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIvPjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
                     </div>
                 </div>
-                <!-- 文字標籤 -->
-                <div class="absolute -top-7 left-1/2 -translate-x-1/2">
-                    <span class="text-blue-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">FLIGHT FUEL</span>
+                <div class="absolute -top-7 left-1/2 -translate-x-1/2 w-full text-center">
+                    <span class="text-pink-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">PINATA TIME</span>
                 </div>
             </div>
+        </div>
+        
+        <!-- 擊打冷卻指示器 (Sky Mode Only) -->
+        <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center">
+            <div class="relative w-24 h-24">
+                <!-- 背景圓 -->
+                <div class="absolute inset-0 rounded-full bg-black/60 border-4 border-gray-600"></div>
+                <!-- 填充圓 -->
+                <div class="absolute inset-0 rounded-full overflow-hidden flex items-end justify-center">
+                    <div id="cdOverlay" class="w-full bg-red-500/80 h-0 transition-all duration-75"></div>
+                </div>
+                <!-- 圖示 -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="text-4xl">🔨</span>
+                </div>
+            </div>
+            <span class="mt-2 text-white font-bold text-sm bg-black/50 px-2 rounded">SMASH!</span>
         </div>
 
         <!-- 底部控制區 -->
         <div class="control-panel flex flex-col items-center justify-end w-full">
             
-            <!-- 提示文字 -->
             <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
-                <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
-                    TAP SPRING TO JUMP (FREE)
+                <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-green-600 to-teal-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
+                    TAP SPRING TO JUMP
                 </div>
             </div>
 
             <!-- 下注操作區 -->
             <div class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6">
-                <!-- 當前下注顯示 -->
                 <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
-                    <span class="text-gray-400 text-sm font-bold uppercase">BASE BET</span>
-                    <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10</span>
+                    <span class="text-gray-400 text-sm font-bold uppercase">HIT COST</span>
+                    <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10.00</span>
                 </div>
                 
-                <!-- 按鈕群組 -->
-                <div class="grid grid-cols-3 gap-4 w-full max-w-md">
+                <div class="grid grid-cols-5 gap-2 w-full max-w-xl">
+                    <button onclick="game.setBet(1)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-emerald-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-5 h-5 rounded-full bg-emerald-400 mb-1 shadow-[0_0_10px_#34d399] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-lg">1</span>
+                    </button>
                     <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
-                        <div class="w-8 h-8 rounded-full bg-yellow-500 mb-2 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform"></div>
-                        <span class="ui-font text-xl">10</span>
+                        <div class="w-6 h-6 rounded-full bg-yellow-500 mb-1 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-lg">10</span>
                     </button>
-                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
-                         <div class="w-10 h-10 rounded-full bg-blue-500 mb-2 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
-                        <span class="ui-font text-2xl">50</span>
+                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-blue-400 active:bg-gray-900 shadow-lg group">
+                         <div class="w-7 h-7 rounded-full bg-blue-500 mb-1 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-xl">50</span>
                     </button>
-                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
-                        <div class="w-12 h-12 rounded-full bg-red-500 mb-2 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform"></div>
-                        <span class="ui-font text-3xl">100</span>
+                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-red-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-8 h-8 rounded-full bg-red-500 mb-1 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-2xl">100</span>
+                    </button>
+                    <button onclick="game.setBet(1000)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-purple-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-9 h-9 rounded-full bg-purple-500 mb-1 shadow-[0_0_10px_#a855f7] group-hover:scale-110 transition-transform border border-white"></div>
+                        <span class="ui-font text-xl">1K</span>
                     </button>
                 </div>
             </div>
@@ -191,49 +249,54 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.wrapper = document.getElementById('game-wrapper');
         
-        // --- 核心：全屏適配邏輯 ---
-        this.width = 900; // 邏輯寬度固定
-        // 初始高度暫定，會由 resize 覆寫
+        this.width = 900; 
         this.height = 1600; 
         
-        // 核心狀態
         this.state = 'GROUND'; 
-        this.balance = 1000000000;
+        this.balance = 5000;
         this.betAmount = 10;
         this.currentMultiplier = 1;
         
-        // 畫面參數
         this.camera = { y: 0, shake: 0 };
+        this.flashAlpha = 0; 
         this.gameTick = 0;
         this.bgScroll = 0;
-        this.groundSpeed = 10; // 速度稍微加快
+        this.groundSpeed = 12; 
         
-        // 初始化參數
         this.groundLevel = 0; 
         this.horseBaseY = 0; 
 
-        // 實體
         this.horse = {
             x: 0, y: 0, vy: 0, angle: 0,
             state: 'RUN', 
             spinTimer: 0,
             scale: 2.2,
             targetX: 0, targetY: 0,
-            moveTimer: 0 
+            moveTimer: 0,
+            pinataHits: 0,    
+            wobble: 0         
         };
 
         this.springs = []; 
         this.springSpawnTimer = 0;
-        this.bullets = [];
         this.particles = [];
         this.texts = [];
         this.clouds = [];
 
-        // 需求4: 時間倒數變成5秒 (60fps * 5 = 300)
         this.skyDurationMax = 300;
         this.skyTimer = 0;
 
-        // 初始化雲朵
+        this.hitCooldownMax = 60;
+        this.hitCooldown = 0;
+
+        // 需求1: 路途 (Roadmap) 系統
+        this.roadmapFuture = [];
+        this.roadmapPast = [];
+        // 初始化生成 20 個未來倍率
+        for(let i=0; i<20; i++) {
+            this.roadmapFuture.push(this.generateWeightedMultiplier());
+        }
+
         for(let i=0; i<8; i++) {
             this.clouds.push({
                 x: Math.random() * 900,
@@ -248,8 +311,9 @@ class Game {
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
-        this.resize(); // 先執行一次以設定正確的高度與位置
+        this.resize(); 
         this.updateUI();
+        this.updateRoadmapUI(); // 初始渲染路途
         this.loop();
         
         setTimeout(() => {
@@ -257,65 +321,108 @@ class Game {
         }, 100);
     }
 
+    // 需求2: 固定顯示小數點後兩位
     formatCurrency(value) {
-        return '$' + Math.floor(value).toLocaleString();
+        return '$' + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     }
 
-    // --- 關鍵修改：區分 手機模式 vs 電腦模式 ---
+    // 抽取倍率生成邏輯
+    generateWeightedMultiplier() {
+        const types = [
+            { mul: 2, color: '#22c55e', label: 'x2', weight: 400, textColor: '#fff' },
+            { mul: 5, color: '#fbbf24', label: 'x5', weight: 300, textColor: '#000' },
+            { mul: 10, color: '#f97316', label: 'x10', weight: 150, textColor: '#fff' },
+            { mul: 25, color: '#ef4444', label: 'x25', weight: 80, textColor: '#fff' },
+            { mul: 50, color: '#db2777', label: 'x50', weight: 40, textColor: '#fff' },
+            { mul: 100, color: '#9333ea', label: 'x100', weight: 20, textColor: '#fff', glow: true },
+            { mul: 500, color: '#2563eb', label: 'x500', weight: 8, textColor: '#fff', glow: true },
+            { mul: 1000, color: '#ffffff', label: 'x1K', weight: 1.5, textColor: '#000', glow: true },
+            { mul: 10000, color: '#00ffff', label: 'MAX', weight: 0.5, textColor: '#000', glow: true }
+        ];
+        
+        const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
+        let rand = Math.random() * totalWeight;
+        let selected = types[0];
+        
+        for(let t of types) {
+            if(rand < t.weight) {
+                selected = t;
+                break;
+            }
+            rand -= t.weight;
+        }
+        return selected;
+    }
+
+    // 更新路途 UI (HTML 渲染) - 增大尺寸版本
+    updateRoadmapUI() {
+        const pastContainer = document.getElementById('roadmapPast');
+        const futureContainer = document.getElementById('roadmapFuture');
+        
+        // 渲染過去 (取最後 5 個)
+        const showPast = this.roadmapPast.slice(-5);
+        let pastHTML = '';
+        showPast.forEach(item => {
+            pastHTML += `
+                <div class="roadmap-item w-9 h-9 rounded flex items-center justify-center text-xs font-bold border border-white/20" style="background-color: ${item.color}; color: ${item.textColor}">
+                    ${item.mul >= 1000 ? 'K' : item.mul}
+                </div>
+            `;
+        });
+        pastContainer.innerHTML = pastHTML;
+
+        // 渲染未來 (取前 10 個)
+        const showFuture = this.roadmapFuture.slice(0, 10);
+        let futureHTML = '';
+        showFuture.forEach((item, index) => {
+            // 第一個稍微大一點
+            const sizeClass = index === 0 ? 'w-12 h-12 text-xl border-2 border-white animate-pulse' : 'w-9 h-9 text-xs opacity-80';
+            const label = item.mul >= 1000 ? (item.mul===10000 ? 'MAX' : '1K') : item.mul;
+            
+            futureHTML += `
+                <div class="roadmap-item rounded-lg flex items-center justify-center font-black shadow-md ${sizeClass}" style="background-color: ${item.color}; color: ${item.textColor}">
+                    ${label}
+                </div>
+            `;
+        });
+        futureContainer.innerHTML = futureHTML;
+    }
+
     resize() {
         const winW = window.innerWidth;
         const winH = window.innerHeight;
-        
-        // 簡單判斷：若高度 > 寬度，視為手機直屏模式 (Portrait)
         const isMobile = winH > winW;
         
-        this.width = 900; // 邏輯寬度永遠固定
+        this.width = 900; 
 
         if (isMobile) {
-            // === 手機模式 (您想要的功能) ===
-            // 邏輯：強制寬度滿版，高度自動延伸，確保不留黑邊
-            
             const scale = winW / this.width;
-            this.height = Math.ceil(winH / scale); // 反算高度
-            
-            // 設定 Wrapper 尺寸與縮放
+            this.height = Math.ceil(winH / scale);
             this.wrapper.style.width = `${this.width}px`;
             this.wrapper.style.height = `${this.height}px`;
-            this.wrapper.style.transformOrigin = '0 0'; // 左上角對齊
+            this.wrapper.style.transformOrigin = '0 0';
             this.wrapper.style.transform = `scale(${scale})`;
-            
-            // 強制靠左上，覆蓋掉任何置中邏輯
             this.wrapper.style.left = '0px';
             this.wrapper.style.top = '0px';
             this.wrapper.style.borderRadius = '0px';
-
         } else {
-            // === 電腦/預覽模式 (您希望這邊不要滿版) ===
-            // 邏輯：維持 9:16 的手機比例，畫面居中，上下留黑邊
-            
-            this.height = 1600; // 固定為 16:9 ~ 18:9 的比例
-            
-            // 計算縮放 (Contain 模式：確保完整顯示不裁切)
+            this.height = 1600;
             const scale = Math.min(winW / this.width, winH / this.height);
-            
             this.wrapper.style.width = `${this.width}px`;
             this.wrapper.style.height = `${this.height}px`;
-            
-            // 畫面置中
             this.wrapper.style.transformOrigin = 'center center';
             this.wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
             this.wrapper.style.left = '50%';
             this.wrapper.style.top = '50%';
-            
-            // 為了美觀加個圓角，像在看手機
             this.wrapper.style.borderRadius = '20px';
         }
 
-        // 更新 Canvas 解析度
         this.canvas.width = this.width;
         this.canvas.height = this.height;
 
-        // 重新計算遊戲內元素位置 (保持比例)
         this.groundLevel = this.height - 680; 
         this.horseBaseY = this.groundLevel - 70;
         
@@ -341,25 +448,29 @@ class Game {
 
         const skyHUD = document.getElementById('skyHUD');
         const groundControls = document.getElementById('groundControls');
+        const hitUI = document.getElementById('hitCooldownUI');
         
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
             skyHUD.style.opacity = 1;
             groundControls.style.opacity = 0;
+            hitUI.style.opacity = 1;
             const pct = (this.skyTimer / this.skyDurationMax) * 100;
             document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+            
+            const cdPct = (this.hitCooldown / this.hitCooldownMax) * 100;
+            document.getElementById('cdOverlay').style.height = `${cdPct}%`;
+
         } else {
             skyHUD.style.opacity = 0;
             groundControls.style.opacity = 1;
+            hitUI.style.opacity = 0;
         }
     }
 
     handleInput(e) {
         e.preventDefault();
 
-        // 座標轉換
         const rect = this.canvas.getBoundingClientRect();
-        // 由於使用了 CSS transform scale，getBoundingClientRect 回傳的是縮放後的尺寸
-        // 我們需要算出點擊點相對於 Canvas 內部邏輯座標的位置
         const scaleX = this.width / rect.width;
         const scaleY = this.height / rect.height;
         const x = (e.clientX - rect.left) * scaleX;
@@ -368,11 +479,9 @@ class Game {
         if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
         if (this.state === 'GROUND') {
-            // UI 防誤觸
             if (y > this.height - 300) return;
 
             let hitSpring = null;
-            // 擴大點擊判定範圍
             for (let s of this.springs) {
                 if (Math.abs(x - s.x) < 160 && Math.abs(y - (s.y - 40)) < 160) {
                     hitSpring = s;
@@ -382,14 +491,10 @@ class Game {
             if (hitSpring) this.attemptLaunch(hitSpring);
         } 
         else if (this.state === 'SKY') {
-            // 空中發射能量球還是需要扣錢 (投資)
+            if (this.hitCooldown > 0) return; 
+
             if (this.balance >= this.betAmount) {
-                this.balance -= this.betAmount;
-                this.shakeScreen(3);
-                // 需求3: 點擊後能量球會自動追蹤
-                this.createBullet(x, y); 
-                this.spawnText(`-$${this.betAmount}`, x, y, '#ef4444', 30);
-                this.updateUI();
+                this.hitPinata(x, y);
             } else {
                 this.spawnText("NO MONEY!", this.horse.x, this.horse.y, '#ef4444', 50);
             }
@@ -397,32 +502,10 @@ class Game {
     }
 
     spawnSpring() {
-        // 需求5: 增加高倍率權重配置
-        const types = [
-            { mul: 2, color: '#22c55e', label: 'x2', weight: 400, textColor: '#fff' },
-            { mul: 5, color: '#fbbf24', label: 'x5', weight: 300, textColor: '#000' },
-            { mul: 10, color: '#f97316', label: 'x10', weight: 150, textColor: '#fff' },
-            { mul: 25, color: '#ef4444', label: 'x25', weight: 80, textColor: '#fff' },
-            { mul: 50, color: '#db2777', label: 'x50', weight: 40, textColor: '#fff' },
-            { mul: 100, color: '#9333ea', label: 'x100', weight: 20, textColor: '#fff', glow: true },
-            { mul: 500, color: '#2563eb', label: 'x500', weight: 8, textColor: '#fff', glow: true },
-            { mul: 1000, color: '#ffffff', label: 'x1K', weight: 1.5, textColor: '#000', glow: true },
-            { mul: 10000, color: '#00ffff', label: 'MAX', weight: 0.5, textColor: '#000', glow: true }
-        ];
+        // 從未來隊列取出第一個
+        const selected = this.roadmapFuture.shift();
         
-        // 權重計算
-        const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
-        let rand = Math.random() * totalWeight;
-        let selected = types[0];
-        
-        for(let t of types) {
-            if(rand < t.weight) {
-                selected = t;
-                break;
-            }
-            rand -= t.weight;
-        }
-
+        // 生成實體
         this.springs.push({
             x: this.width + 150, 
             y: this.groundLevel + 20, 
@@ -437,39 +520,37 @@ class Game {
             pulse: 0,
             compress: 0 
         });
+
+        // 更新路途邏輯
+        this.roadmapPast.push(selected); // 移入歷史
+        this.roadmapFuture.push(this.generateWeightedMultiplier()); // 補一個新的到未來
+        this.updateRoadmapUI(); // 更新介面
     }
 
     attemptLaunch(spring) {
-        // 需求2: 點擊彈簧一定會動作，且不會扣錢
-        // 移除扣款邏輯
-        // 移除失敗機率判斷
-
         this.updateUI();
 
-        // 觸發反饋
         this.createParticles(spring.x, spring.y + 10, 1, 'rgba(255,255,255,0.8)', 'shockwave');
         this.createParticles(spring.x, spring.y, 20, spring.color, 'spark');
         spring.compress = 20;
         spring.active = false; 
 
-        // 100% 成功發射
         setTimeout(() => {
             this.state = 'LAUNCHING';
             this.currentMultiplier = spring.mul;
-            this.horse.vy = -22; // 彈跳力道
+            this.horse.vy = -22; 
             this.horse.state = 'FLY';
-            this.skyTimer = this.skyDurationMax; // 5秒
+            this.skyTimer = this.skyDurationMax; 
             
             this.horse.targetX = this.width * 0.3;
             this.horse.moveTimer = 0;
+            this.horse.pinataHits = 0; 
 
             this.shakeScreen(20);
             
-            // 顯示文字與倍率
             let label = spring.mul >= 1000 ? 'JACKPOT!' : `x${spring.mul} BOOST!`;
             this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
             
-            // 速度線特效
             for(let i=0; i<30; i++) {
                 this.particles.push({
                     type: 'line',
@@ -486,54 +567,100 @@ class Game {
         }, 50);
     }
 
-    // 需求3: 能量球自動追蹤
-    createBullet(inputX, inputY) {
-        // 從畫面底部發射
-        const startX = inputX;
-        const startY = this.height;
+    hitPinata(inputX, inputY) {
+        this.balance -= this.betAmount;
+        this.hitCooldown = this.hitCooldownMax; 
         
-        this.bullets.push({
-            x: startX,
-            y: startY,
-            vx: 0, // 初始速度先設為0，update時會計算追蹤
-            vy: 0,
-            active: true,
-            speed: 35, // 追蹤速度
-            color: `hsl(${Math.random()*60 + 180}, 100%, 75%)` // 改為藍青色系能量球
-        });
+        this.skyTimer = this.skyDurationMax; 
+        this.horse.pinataHits++;
+        this.horse.state = 'SPIN';
+        this.horse.spinTimer = 15;
+
+        // 隨機特效選擇
+        const effectType = Math.floor(Math.random() * 4); // 0-3
+        const hx = this.horse.x;
+        const hy = this.horse.y;
+
+        switch(effectType) {
+            case 0: // 重擊 (Heavy)
+                this.shakeScreen(30);
+                this.createParticles(hx, hy, 40, '#fff', 'spark');
+                this.createParticles(hx, hy, 5, '#ef4444', 'shockwave');
+                this.spawnText(`SMASH!`, hx, hy - 120, '#fff', 50);
+                break;
+            case 1: // 狂歡 (Party)
+                this.shakeScreen(20);
+                this.createParticles(hx, hy, 50, '#f472b6', 'confetti');
+                this.spawnText(`PARTY!`, hx, hy - 120, '#f472b6', 50);
+                break;
+            case 2: // 閃光 (Flash)
+                this.shakeScreen(25);
+                this.flashAlpha = 0.5; // 瞬間閃光
+                this.createParticles(hx, hy, 20, '#ffff00', 'line');
+                this.spawnText(`ZAP!`, hx, hy - 120, '#ffff00', 50);
+                break;
+            case 3: // 金幣 (Rich - 視覺爽感)
+                this.shakeScreen(20);
+                this.createParticles(hx, hy, 30, '#FACC15', 'coin');
+                this.createParticles(hx, hy, 20, '#fff', 'spark');
+                this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
+                break;
+        }
+        
+        // 顯示扣款 (如果不是 Rich 特效已經顯示過)
+        if (effectType !== 3) {
+            this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
+        }
+
+        // 爆炸與中獎邏輯
+        let baseChance = 0;
+        let riskFactor = 0.015;
+        if (this.currentMultiplier >= 100) riskFactor = 0.025;
+
+        let explodeChance = baseChance + (this.horse.pinataHits * riskFactor);
+        
+        let roll = Math.random();
+
+        if (roll < explodeChance) {
+            setTimeout(() => {
+                this.explodePinata();
+            }, 300); 
+        } else {
+            let winChance = 0.4 * (10 / Math.max(10, this.currentMultiplier));
+            winChance = Math.max(0.1, winChance);
+
+            if (Math.random() < winChance) {
+                this.triggerWin();
+            } else {
+                this.spawnText("TIME RESET!", hx, hy - 80, '#60a5fa', 40);
+            }
+        }
+        
+        this.updateUI();
     }
 
-    checkHit(b) {
-        const dx = b.x - this.horse.x;
-        const dy = b.y - this.horse.y;
-        // 判定範圍
-        if (Math.abs(dx) < 80 && Math.abs(dy) < 80) return true;
-        return false;
+    explodePinata() {
+        this.shakeScreen(50); // 超大震動
+        this.flashAlpha = 1.0; // 全螢幕閃白
+        
+        this.createParticles(this.horse.x, this.horse.y, 100, '#ec4899', 'confetti');
+        this.createParticles(this.horse.x, this.horse.y, 50, '#fff', 'spark');
+        this.createParticles(this.horse.x, this.horse.y, 5, '#fff', 'shockwave');
+        this.createParticles(this.horse.x, this.horse.y, 20, '#ffff00', 'line');
+        
+        this.spawnText("BROKEN!", this.horse.x, this.horse.y - 50, '#ef4444', 90);
+        
+        this.state = 'FALLING';
+        this.horse.vy = 0;
+        this.updateUI();
     }
 
-    addTimeBonus(x, y) {
-        // 需求4: 能量球加的時間不要太多 (原本80 -> 現在15)
-        const bonusTime = 15;
-        this.skyTimer = Math.min(this.skyTimer + bonusTime, this.skyDurationMax);
-        // 視覺上顯示 +TIME
-        this.spawnText("+TIME", x, y - 60, '#60A5FA', 40);
-    }
-
-    triggerWin(x, y) {
-        // 贏分 = 基礎下注 * 當前倍率
+    triggerWin() {
         const win = this.betAmount * this.currentMultiplier;
         this.balance += win;
         
-        this.spawnText(`+${this.formatCurrency(win)}`, x, y - 120, '#FACC15', 60);
-        
-        this.createParticles(x, y, 15, '#FACC15', 'coin');
-        this.createParticles(x, y, 10, '#FFF', 'spark');
-        
-        this.horse.state = 'SPIN';
-        this.horse.spinTimer = 20; 
-        
-        this.shakeScreen(5); 
-        this.updateUI();
+        this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x, this.horse.y - 100, '#FACC15', 60);
+        this.createParticles(this.horse.x, this.horse.y, 20, '#FACC15', 'coin');
     }
 
     shakeScreen(intensity) {
@@ -551,15 +678,16 @@ class Game {
         for(let i=0; i<count; i++) {
             let p = {
                 x, y,
-                vx: (Math.random() - 0.5) * 15,
-                vy: (Math.random() - 0.5) * 15,
+                vx: (Math.random() - 0.5) * 20,
+                vy: (Math.random() - 0.5) * 20,
                 life: 30 + Math.random() * 20,
                 maxLife: 30 + Math.random() * 20,
                 color,
                 type,
-                size: Math.random() * 6 + 4,
+                size: Math.random() * 8 + 4,
                 gravity: 0.6,
-                growth: 0
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 10
             };
             
             if (type === 'coin') {
@@ -573,6 +701,19 @@ class Game {
                 p.life = 20; p.maxLife = 20;
                 p.size = 10;
                 p.growth = 20; 
+            } else if (type === 'confetti') {
+                p.gravity = 0.2;
+                p.vx *= 1.5;
+                p.vy *= 1.5;
+                p.life = 60;
+                const colors = ['#ec4899', '#3b82f6', '#eab308', '#22c55e', '#a855f7'];
+                p.color = colors[Math.floor(Math.random() * colors.length)];
+                p.w = 12; p.h = 6;
+            } else if (type === 'line') {
+                p.vx = (Math.random() - 0.5) * 40;
+                p.vy = (Math.random() - 0.5) * 40;
+                p.life = 15;
+                p.w = 30; p.h = 4;
             }
             this.particles.push(p);
         }
@@ -590,7 +731,11 @@ class Game {
             this.bgScroll += this.groundSpeed;
         }
 
-        // 雲層邏輯
+        if (this.hitCooldown > 0) {
+            this.hitCooldown--;
+            if (this.hitCooldown % 5 === 0) this.updateUI(); 
+        }
+
         this.clouds.forEach(c => {
             c.x -= c.speed;
             if (c.x < -200) {
@@ -608,10 +753,10 @@ class Game {
             this.horse.x = this.width * 0.3; 
             
             this.springSpawnTimer++;
-            if (this.springSpawnTimer > 60) { // 稍微加快生成
+            if (this.springSpawnTimer > 22) { 
                 this.spawnSpring();
                 this.springSpawnTimer = 0;
-                this.springSpawnTimer -= Math.random() * 20; 
+                this.springSpawnTimer -= Math.random() * 10; 
             }
 
             for (let i = this.springs.length - 1; i >= 0; i--) {
@@ -638,14 +783,10 @@ class Game {
             }
         }
         else if (this.state === 'SKY') {
-            // 隨機飛行邏輯
             this.horse.moveTimer--;
             if (this.horse.moveTimer <= 0) {
-                // X軸目標
-                this.horse.targetX = this.width * 0.1 + Math.random() * (this.width * 0.8);
-                // Y軸目標：限制在上方
-                this.horse.targetY = this.height * 0.1 + Math.random() * (this.height * 0.5);
-                
+                this.horse.targetX = this.width * 0.2 + Math.random() * (this.width * 0.6);
+                this.horse.targetY = this.height * 0.15 + Math.random() * (this.height * 0.4);
                 this.horse.moveTimer = 40 + Math.random() * 40; 
             }
             
@@ -655,26 +796,23 @@ class Game {
             this.horse.x += dx * 0.05;
             this.horse.y += dy * 0.05;
 
-            // 旋轉
             if (this.horse.state === 'SPIN') {
-                this.horse.angle += 0.3; 
+                this.horse.angle += 0.4; 
                 this.horse.spinTimer--;
                 if (this.horse.spinTimer <= 0) {
                     this.horse.state = 'FLY';
+                    this.horse.angle = 0;
                 }
             } else {
-                let bankAngle = dx * 0.004; 
-                bankAngle = Math.max(-0.4, Math.min(0.4, bankAngle));
-                this.horse.angle += (bankAngle - this.horse.angle) * 0.1;
+                this.horse.wobble += 0.05;
+                this.horse.angle = Math.sin(this.horse.wobble) * 0.1;
             }
 
             this.skyTimer--;
             this.updateUI();
 
             if (this.skyTimer <= 0) {
-                this.state = 'FALLING';
-                this.horse.vy = 0;
-                this.updateUI();
+                this.explodePinata();
             }
         }
         else if (this.state === 'FALLING') {
@@ -684,12 +822,11 @@ class Game {
             let targetX = this.width * 0.3;
             this.horse.x += (targetX - this.horse.x) * 0.06;
             
-            if (Math.abs(this.horse.angle) > 0.01) this.horse.angle *= 0.8;
-            else this.horse.angle = 0;
+            this.horse.angle += 0.2; 
             
-            if (Math.abs(this.horse.y - targetY) < 10) {
+            if (Math.abs(this.horse.y - targetY) < 20) {
                 this.state = 'GROUND';
-                this.currentMultiplier = 1; // 落地重置倍率
+                this.currentMultiplier = 1; 
                 this.horse.y = this.horseBaseY;
                 this.horse.state = 'RUN';
                 this.horse.angle = 0;
@@ -703,52 +840,8 @@ class Game {
             }
         }
 
-        this.updateBullets();
         this.updateParticles();
         this.updateTexts();
-    }
-
-    updateBullets() {
-        for (let i = this.bullets.length - 1; i >= 0; i--) {
-            let b = this.bullets[i];
-            
-            if (this.state === 'SKY') {
-                // 需求3: 自動追蹤邏輯
-                // 每一幀計算指向馬匹的角度
-                let dx = this.horse.x - b.x;
-                let dy = this.horse.y - b.y;
-                let angle = Math.atan2(dy, dx);
-                
-                b.vx = Math.cos(angle) * b.speed;
-                b.vy = Math.sin(angle) * b.speed;
-                
-                // 移動
-                b.x += b.vx;
-                b.y += b.vy;
-
-                // 命中判定
-                if (this.checkHit(b)) {
-                    this.addTimeBonus(b.x, b.y);
-                    // 必定觸發獎勵特效，並根據機率觸發金幣增加
-                    // 因為射擊要錢，這裡設定一定機率回本或賺錢
-                    if (Math.random() < 0.6) { // 60% 機率中獎
-                        this.triggerWin(b.x, b.y);
-                    } else {
-                        // 沒中獎但有特效 (增加時間)
-                        this.createParticles(b.x, b.y, 8, '#0ff', 'spark');
-                    }
-                    this.bullets.splice(i, 1);
-                    continue;
-                }
-            } else {
-                // 如果不是 SKY 狀態 (如 FALLING)，子彈就直接飛出去
-                b.y -= 20; 
-            }
-
-            if (b.x < -100 || b.x > this.width + 100 || b.y < -100 || b.y > this.height + 100) {
-                this.bullets.splice(i, 1);
-            }
-        }
     }
 
     updateParticles() {
@@ -766,6 +859,13 @@ class Game {
             } else if (p.type === 'line') {
                 p.x += p.vx;
                 p.y += p.vy;
+                p.vx *= 0.9; p.vy *= 0.9;
+            } else if (p.type === 'confetti') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rotation += p.rotSpeed;
+                p.vx *= 0.95; 
             } else {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -782,7 +882,7 @@ class Game {
             t.y += t.vy;
             t.life--;
             t.vy *= 0.92;
-            if (this.state === 'GROUND' || this.state === 'SKY') {
+            if (this.state === 'GROUND') { 
                 t.x -= 4; 
             }
             if (t.life <= 0) this.texts.splice(i, 1);
@@ -800,8 +900,20 @@ class Game {
         
         if (this.state === 'GROUND') this.drawGroundElements();
         
-        this.drawHorse();
+        if (this.state === 'SKY') {
+            this.drawPinata();
+        } else {
+            this.drawHorse();
+        }
+        
         this.drawEffects();
+
+        if (this.flashAlpha > 0) {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${this.flashAlpha})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            this.flashAlpha *= 0.85; 
+            if (this.flashAlpha < 0.01) this.flashAlpha = 0;
+        }
 
         this.ctx.restore();
     }
@@ -813,8 +925,8 @@ class Game {
             grd.addColorStop(0, "#1e40af");
             grd.addColorStop(1, "#60a5fa");
         } else if (this.state === 'SKY' || this.state === 'LAUNCHING') {
-            grd.addColorStop(0, "#020617");
-            grd.addColorStop(1, "#1e3a8a");
+            grd.addColorStop(0, "#4a044e");
+            grd.addColorStop(1, "#c026d3");
         } else {
             grd.addColorStop(0, "#1d4ed8");
             grd.addColorStop(1, "#93c5fd");
@@ -822,14 +934,15 @@ class Game {
         this.ctx.fillStyle = grd;
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        // 畫一點星星
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
              this.ctx.fillStyle = 'white';
-             for(let i=0; i<20; i++) {
+             for(let i=0; i<30; i++) {
                  let sx = (this.gameTick * 2 + i * 137) % this.width;
                  let sy = (i * 93) % this.height;
-                 this.ctx.fillRect(sx, sy, 2, 2);
+                 this.ctx.globalAlpha = 0.5 + Math.sin(this.gameTick * 0.1 + i) * 0.5;
+                 this.ctx.fillRect(sx, sy, 3, 3);
              }
+             this.ctx.globalAlpha = 1.0;
         }
 
         this.clouds.forEach(c => {
@@ -842,7 +955,7 @@ class Game {
         });
 
         if (this.state === 'LAUNCHING') {
-            this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             this.ctx.lineWidth = 4;
             this.ctx.beginPath();
             for(let i=0; i<this.height; i+=150) {
@@ -926,7 +1039,6 @@ class Game {
             this.ctx.shadowBlur = 0;
 
             this.ctx.fillStyle = s.textColor;
-            // 根據文字長度縮小字體
             let fontSize = 48;
             if (s.label.length >= 4) fontSize = 36;
             this.ctx.font = `900 ${fontSize}px "Black Ops One"`; 
@@ -937,6 +1049,68 @@ class Game {
             this.ctx.restore();
             this.ctx.globalAlpha = 1.0;
         });
+    }
+
+    drawPinata() {
+        this.ctx.save();
+        this.ctx.translate(this.horse.x, this.horse.y);
+        this.ctx.scale(this.horse.scale * 1.8, this.horse.scale * 1.8); 
+        this.ctx.rotate(this.horse.angle);
+
+        this.ctx.strokeStyle = '#fff';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -60);
+        this.ctx.lineTo(0, -1000); 
+        this.ctx.stroke();
+
+        const colors = ['#ec4899', '#a855f7', '#3b82f6', '#22c55e', '#eab308'];
+        
+        for(let i=0; i<5; i++) {
+            this.ctx.fillStyle = colors[i % colors.length];
+            let offset = Math.sin(this.gameTick * 0.2 + i) * 2;
+            this.ctx.beginPath();
+            this.ctx.roundRect(-35 + offset, -30 + i*12, 70, 15, 2);
+            this.ctx.fill();
+        }
+
+        this.ctx.save();
+        this.ctx.translate(35, -20);
+        this.ctx.rotate(-0.2);
+        this.ctx.fillStyle = '#ec4899';
+        this.ctx.beginPath();
+        this.ctx.roundRect(-10, -30, 40, 30, 5);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = 'white';
+        this.ctx.beginPath();
+        this.ctx.arc(15, -15, 6, 0, Math.PI*2);
+        this.ctx.fill();
+        this.ctx.fillStyle = 'black';
+        this.ctx.beginPath();
+        this.ctx.arc(17, -15, 2, 0, Math.PI*2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#a855f7';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -30);
+        this.ctx.lineTo(10, -50);
+        this.ctx.lineTo(20, -30);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        this.ctx.fillStyle = '#eab308';
+        this.ctx.fillRect(-25, 30, 10, 30);
+        this.ctx.fillRect(15, 30, 10, 30);
+        
+        this.ctx.fillStyle = '#3b82f6';
+        this.ctx.beginPath();
+        this.ctx.moveTo(-35, -10);
+        this.ctx.lineTo(-55, 10);
+        this.ctx.lineTo(-45, 20);
+        this.ctx.fill();
+
+        this.ctx.restore();
     }
 
     drawHorse() {
@@ -974,20 +1148,6 @@ class Game {
         this.ctx.rotate(-legSwing * 0.5 + 0.5);
         this.ctx.fillRect(-4, 0, 8, 20);
         this.ctx.restore();
-
-        if (this.horse.state !== 'RUN') {
-            this.ctx.save();
-            this.ctx.translate(0, bob - 10);
-            let flap = Math.sin(this.gameTick * 0.8) * 0.5;
-            this.ctx.scale(1, 1 - flap * 0.5);
-            this.ctx.fillStyle = '#bfdbfe';
-            this.ctx.beginPath();
-            this.ctx.moveTo(5, 0);
-            this.ctx.lineTo(-30, -50); 
-            this.ctx.lineTo(20, -20);
-            this.ctx.fill();
-            this.ctx.restore();
-        }
 
         this.ctx.fillStyle = '#854d0e'; 
         this.ctx.beginPath();
@@ -1056,34 +1216,6 @@ class Game {
     }
 
     drawEffects() {
-        this.bullets.forEach(b => {
-            this.ctx.save();
-            this.ctx.shadowBlur = 20;
-            this.ctx.shadowColor = b.color;
-            this.ctx.fillStyle = b.color;
-            this.ctx.beginPath();
-            this.ctx.arc(b.x, b.y, 15, 0, Math.PI*2);
-            this.ctx.fill();
-            
-            // 能量球核心
-            this.ctx.fillStyle = '#fff';
-            this.ctx.beginPath();
-            this.ctx.arc(b.x, b.y, 8, 0, Math.PI*2);
-            this.ctx.fill();
-            
-            this.ctx.shadowBlur = 0;
-            
-            // 拖尾
-            this.ctx.lineWidth = 8;
-            this.ctx.strokeStyle = b.color;
-            this.ctx.globalAlpha = 0.5;
-            this.ctx.beginPath();
-            this.ctx.moveTo(b.x, b.y);
-            this.ctx.lineTo(b.x - b.vx*2, b.y - b.vy*2);
-            this.ctx.stroke();
-            this.ctx.restore();
-        });
-
         this.particles.forEach(p => {
             this.ctx.save();
             this.ctx.globalAlpha = p.life / 50;
@@ -1110,6 +1242,10 @@ class Game {
                 this.ctx.beginPath();
                 this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
                 this.ctx.stroke();
+            } else if (p.type === 'confetti') {
+                this.ctx.fillStyle = p.color;
+                this.ctx.rotate(p.rotation * Math.PI / 180);
+                this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
             } else {
                 this.ctx.fillStyle = p.color;
                 this.ctx.beginPath();
