@@ -7,7 +7,7 @@
     <!-- iOS PWA 相關設置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>飛天神駒 PRO - PINATA EDITION</title>
+    <title>飛天神駒 PRO - FURY EDITION</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -447,6 +447,10 @@ class Game {
         this.fireTimer = 0; // 射速控制
         this.pendingResult = null; // 預存的結果
 
+        // 新增：連勝狂暴系統
+        this.winStreak = 0;
+        this.isFury = false;
+
         this.camera = { y: 0, shake: 0 };
         this.flashAlpha = 0; 
         this.gameTick = 0;
@@ -528,7 +532,12 @@ class Game {
         this.resize(); 
         this.updateUI();
         this.updateRoadmapUI(); 
-        this.loop();
+        
+        // 修正：鎖定 FPS 為 60
+        this.fps = 60;
+        this.frameInterval = 1000 / this.fps;
+        this.lastFrameTime = 0;
+        this.loop(0); // 傳入初始時間
         
         setTimeout(() => {
             this.wrapper.style.opacity = 1;
@@ -738,25 +747,9 @@ class Game {
         const centerAlertText = document.getElementById('centerAlertText');
         const centerAlertIcon = document.getElementById('centerAlertIcon');
         
+        // 修正：移除地面狀態下的中央閃爍提示
         if (this.state === 'GROUND') {
-            const nextMul = this.springs.length > 0 ? this.springs[0].mul : 1;
-            if (nextMul >= 100) {
-                centerHUD.style.opacity = 1;
-                
-                if (nextMul >= 1000) {
-                    centerAlertBg.className = "absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_50px_rgba(139,92,246,0.9)] bg-indigo-900/90 border-4 border-indigo-400 animate-flash";
-                    centerAlertText.innerText = "COSMIC JACKPOT!";
-                    centerAlertText.className = "text-5xl font-black ui-font text-indigo-100 drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap animate-pulse";
-                    centerAlertIcon.innerText = "🌌";
-                } else {
-                    centerAlertBg.className = "absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_30px_rgba(236,72,153,0.6)] bg-pink-600/80 border-4 border-pink-400 animate-flash";
-                    centerAlertText.innerText = "JACKPOT CHANCE!";
-                    centerAlertText.className = "text-4xl font-black ui-font text-pink-100 drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap animate-bounce";
-                    centerAlertIcon.innerText = "💎";
-                }
-            } else {
-                centerHUD.style.opacity = 0;
-            }
+            centerHUD.style.opacity = 0;
         }
 
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
@@ -829,9 +822,7 @@ class Game {
             groundControls.style.opacity = 1;
             hitUI.style.opacity = 0;
             betPanel.classList.remove('processing');
-            if (this.state === 'GROUND' && this.springs.length > 0 && this.springs[0].mul < 100) {
-                 centerHUD.style.opacity = 0;
-            }
+            // Ground check moved to top of function
         }
     }
 
@@ -992,10 +983,19 @@ class Game {
 
             if (this.pendingResult === 'WIN') {
                 this.triggerWin();
-            } else if (this.pendingResult === 'EXPLODE') {
-                setTimeout(() => { this.explodePinata(); }, 200);
             } else {
-                this.spawnText("TIME RESET!", this.horse.x, this.horse.y - 80, '#60a5fa', 40);
+                // 斷連勝邏輯
+                if (this.pendingResult === 'EXPLODE') {
+                    setTimeout(() => { this.explodePinata(); }, 200);
+                } else {
+                    this.spawnText("MISS!", this.horse.x, this.horse.y - 80, '#9ca3af', 40);
+                }
+                
+                // 如果之前有連勝，顯示連勝中斷
+                if (this.winStreak >= 3) {
+                     this.spawnText("STREAK LOST", this.horse.x, this.horse.y + 50, '#ef4444', 40);
+                }
+                this.winStreak = 0;
             }
             this.updateUI();
         }
@@ -1015,6 +1015,7 @@ class Game {
         
         this.state = 'FALLING';
         this.horse.vy = 0;
+        this.winStreak = 0; // 爆炸也會重置連勝
         this.updateUI();
     }
 
@@ -1024,7 +1025,15 @@ class Game {
         this.saveBalance(); 
         this.audio.playWin(); 
         
+        this.winStreak++; // 增加連勝
+        
         this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x, this.horse.y - 100, '#FACC15', 60);
+        
+        if (this.winStreak >= 2) {
+             let streakColor = this.winStreak >= 3 ? '#ef4444' : '#fbbf24';
+             this.spawnText(`STREAK x${this.winStreak}`, this.horse.x, this.horse.y - 160, streakColor, 40, 'comic');
+        }
+
         this.createParticles(this.horse.x, this.horse.y, 40, '#FACC15', 'coin');
         this.createParticles(this.horse.x, this.horse.y, 20, '#ffff00', 'line'); 
     }
@@ -1106,7 +1115,7 @@ class Game {
         // Q彈物理
         const targetScale = 1.0;
         const stiffness = 0.2; 
-        const damping = 0.8;   
+        const damping = 0.8;    
 
         const forceX = (targetScale - this.horse.animScaleX) * stiffness;
         this.horse.scaleVx += forceX;
@@ -1151,9 +1160,9 @@ class Game {
             if (c.x < -200) {
                 c.x = this.width + 200;
                 if (this.state === 'SKY') {
-                       c.y = Math.random() * this.height; 
+                        c.y = Math.random() * this.height; 
                 } else {
-                       c.y = Math.random() * (this.height * 0.4); 
+                        c.y = Math.random() * (this.height * 0.4); 
                 }
             }
         });
@@ -1207,6 +1216,9 @@ class Game {
                     this.springs.splice(i, 1);
                 }
             }
+            
+            // 加入動態更新 UI，確保 TARGET 倍數即時同步
+            this.updateUI();
         }
         else if (this.state === 'LAUNCHING') {
             let targetY = this.height * 0.3;
@@ -1448,6 +1460,20 @@ class Game {
             this.flashAlpha *= 0.85; 
             if (this.flashAlpha < 0.01) this.flashAlpha = 0;
         }
+        
+        // 繪製 Streak UI
+        if (this.state === 'SKY' && this.winStreak >= 2) {
+             this.ctx.save();
+             this.ctx.textAlign = 'center';
+             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+             this.ctx.font = '900 120px "Black Ops One"';
+             this.ctx.translate(this.width/2, this.height/2 + 200);
+             this.ctx.rotate(-0.1);
+             this.ctx.fillText(`${this.winStreak}`, 0, 0);
+             this.ctx.font = '900 40px "Black Ops One"';
+             this.ctx.fillText("STREAK", 0, 50);
+             this.ctx.restore();
+        }
 
         this.ctx.restore();
     }
@@ -1476,6 +1502,14 @@ class Game {
                     grd.addColorStop(0, "#4a044e");
                     grd.addColorStop(1, "#c026d3");
                 }
+                
+                // 狂暴模式：背景脈衝
+                if (this.winStreak >= 3) {
+                     let pulse = Math.sin(this.gameTick * 0.2) * 0.2;
+                     // 疊加紅色濾鏡
+                     this.ctx.save();
+                     this.ctx.globalCompositeOperation = 'overlay';
+                }
             }
         } else {
             grd.addColorStop(0, "#1d4ed8");
@@ -1483,6 +1517,12 @@ class Game {
         }
         this.ctx.fillStyle = grd;
         this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        // 狂暴模式的紅色濾鏡
+        if (this.state === 'SKY' && this.winStreak >= 3) {
+             this.ctx.fillStyle = `rgba(255, 0, 0, ${0.1 + Math.sin(this.gameTick*0.2)*0.05})`;
+             this.ctx.fillRect(0, 0, this.width, this.height);
+        }
 
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
              this.ctx.fillStyle = 'white';
@@ -1610,6 +1650,12 @@ class Game {
         this.ctx.scale(scaleX, scaleY); 
         this.ctx.rotate(this.horse.angle);
 
+        // 狂暴光環
+        if (this.winStreak >= 3) {
+             this.ctx.shadowBlur = 20 + Math.sin(this.gameTick*0.5)*10;
+             this.ctx.shadowColor = '#ef4444';
+        }
+
         this.ctx.strokeStyle = '#fff';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
@@ -1633,6 +1679,12 @@ class Game {
             isMetal = true;
             // 3. 視覺調整：機械版改為 Cyberpunk 風格
             colors = ['#1e293b', '#334155', '#475569', '#06b6d4', '#0891b2'];
+        }
+        
+        // 狂暴模式下身體顏色變化
+        if (this.winStreak >= 3) {
+             colors[0] = '#ef4444'; // 頭部變紅
+             colors[1] = '#b91c1c'; // 耳朵變深紅
         }
         
         // 繪製身體
@@ -1682,7 +1734,17 @@ class Game {
         this.ctx.fill();
         
         // 眼睛
-        if (isMetal) {
+        if (this.winStreak >= 3) {
+            // 狂暴眼
+            this.ctx.shadowBlur = 20;
+            this.ctx.shadowColor = '#ffff00';
+            this.ctx.fillStyle = '#fff';
+            this.ctx.beginPath();
+            this.ctx.moveTo(10, -18); this.ctx.lineTo(22, -12);
+            this.ctx.lineTo(10, -6);
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+        } else if (isMetal) {
             // 機械眼
             this.ctx.fillStyle = '#06b6d4'; // 青光眼
             this.ctx.shadowBlur = 15;
@@ -1910,10 +1972,22 @@ class Game {
         });
     }
 
-    loop() {
-        this.update();
-        this.draw();
-        requestAnimationFrame(() => this.loop());
+    loop(timestamp) {
+        // 使用 timestamp 與 requestAnimationFrame 實現穩定的 60FPS
+        requestAnimationFrame((t) => this.loop(t));
+
+        if (!this.lastFrameTime) {
+            this.lastFrameTime = timestamp;
+            return;
+        }
+
+        const elapsed = timestamp - this.lastFrameTime;
+
+        if (elapsed > this.frameInterval) {
+            this.lastFrameTime = timestamp - (elapsed % this.frameInterval);
+            this.update();
+            this.draw();
+        }
     }
 }
 
