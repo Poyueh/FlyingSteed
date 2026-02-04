@@ -7,7 +7,7 @@
     <!-- iOS PWA 相關設置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>飛天神駒 PRO - PINATA EDITION</title>
+    <title>飛天神駒 - PINATA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -466,14 +466,21 @@ class Game {
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
         
-        // 3. 自動播放：全域點擊監聽 (Auto-Play Trigger)
-        const unlockAudio = () => {
+        // 需求1: 嘗試自動播放 (Try auto-play on init)
+        try {
             this.audio.init();
-            window.removeEventListener('click', unlockAudio);
-            window.removeEventListener('touchstart', unlockAudio);
+        } catch(e) { console.log(e); }
+        
+        // 備用：若被瀏覽器擋住，點擊後恢復 (Resume on Interaction)
+        const resumeAudio = () => {
+            if (this.audio.ctx && this.audio.ctx.state === 'suspended') {
+                this.audio.ctx.resume();
+            }
+            window.removeEventListener('click', resumeAudio);
+            window.removeEventListener('touchstart', resumeAudio);
         };
-        window.addEventListener('click', unlockAudio);
-        window.addEventListener('touchstart', unlockAudio);
+        window.addEventListener('click', resumeAudio);
+        window.addEventListener('touchstart', resumeAudio);
 
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
@@ -930,22 +937,28 @@ class Game {
 
         if (this.horse.faceTimer > 0) this.horse.faceTimer--;
 
-        // 1. PINATA 欠打表演更新
+        // 需求2: 欠打表演誇張化
         if (this.state === 'SKY' && this.horse.faceTimer <= 0) {
-            // 呼吸感
-            this.horse.animScaleX += Math.sin(this.gameTick * 0.1) * 0.002;
-            this.horse.animScaleY += Math.sin(this.gameTick * 0.1) * 0.002;
+            // 呼吸感增強 0.002 -> 0.005
+            const breath = Math.sin(this.gameTick * 0.2); // 頻率也加快
+            this.horse.animScaleX = 1.0 + breath * 0.05; // 5% 變形
+            this.horse.animScaleY = 1.0 - breath * 0.05;
             
             // 隨機觸發動作 (每 2 秒約一次)
-            if (Math.random() < 0.01) {
+            if (Math.random() < 0.02) {
                 // 吐舌頭
                 this.horse.tongueOut = 1.0; 
-                setTimeout(() => { this.horse.tongueOut = 0; }, 800);
+                setTimeout(() => { this.horse.tongueOut = 0; }, 1200);
             }
-            if (Math.random() < 0.01) {
+            if (Math.random() < 0.02) {
                 // 扭屁股
                 this.horse.buttWiggle = 1.0;
                 setTimeout(() => { this.horse.buttWiggle = 0; }, 1000);
+            }
+            
+            // 隨機旋轉 (搖頭晃腦)
+            if (this.horse.buttWiggle > 0 || this.horse.tongueOut > 0) {
+                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.2;
             }
         } else {
             this.horse.tongueOut = 0;
