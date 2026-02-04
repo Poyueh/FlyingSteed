@@ -7,7 +7,7 @@
     <!-- iOS PWA 相關設置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>飛天神駒 - PINATA</title>
+    <title>飛天神駒 PRO - PINATA EDITION</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -123,6 +123,12 @@
         .roadmap-item {
             transition: all 0.3s ease-out;
         }
+        
+        /* 處理中狀態 */
+        .processing {
+            filter: brightness(0.5);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -193,8 +199,10 @@
                 </div>
                 <!-- 圖示 -->
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="text-4xl">🔨</span>
+                    <span class="text-4xl" id="hammerIcon">🔨</span>
                 </div>
+                <!-- 讀取中轉圈 (模擬網路) -->
+                <div id="loadingSpinner" class="absolute inset-0 rounded-full border-4 border-t-white border-transparent animate-spin opacity-0"></div>
             </div>
             <span class="mt-2 text-white font-bold text-sm bg-black/50 px-2 rounded">SMASH!</span>
         </div>
@@ -209,7 +217,7 @@
             </div>
 
             <!-- 下注操作區 -->
-            <div class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6">
+            <div id="betPanel" class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6 transition-opacity duration-200">
                 <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
                     <span class="text-gray-400 text-sm font-bold uppercase">HIT COST</span>
                     <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10.00</span>
@@ -322,10 +330,8 @@ class AudioController {
         this.playTone(100, 'sawtooth', 0.5, 0.5, 10); 
     }
 
-    // 2. 動態 BGM 邏輯
     setSkyMode(isSky) {
         this.isSkyMode = isSky;
-        // 地面 110 BPM, 天空 160 BPM
         this.targetBPM = isSky ? 160 : 110; 
     }
 
@@ -341,10 +347,8 @@ class AudioController {
             while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
                 this.scheduleNote(this.noteIdx, this.nextNoteTime);
                 this.noteIdx++;
-                // BPM 平滑過渡
                 this.currentBPM += (this.targetBPM - this.currentBPM) * 0.1;
                 const secondsPerBeat = 60.0 / this.currentBPM;
-                // 我們使用 16 分音符為單位 (0.25 beat)
                 this.nextNoteTime += secondsPerBeat * 0.5; 
             }
             requestAnimationFrame(scheduler);
@@ -353,20 +357,15 @@ class AudioController {
     }
 
     scheduleNote(idx, time) {
-        // Bassline (始終播放)
         const bassFreq = this.bassLine[idx % this.bassLine.length];
-        // Sky 模式下 Bass 改為 Square 且更大聲，地面為 Triangle
         const bassType = this.isSkyMode ? 'square' : 'triangle';
         const bassVol = this.isSkyMode ? 0.08 : 0.05;
         this.playToneScheduled(bassFreq, bassType, 0.2, bassVol, time);
 
-        // Melody (僅 Sky 模式播放)
         if (this.isSkyMode) {
             const melFreq = this.melodyLine[idx % this.melodyLine.length];
             if (melFreq > 0) {
-                // 琶音風格
                 this.playToneScheduled(melFreq, 'sawtooth', 0.1, 0.05, time);
-                // 偶爾加個高音
                 if (Math.random() < 0.2) {
                     this.playToneScheduled(melFreq * 2, 'sine', 0.1, 0.03, time);
                 }
@@ -400,12 +399,20 @@ class Game {
         
         this.state = 'GROUND'; 
         
-        const savedBalance = localStorage.getItem('cp_balance');
+        // 需求1: 破產救濟邏輯
+        let savedBalance = localStorage.getItem('cp_balance');
         this.balance = savedBalance ? parseFloat(savedBalance) : 5000;
+        if (this.balance <= 0) {
+            this.balance = 5000;
+            this.saveBalance();
+        }
         
         this.betAmount = 10;
         this.currentMultiplier = 1;
         
+        // 需求4: 網路延遲模擬變數
+        this.isProcessingHit = false; 
+
         this.camera = { y: 0, shake: 0 };
         this.flashAlpha = 0; 
         this.gameTick = 0;
@@ -424,15 +431,13 @@ class Game {
             moveTimer: 0,
             pinataHits: 0,    
             wobble: 0,
-            // Pinata 表演參數
             animScaleX: 1, 
             animScaleY: 1,
             scaleVx: 0, 
             scaleVy: 0,
             faceTimer: 0,
-            // 1. 欠打表演參數
-            tongueOut: 0, // 吐舌頭程度 0-1
-            buttWiggle: 0 // 扭屁股角度
+            tongueOut: 0, 
+            buttWiggle: 0 
         };
 
         this.springs = []; 
@@ -466,12 +471,10 @@ class Game {
         window.addEventListener('resize', () => this.resize());
         window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
         
-        // 需求1: 嘗試自動播放 (Try auto-play on init)
         try {
             this.audio.init();
         } catch(e) { console.log(e); }
         
-        // 備用：若被瀏覽器擋住，點擊後恢復 (Resume on Interaction)
         const resumeAudio = () => {
             if (this.audio.ctx && this.audio.ctx.state === 'suspended') {
                 this.audio.ctx.resume();
@@ -604,6 +607,7 @@ class Game {
     }
 
     setBet(amount) {
+        if (this.isProcessingHit) return; // 處理中鎖定
         this.betAmount = amount;
         const display = document.getElementById('currentBetDisplay');
         display.classList.remove('shake');
@@ -620,6 +624,9 @@ class Game {
         const skyHUD = document.getElementById('skyHUD');
         const groundControls = document.getElementById('groundControls');
         const hitUI = document.getElementById('hitCooldownUI');
+        const betPanel = document.getElementById('betPanel');
+        const hammerIcon = document.getElementById('hammerIcon');
+        const spinner = document.getElementById('loadingSpinner');
         
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
             skyHUD.style.opacity = 1;
@@ -628,13 +635,26 @@ class Game {
             const pct = (this.skyTimer / this.skyDurationMax) * 100;
             document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
             
-            const cdPct = (this.hitCooldown / this.hitCooldownMax) * 100;
+            // CD 視覺更新
+            let cdPct = (this.hitCooldown / this.hitCooldownMax) * 100;
             document.getElementById('cdOverlay').style.height = `${cdPct}%`;
+
+            // 處理中視覺狀態
+            if (this.isProcessingHit) {
+                betPanel.classList.add('processing');
+                hammerIcon.style.opacity = 0;
+                spinner.style.opacity = 1;
+            } else {
+                betPanel.classList.remove('processing');
+                hammerIcon.style.opacity = 1;
+                spinner.style.opacity = 0;
+            }
 
         } else {
             skyHUD.style.opacity = 0;
             groundControls.style.opacity = 1;
             hitUI.style.opacity = 0;
+            betPanel.classList.remove('processing');
         }
     }
 
@@ -663,10 +683,22 @@ class Game {
             if (hitSpring) this.attemptLaunch(hitSpring);
         } 
         else if (this.state === 'SKY') {
-            if (this.hitCooldown > 0) return; 
+            // 需求4: 模擬網路延遲與冷卻檢查
+            if (this.hitCooldown > 0 || this.isProcessingHit) return; 
 
             if (this.balance >= this.betAmount) {
-                this.hitPinata(x, y);
+                // 開始模擬請求
+                this.isProcessingHit = true;
+                this.updateUI();
+                
+                // 模擬 200~500ms 延遲
+                const latency = 200 + Math.random() * 300;
+                setTimeout(() => {
+                    this.executeHit(x, y);
+                    this.isProcessingHit = false;
+                    this.updateUI();
+                }, latency);
+
             } else {
                 this.spawnText("NO MONEY!", this.horse.x, this.horse.y, '#ef4444', 50);
             }
@@ -741,7 +773,8 @@ class Game {
         }, 50);
     }
 
-    hitPinata(inputX, inputY) {
+    // 真正執行打擊 (在模擬延遲後呼叫)
+    executeHit(inputX, inputY) {
         this.balance -= this.betAmount;
         this.saveBalance(); 
         this.hitCooldown = this.hitCooldownMax; 
@@ -755,7 +788,6 @@ class Game {
         this.horse.scaleVy = 0.2; 
         
         this.horse.faceTimer = 25; 
-        // 擊中時收回舌頭
         this.horse.tongueOut = 0; 
 
         this.audio.playHit();
@@ -766,33 +798,45 @@ class Game {
         const comicWords = ["POW!", "BAM!", "WHACK!", "OOF!", "SMASH!", "BOOM!"];
         const randWord = comicWords[Math.floor(Math.random() * comicWords.length)];
         
-        const effectType = Math.floor(Math.random() * 4); 
+        // 需求3: 更多樣的打擊特效
+        const effectType = Math.floor(Math.random() * 6); // 增加到 6 種
         const hx = this.horse.x;
         const hy = this.horse.y;
 
         switch(effectType) {
-            case 0: 
+            case 0: // 基本重擊
                 this.shakeScreen(40);
                 this.createParticles(hx, hy, 40, '#fff', 'spark');
                 this.createParticles(hx, hy, 5, '#ef4444', 'shockwave');
                 this.spawnText(randWord, hx, hy - 120, '#fff', 70, 'comic');
                 break;
-            case 1: 
+            case 1: // 派對紙屑
                 this.shakeScreen(30);
                 this.createParticles(hx, hy, 60, '#f472b6', 'confetti');
                 this.spawnText(randWord, hx, hy - 120, '#f472b6', 70, 'comic');
                 break;
-            case 2: 
+            case 2: // 閃電速度
                 this.shakeScreen(35);
                 this.flashAlpha = 0.6; 
                 this.createParticles(hx, hy, 25, '#ffff00', 'line');
                 this.spawnText(randWord, hx, hy - 120, '#ffff00', 70, 'comic');
                 break;
-            case 3: 
+            case 3: // 金幣雨 (純視覺)
                 this.shakeScreen(30);
                 this.createParticles(hx, hy, 35, '#FACC15', 'coin');
                 this.createParticles(hx, hy, 20, '#fff', 'spark');
                 this.spawnText(`-${this.formatCurrency(this.betAmount)}`, hx + 50, hy - 50, '#ef4444', 40);
+                break;
+            case 4: // 雷電 (Electric)
+                this.shakeScreen(45);
+                this.createParticles(hx, hy, 15, '#00ffff', 'line'); // 藍色線條
+                this.createParticles(hx, hy, 20, '#fff', 'spark');
+                this.spawnText("ZAP!", hx, hy - 120, '#00ffff', 70, 'comic');
+                break;
+            case 5: // 故障 (Glitch)
+                this.shakeScreen(20);
+                this.createParticles(hx, hy, 30, '#00ff00', 'confetti'); // 綠色矩陣雨
+                this.spawnText("ERROR", hx, hy - 120, '#00ff00', 60, 'comic');
                 break;
         }
         
@@ -815,8 +859,6 @@ class Game {
                 this.spawnText("TIME RESET!", hx, hy - 80, '#60a5fa', 40);
             }
         }
-        
-        this.updateUI();
     }
 
     explodePinata() {
@@ -937,28 +979,29 @@ class Game {
 
         if (this.horse.faceTimer > 0) this.horse.faceTimer--;
 
-        // 需求2: 欠打表演誇張化
+        // 需求2: 欠打表演極致誇張化
         if (this.state === 'SKY' && this.horse.faceTimer <= 0) {
-            // 呼吸感增強 0.002 -> 0.005
-            const breath = Math.sin(this.gameTick * 0.2); // 頻率也加快
-            this.horse.animScaleX = 1.0 + breath * 0.05; // 5% 變形
-            this.horse.animScaleY = 1.0 - breath * 0.05;
+            // 呼吸感 (像氣球一樣) - 振幅 0.05 -> 0.1
+            const breath = Math.sin(this.gameTick * 0.15); 
+            this.horse.animScaleX = 1.0 + breath * 0.1; 
+            this.horse.animScaleY = 1.0 - breath * 0.1;
             
-            // 隨機觸發動作 (每 2 秒約一次)
-            if (Math.random() < 0.02) {
-                // 吐舌頭
+            // 漂浮感 (上下移動)
+            this.horse.y += Math.sin(this.gameTick * 0.1) * 2;
+
+            // 隨機觸發動作 (頻率變高)
+            if (Math.random() < 0.03) {
                 this.horse.tongueOut = 1.0; 
                 setTimeout(() => { this.horse.tongueOut = 0; }, 1200);
             }
-            if (Math.random() < 0.02) {
-                // 扭屁股
+            if (Math.random() < 0.03) {
                 this.horse.buttWiggle = 1.0;
                 setTimeout(() => { this.horse.buttWiggle = 0; }, 1000);
             }
             
             // 隨機旋轉 (搖頭晃腦)
             if (this.horse.buttWiggle > 0 || this.horse.tongueOut > 0) {
-                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.2;
+                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; // 角度變大
             }
         } else {
             this.horse.tongueOut = 0;
