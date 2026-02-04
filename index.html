@@ -15,42 +15,23 @@
         html, body {
             margin: 0;
             padding: 0;
-            /* 關鍵修正：使用 fixed 鎖定視口，解決 iOS 100vh 溢出問題 */
             width: 100%;
             height: 100%;
-            position: fixed;
+            position: fixed; /* 鎖定視口，這對手機版很重要 */
             overflow: hidden;
             background-color: #000; 
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
         }
-        
-        #game-container {
-            /* 新增一個外層容器負責居中 */
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
 
         #game-wrapper {
-            position: relative;
-            /* 寬度固定 900，高度由 JS 動態決定 */
-            width: 900px;  
-            height: 1600px; /* 預設高度，會被 JS 覆蓋 */
+            position: absolute;
             background-color: #1a1a2e;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
             overflow: hidden;
             opacity: 0; 
             transition: opacity 0.5s;
-            /* 關鍵：縮放中心設為中心 */
-            transform-origin: center center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
         canvas {
@@ -129,76 +110,74 @@
 </head>
 <body>
 
-<div id="game-container">
-    <div id="game-wrapper">
-        <canvas id="gameCanvas"></canvas>
+<div id="game-wrapper">
+    <canvas id="gameCanvas"></canvas>
 
-        <div class="ui-layer safe-area-inset">
-            <!-- 頂部 HUD -->
-            <div class="flex justify-between items-start p-6 pt-12 relative z-20"> <!-- 增加頂部間距適應瀏海 -->
-                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
-                    <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
-                    <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$1,000,000,000</div>
-                </div>
-                
-                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
-                    <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80">Bonus</div>
-                    <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
-                </div>
+    <div class="ui-layer safe-area-inset">
+        <!-- 頂部 HUD -->
+        <div class="flex justify-between items-start p-6 pt-12 relative z-20"> <!-- 增加頂部間距適應瀏海 -->
+            <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
+                <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
+                <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$1,000,000,000</div>
             </div>
             
-            <!-- 天空飛行計時條 -->
-            <div id="skyHUD" class="absolute top-[140px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
-                <!-- 外框與發光效果 -->
-                <div class="relative">
-                    <div class="absolute inset-0 bg-blue-500 blur-md opacity-30 rounded-full"></div>
-                    <div class="w-full h-8 bg-gray-900/90 rounded-full overflow-hidden border-2 border-blue-400/50 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center p-1">
-                        <!-- 進度條本身 -->
-                        <div id="skyTimerBar" class="h-full rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-white w-full shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all duration-[16ms] ease-linear relative overflow-hidden">
-                            <!-- 掃光動畫 -->
-                            <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEwIDAgTDAgMjAgTDEwIDIwIEwyMCAwIFoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIvPjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
-                        </div>
+            <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
+                <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80">Bonus</div>
+                <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
+            </div>
+        </div>
+        
+        <!-- 天空飛行計時條 -->
+        <div id="skyHUD" class="absolute top-[140px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
+            <!-- 外框與發光效果 -->
+            <div class="relative">
+                <div class="absolute inset-0 bg-blue-500 blur-md opacity-30 rounded-full"></div>
+                <div class="w-full h-8 bg-gray-900/90 rounded-full overflow-hidden border-2 border-blue-400/50 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center p-1">
+                    <!-- 進度條本身 -->
+                    <div id="skyTimerBar" class="h-full rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-white w-full shadow-[0_0_15px_rgba(59,130,246,0.8)] transition-all duration-[16ms] ease-linear relative overflow-hidden">
+                        <!-- 掃光動畫 -->
+                        <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEwIDAgTDAgMjAgTDEwIDIwIEwyMCAwIFoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIvPjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
                     </div>
-                    <!-- 文字標籤 -->
-                    <div class="absolute -top-7 left-1/2 -translate-x-1/2">
-                        <span class="text-blue-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">FLIGHT FUEL</span>
-                    </div>
+                </div>
+                <!-- 文字標籤 -->
+                <div class="absolute -top-7 left-1/2 -translate-x-1/2">
+                    <span class="text-blue-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">FLIGHT FUEL</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部控制區 -->
+        <div class="control-panel flex flex-col items-center justify-end w-full">
+            
+            <!-- 提示文字 -->
+            <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
+                <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
+                    TAP SPRING TO JUMP (FREE)
                 </div>
             </div>
 
-            <!-- 底部控制區 -->
-            <div class="control-panel flex flex-col items-center justify-end w-full">
-                
-                <!-- 提示文字 -->
-                <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
-                    <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
-                        TAP SPRING TO JUMP (FREE)
-                    </div>
+            <!-- 下注操作區 -->
+            <div class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6">
+                <!-- 當前下注顯示 -->
+                <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
+                    <span class="text-gray-400 text-sm font-bold uppercase">BASE BET</span>
+                    <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10</span>
                 </div>
-
-                <!-- 下注操作區 -->
-                <div class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6">
-                    <!-- 當前下注顯示 -->
-                    <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
-                        <span class="text-gray-400 text-sm font-bold uppercase">BASE BET</span>
-                        <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10</span>
-                    </div>
-                    
-                    <!-- 按鈕群組 -->
-                    <div class="grid grid-cols-3 gap-4 w-full max-w-md">
-                        <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
-                            <div class="w-8 h-8 rounded-full bg-yellow-500 mb-2 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform"></div>
-                            <span class="ui-font text-xl">10</span>
-                        </button>
-                        <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
-                             <div class="w-10 h-10 rounded-full bg-blue-500 mb-2 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
-                            <span class="ui-font text-2xl">50</span>
-                        </button>
-                        <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
-                            <div class="w-12 h-12 rounded-full bg-red-500 mb-2 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform"></div>
-                            <span class="ui-font text-3xl">100</span>
-                        </button>
-                    </div>
+                
+                <!-- 按鈕群組 -->
+                <div class="grid grid-cols-3 gap-4 w-full max-w-md">
+                    <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-8 h-8 rounded-full bg-yellow-500 mb-2 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-xl">10</span>
+                    </button>
+                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                         <div class="w-10 h-10 rounded-full bg-blue-500 mb-2 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-2xl">50</span>
+                    </button>
+                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                        <div class="w-12 h-12 rounded-full bg-red-500 mb-2 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform"></div>
+                        <span class="ui-font text-3xl">100</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -282,23 +261,61 @@ class Game {
         return '$' + Math.floor(value).toLocaleString();
     }
 
-    // --- 修正需求1: 手機畫面等比滿版 ---
+    // --- 關鍵修改：區分 手機模式 vs 電腦模式 ---
     resize() {
         const winW = window.innerWidth;
         const winH = window.innerHeight;
         
-        // 1. 計算適合當前螢幕的邏輯高度 (保持寬度 900)
-        // 限制長寬比範圍，確保遊戲邏輯區域合理
-        const screenRatio = winH / winW;
+        // 簡單判斷：若高度 > 寬度，視為手機直屏模式 (Portrait)
+        const isMobile = winH > winW;
         
-        // 這裡允許更極端的比例，適應現代長手機
-        const targetRatio = Math.max(screenRatio, 1.5); 
-        
-        this.height = Math.floor(this.width * targetRatio);
+        this.width = 900; // 邏輯寬度永遠固定
+
+        if (isMobile) {
+            // === 手機模式 (您想要的功能) ===
+            // 邏輯：強制寬度滿版，高度自動延伸，確保不留黑邊
+            
+            const scale = winW / this.width;
+            this.height = Math.ceil(winH / scale); // 反算高度
+            
+            // 設定 Wrapper 尺寸與縮放
+            this.wrapper.style.width = `${this.width}px`;
+            this.wrapper.style.height = `${this.height}px`;
+            this.wrapper.style.transformOrigin = '0 0'; // 左上角對齊
+            this.wrapper.style.transform = `scale(${scale})`;
+            
+            // 強制靠左上，覆蓋掉任何置中邏輯
+            this.wrapper.style.left = '0px';
+            this.wrapper.style.top = '0px';
+            this.wrapper.style.borderRadius = '0px';
+
+        } else {
+            // === 電腦/預覽模式 (您希望這邊不要滿版) ===
+            // 邏輯：維持 9:16 的手機比例，畫面居中，上下留黑邊
+            
+            this.height = 1600; // 固定為 16:9 ~ 18:9 的比例
+            
+            // 計算縮放 (Contain 模式：確保完整顯示不裁切)
+            const scale = Math.min(winW / this.width, winH / this.height);
+            
+            this.wrapper.style.width = `${this.width}px`;
+            this.wrapper.style.height = `${this.height}px`;
+            
+            // 畫面置中
+            this.wrapper.style.transformOrigin = 'center center';
+            this.wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            this.wrapper.style.left = '50%';
+            this.wrapper.style.top = '50%';
+            
+            // 為了美觀加個圓角，像在看手機
+            this.wrapper.style.borderRadius = '20px';
+        }
+
+        // 更新 Canvas 解析度
         this.canvas.width = this.width;
         this.canvas.height = this.height;
 
-        // 重新計算遊戲內元素位置
+        // 重新計算遊戲內元素位置 (保持比例)
         this.groundLevel = this.height - 680; 
         this.horseBaseY = this.groundLevel - 70;
         
@@ -306,22 +323,6 @@ class Game {
             this.horse.y = this.horseBaseY;
             this.horse.x = this.width * 0.3;
         }
-
-        // 2. CSS Scale 計算
-        this.wrapper.style.width = `${this.width}px`;
-        this.wrapper.style.height = `${this.height}px`;
-
-        // 計算縮放比例
-        // 我們希望遊戲 wrapper 的寬度剛好等於視口寬度 (因為是豎屏遊戲)
-        let scale = winW / this.width;
-
-        // 如果高度縮放後超過視口，則改用高度基準 (Contain)
-        // 但通常我們希望它填滿，所以這裡主要以寬度為基準，因為我們上面已經把 this.height 設為符合比例了
-        if (this.height * scale > winH) {
-             scale = winH / this.height;
-        }
-
-        this.wrapper.style.transform = `scale(${scale})`;
     }
 
     setBet(amount) {
