@@ -129,6 +129,15 @@
             filter: brightness(0.5);
             pointer-events: none;
         }
+
+        /* 底版閃爍動畫 */
+        @keyframes flash-pulse {
+            0%, 100% { opacity: 0.8; transform: scale(1) skewX(-12deg); }
+            50% { opacity: 1; transform: scale(1.05) skewX(-12deg); }
+        }
+        .animate-flash {
+            animation: flash-pulse 0.5s infinite;
+        }
     </style>
 </head>
 <body>
@@ -167,7 +176,8 @@
                 </div>
                 
                 <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
-                    <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80">Bonus</div>
+                    <!-- 1. 給 Bonus 標籤加 ID 方便控制 -->
+                    <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
                     <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
                 </div>
             </div>
@@ -187,6 +197,17 @@
                 </div>
             </div>
         </div>
+
+        <!-- 中央醒目提示框 (戰術 HUD) -->
+        <div id="centerHUD" class="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none transition-opacity duration-200 opacity-0 flex flex-col items-center justify-center">
+            <!-- 閃爍底版 -->
+            <div id="centerAlertBg" class="absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_30px_rgba(0,0,0,0.5)]"></div>
+            <!-- 內容 -->
+            <div class="relative px-12 py-5 flex flex-col items-center z-10">
+                <span id="centerAlertIcon" class="text-6xl mb-2 drop-shadow-md filter grayscale-0"></span>
+                <span id="centerAlertText" class="text-5xl font-black ui-font text-white drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap"></span>
+            </div>
+        </div>
         
         <!-- 左輪彈夾冷卻指示器 -->
         <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center scale-110">
@@ -202,8 +223,8 @@
                     </div>
                     
                     <!-- 中心軸 -->
-                    <div class="absolute top-1/2 left-1/2 w-12 h-12 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
-                        <span id="ammoText" class="text-[10px] font-black text-gray-400">RDY</span>
+                    <div class="absolute top-1/2 left-1/2 w-14 h-14 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
+                        <span id="ammoText" class="text-xs font-black text-gray-400 leading-tight text-center ui-font">RDY</span>
                     </div>
                 </div>
             </div>
@@ -571,6 +592,28 @@ class Game {
         return selected;
     }
 
+    // 1. 輔助函式：取得倍率對應的顏色 (與生成邏輯一致)
+    getSpringColor(mul) {
+        if(mul >= 10000) return '#00ffff';
+        if(mul >= 1000) return '#ffffff';
+        if(mul >= 500) return '#2563eb';
+        if(mul >= 100) return '#9333ea';
+        if(mul >= 50) return '#db2777';
+        if(mul >= 25) return '#ef4444';
+        if(mul >= 10) return '#f97316';
+        if(mul >= 5) return '#fbbf24';
+        return '#22c55e'; // x2 default
+    }
+
+    // 新增：取得畫面最左側的有效彈簧 (作為 Target)
+    getTargetSpring() {
+        // 忽略已經跑過頭的彈簧 (馬在 0.3*900 = 270)
+        // 設定一個閾值，例如 180，小於此值的彈簧視為已錯過
+        // 這樣 UI 會在彈簧經過馬屁股後立刻切換到下一個
+        const threshold = 180;
+        return this.springs.find(s => s.x > threshold);
+    }
+
     updateRoadmapUI() {
         const pastContainer = document.getElementById('roadmapPast');
         const futureContainer = document.getElementById('roadmapFuture');
@@ -654,7 +697,35 @@ class Game {
 
     updateUI() {
         document.getElementById('balanceDisplay').innerText = this.formatCurrency(this.balance);
-        document.getElementById('multiplierDisplay').innerText = 'x' + this.currentMultiplier;
+        
+        // 需求1: 右上角 Bonus 顯示邏輯 (修正)
+        let displayMul = this.currentMultiplier;
+        let displayColor = '#60a5fa'; // 預設藍
+        let labelText = "ACTIVE";
+
+        if (this.state === 'GROUND') {
+            labelText = "TARGET";
+            // 優先抓取場景上「即將遭遇」的彈簧
+            const target = this.getTargetSpring();
+            if (target) {
+                displayMul = target.mul;
+                displayColor = target.color;
+            } else if (this.roadmapFuture.length > 0) {
+                // 如果場景空了，顯示未來第一個
+                displayMul = this.roadmapFuture[0].mul;
+                displayColor = this.roadmapFuture[0].color;
+            }
+        } else {
+            // SKY 模式：顯示當前作用中的倍率
+            displayColor = this.getSpringColor(this.currentMultiplier);
+        }
+
+        const mulDisplay = document.getElementById('multiplierDisplay');
+        mulDisplay.innerText = 'x' + displayMul;
+        mulDisplay.style.color = displayColor;
+        
+        document.getElementById('bonusLabel').innerText = labelText;
+        
         document.getElementById('currentBetDisplay').innerText = this.formatCurrency(this.betAmount);
 
         const skyHUD = document.getElementById('skyHUD');
@@ -662,6 +733,32 @@ class Game {
         const hitUI = document.getElementById('hitCooldownUI');
         const betPanel = document.getElementById('betPanel');
         
+        const centerHUD = document.getElementById('centerHUD');
+        const centerAlertBg = document.getElementById('centerAlertBg');
+        const centerAlertText = document.getElementById('centerAlertText');
+        const centerAlertIcon = document.getElementById('centerAlertIcon');
+        
+        if (this.state === 'GROUND') {
+            const nextMul = this.springs.length > 0 ? this.springs[0].mul : 1;
+            if (nextMul >= 100) {
+                centerHUD.style.opacity = 1;
+                
+                if (nextMul >= 1000) {
+                    centerAlertBg.className = "absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_50px_rgba(139,92,246,0.9)] bg-indigo-900/90 border-4 border-indigo-400 animate-flash";
+                    centerAlertText.innerText = "COSMIC JACKPOT!";
+                    centerAlertText.className = "text-5xl font-black ui-font text-indigo-100 drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap animate-pulse";
+                    centerAlertIcon.innerText = "🌌";
+                } else {
+                    centerAlertBg.className = "absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_30px_rgba(236,72,153,0.6)] bg-pink-600/80 border-4 border-pink-400 animate-flash";
+                    centerAlertText.innerText = "JACKPOT CHANCE!";
+                    centerAlertText.className = "text-4xl font-black ui-font text-pink-100 drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap animate-bounce";
+                    centerAlertIcon.innerText = "💎";
+                }
+            } else {
+                centerHUD.style.opacity = 0;
+            }
+        }
+
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
             skyHUD.style.opacity = 1;
             groundControls.style.opacity = 0;
@@ -669,36 +766,47 @@ class Game {
             const pct = (this.skyTimer / this.skyDurationMax) * 100;
             document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
             
-            const ring = document.getElementById('ammoRing');
-            const ammoText = document.getElementById('ammoText');
             const revolverContainer = document.getElementById('revolverContainer');
+            const ammoText = document.getElementById('ammoText');
             
             let bulletsLoaded = 6;
             let rotation = 0;
 
             if (this.hitCooldown > 0) {
+                // 冷卻中
                 const progress = 1 - (this.hitCooldown / this.hitCooldownMax);
                 bulletsLoaded = Math.floor(progress * 6); 
                 rotation = bulletsLoaded * 60;
                 
                 ammoText.innerText = "LOAD";
-                ammoText.style.color = "#fbbf24"; 
+                ammoText.className = "text-xl font-black text-yellow-400 ui-font animate-pulse";
                 betPanel.classList.add('processing');
 
+                centerHUD.style.opacity = 1;
+                centerAlertBg.className = "absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_30px_rgba(250,204,21,0.6)] bg-yellow-600/80 border-4 border-yellow-400 animate-flash";
+                centerAlertText.innerText = "RELOADING...";
+                centerAlertText.className = "text-5xl font-black ui-font text-yellow-100 drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap";
+                centerAlertIcon.innerText = "⚠️";
+
             } else if (this.isFiring) {
+                // 射擊中
                 bulletsLoaded = 0;
                 rotation = this.gameTick * 30; 
                 
                 ammoText.innerText = "FIRE";
-                ammoText.style.color = "#ef4444"; 
+                ammoText.className = "text-xl font-black text-red-500 ui-font";
                 betPanel.classList.add('processing');
+                centerHUD.style.opacity = 0; 
             } else {
+                // 就緒
                 bulletsLoaded = 6;
                 rotation = 0;
                 
                 ammoText.innerText = "RDY";
-                ammoText.style.color = "#4ade80"; 
+                ammoText.className = "text-xl font-black text-green-400 ui-font";
                 betPanel.classList.remove('processing');
+
+                centerHUD.style.opacity = 0;
             }
 
             revolverContainer.style.transform = `rotate(${rotation}deg)`;
@@ -721,6 +829,9 @@ class Game {
             groundControls.style.opacity = 1;
             hitUI.style.opacity = 0;
             betPanel.classList.remove('processing');
+            if (this.state === 'GROUND' && this.springs.length > 0 && this.springs[0].mul < 100) {
+                 centerHUD.style.opacity = 0;
+            }
         }
     }
 
@@ -737,16 +848,11 @@ class Game {
         if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
         if (this.state === 'GROUND') {
-            if (y > this.height - 300) return;
-
-            let hitSpring = null;
-            for (let s of this.springs) {
-                if (Math.abs(x - s.x) < 160 && Math.abs(y - (s.y - 40)) < 160) {
-                    hitSpring = s;
-                    break;
-                }
+            // 需求4: 點擊任意處起飛，鎖定「當前顯示」的彈簧
+            const target = this.getTargetSpring();
+            if (target) {
+                this.attemptLaunch(target);
             }
-            if (hitSpring) this.attemptLaunch(hitSpring);
         } 
         else if (this.state === 'SKY') {
             if (this.hitCooldown > 0 || this.isFiring) return; 
@@ -852,8 +958,6 @@ class Game {
 
     spawnBullet() {
         this.audio.playShoot();
-        // 需求1: KUSO 風格子彈
-        // 將 betAmount 存入子彈物件
         this.bullets.push({
             x: this.width / 2 + (Math.random() - 0.5) * 100,
             y: this.height + 20,
@@ -861,7 +965,7 @@ class Game {
             targetY: this.horse.y,
             speed: 45, 
             isLast: this.fireQueue === 1,
-            betAmount: this.betAmount // 用於區分樣式
+            betAmount: this.betAmount 
         });
         this.fireQueue--;
     }
