@@ -139,7 +139,7 @@
             animation: flash-pulse 0.5s infinite;
         }
 
-        /* [新增] 自動按鈕選中樣式 */
+        /* 自動按鈕選中樣式 */
         .auto-opt-btn.selected {
             background-color: #2563eb;
             border-color: #60a5fa;
@@ -182,7 +182,7 @@
                     <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
                     <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
                 </div>
-               
+                
                 <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
                     <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
                     <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
@@ -229,9 +229,8 @@
             <span class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
         </div>
 
-        <!-- [修改] 自動託管設定面板：巨大化介面 -->
+        <!-- 自動託管設定面板 -->
         <div id="autoPanel" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
-            <!-- 寬度改為 90%，最大 600px，適應手機與平板 -->
             <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-8 w-[90%] max-w-[600px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
                 <h2 class="text-white ui-font text-5xl text-center mb-8 tracking-widest drop-shadow-[0_4px_0_#000]">AUTO PILOT</h2>
                 
@@ -246,7 +245,7 @@
                     </div>
                 </div>
 
-                <!-- 觸發倍率選擇 (擴充至 500x) -->
+                <!-- 觸發倍率選擇 -->
                 <div class="mb-10">
                     <label class="text-yellow-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">MIN MULTIPLIER</label>
                     <div class="grid grid-cols-4 gap-3">
@@ -280,15 +279,15 @@
             <!-- 下注操作區 -->
             <div id="betPanel" class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-4 pb-6 transition-opacity duration-200">
                 
-                <!-- [修改] 功能控制列 (高度加高到 80px) -->
+                <!-- 功能控制列 -->
                 <div class="flex items-stretch justify-between w-full max-w-xl mb-5 gap-3 min-h-[80px]">
-                    <!-- 顯示押注額 (左側) -->
+                    <!-- 顯示押注額 -->
                     <div class="flex-1 flex flex-col justify-center bg-black/60 px-5 py-2 rounded-2xl border border-white/10">
                         <span class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">TOTAL BET</span>
                         <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md leading-none">$10.00</span>
                     </div>
 
-                    <!-- AUTO 按鈕 (右側超大版，增加權重 flex-1.2) -->
+                    <!-- AUTO 按鈕 -->
                     <button id="autoToggleBtn" onclick="game.toggleAutoPanel(true)" class="flex-[1.2] bg-gray-800 border-2 border-blue-500/50 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden hover:bg-gray-700 active:scale-95 transition-all shadow-lg group">
                         <div class="flex items-center gap-2 mb-0">
                             <div id="autoStatusDot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_8px_rgba(0,0,0,0.5)] transition-colors duration-300"></div>
@@ -299,7 +298,7 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </button>
                 </div>
-               
+                
                 <div class="grid grid-cols-5 gap-3 w-full max-w-xl">
                     <button onclick="game.setBet(1)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-emerald-400 active:bg-gray-900 shadow-lg group">
                         <div class="w-5 h-5 rounded-full bg-emerald-400 mb-1 shadow-[0_0_10px_#34d399] group-hover:scale-110 transition-transform"></div>
@@ -472,7 +471,7 @@ class AudioController {
     }
 }
 
-// --- [新增] 數學模型類別 (RTP & Volatility 控制) ---
+// --- 數學模型類別 (RTP & Volatility 控制) ---
 class MathModel {
     constructor(targetRTP = 0.96) {
         this.targetRTP = targetRTP;
@@ -523,7 +522,7 @@ class Game {
         // 初始化數學模組
         this.math = new MathModel(0.96);
 
-        // [新增] 自動託管設定
+        // 自動託管設定
         this.auto = {
             active: false,
             rounds: 10,
@@ -570,7 +569,7 @@ class Game {
             scale: 2.2,
             targetX: 0, targetY: 0,
             moveTimer: 0,
-            pinataHits: 0,     
+            pinataHits: 0,      
             wobble: 0,
             animScaleX: 1, 
             animScaleY: 1,
@@ -647,7 +646,7 @@ class Game {
         }, 100);
     }
 
-    // [新增] 切換自動設定面板顯隱
+    // 切換自動設定面板顯隱
     toggleAutoPanel(show) {
         const panel = document.getElementById('autoPanel');
         const content = document.getElementById('autoPanelContent');
@@ -667,11 +666,11 @@ class Game {
         }
     }
 
-    // [新增] 設定自動參數
+    // 設定自動參數
     setAutoRounds(val) { this.auto.maxRounds = val; this.updateAutoPanelUI(); }
     setAutoMinMul(val) { this.auto.minMul = val; this.updateAutoPanelUI(); }
 
-    // [新增] 更新面板按鈕樣式
+    // 更新面板按鈕樣式
     updateAutoPanelUI() {
         document.querySelectorAll('.auto-opt-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -682,7 +681,7 @@ class Game {
         });
     }
 
-    // [新增] 開始自動
+    // 開始自動
     startAuto() {
         this.auto.active = true;
         this.auto.rounds = this.auto.maxRounds;
@@ -690,13 +689,13 @@ class Game {
         this.updateAutoStatusBtn();
     }
 
-    // [新增] 停止自動
+    // 停止自動
     stopAuto() {
         this.auto.active = false;
         this.updateAutoStatusBtn();
     }
 
-    // [新增] 更新主介面 AUTO 按鈕狀態
+    // 更新主介面 AUTO 按鈕狀態
     updateAutoStatusBtn() {
         const dot = document.getElementById('autoStatusDot');
         const text = document.getElementById('autoStatusText');
@@ -1082,13 +1081,11 @@ class Game {
         }, 50);
     }
 
-    // 射擊計算：改用 MathModel
     startShootingRound(inputX, inputY) {
         this.balance -= this.betAmount;
         this.saveBalance();
         this.updateUI();
 
-        // 使用數學模組計算結果
         const result = this.math.getResult(this.currentMultiplier, this.horse.pinataHits);
         
         this.pendingResult = result;
@@ -1111,7 +1108,6 @@ class Game {
         this.fireQueue--;
     }
 
-    // [修改] 子彈命中邏輯
     bulletHit(b) {
         this.horse.pinataHits++;
         
@@ -1159,7 +1155,6 @@ class Game {
         }
     }
 
-    // 返水邏輯：改用 MathModel
     triggerSmallWin() {
         // 使用數學模組計算返水金額
         const win = this.math.getSmallWinAmount(this.betAmount);
@@ -1176,14 +1171,14 @@ class Game {
         }
     }
 
-    // 爆炸邏輯：移除 JACKPOT 文字，加入滯空表演狀態切換
+    // [修改] 爆炸邏輯：優化贏分顯示
     explodePinata(isWin = false) {
         this.audio.playExplode(); 
         
         if (isWin) {
             // === 大獎：進入 EXPLODING 狀態 (滯空表演) ===
             this.state = 'EXPLODING';
-            this.explosionTimer = 100; // 滯空約 1.6 秒 (60fps)
+            this.explosionTimer = 120; // 延長一點表演時間 (約2秒)
             this.horse.vy = 0;
             
             this.shakeScreen(100); // 強烈震動
@@ -1196,8 +1191,14 @@ class Game {
 
             this.winStreak++;
 
-            // [修改] 移除了 "JACKPOT!!" 文字，只顯示巨大金額
-            this.spawnText(`+${this.formatCurrency(totalWin)}`, this.horse.x, this.horse.y - 50, '#ffffff', 120);
+            // [修改重點] 贏分顯示優化
+            // 1. 座標鎖定在畫面中心上方，不隨馬匹移動
+            const centerX = this.width / 2;
+            const centerY = this.height * 0.4;
+
+            // 2. 生成專屬的 'BIG_WIN' 類型文字
+            // 參數：文字, X, Y, 顏色, 大小, 類型
+            this.spawnText(`+${this.formatCurrency(totalWin)}`, centerX, centerY, '#FFD700', 130, 'BIG_WIN');
 
             // 第一波爆發
             this.createParticles(this.horse.x, this.horse.y, 150, '#ec4899', 'confetti');
@@ -1217,26 +1218,6 @@ class Game {
         }
         
         this.updateUI();
-    }
-
-    triggerWin() {
-        // 保留給舊邏輯參考，目前已被 explodePinata(true) 取代
-        const win = this.betAmount * this.currentMultiplier;
-        this.balance += win;
-        this.saveBalance(); 
-        this.audio.playWin(); 
-        
-        this.winStreak++; 
-        
-        this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x, this.horse.y - 100, '#FACC15', 60);
-        
-        if (this.winStreak >= 2) {
-            let streakColor = this.winStreak >= 3 ? '#ef4444' : '#fbbf24';
-            this.spawnText(`STREAK x${this.winStreak}`, this.horse.x, this.horse.y - 160, streakColor, 40, 'comic');
-        }
-
-        this.createParticles(this.horse.x, this.horse.y, 40, '#FACC15', 'coin');
-        this.createParticles(this.horse.x, this.horse.y, 20, '#ffff00', 'line'); 
     }
 
     shakeScreen(intensity) {
@@ -1315,14 +1296,12 @@ class Game {
             if (this.hitCooldown % 2 === 0) this.updateUI(); 
         }
 
-        // === [新增] AUTO-BOT 邏輯 ===
+        // === AUTO-BOT 邏輯 ===
         if (this.auto.active) {
             // 1. 地面狀態：尋找合適倍率起飛
             if (this.state === 'GROUND') {
                 const target = this.getTargetSpring();
-                // 只有當倍率 >= 設定值，且彈簧處於可觸發位置時才跳
                 if (target && target.active && target.mul >= this.auto.minMul) {
-                    // 模擬隨機延遲，讓機器人看起來像真人
                     if (!this.autoDelay) this.autoDelay = Math.random() * 5;
                     this.autoDelay--;
                     if (this.autoDelay <= 0) {
@@ -1333,28 +1312,25 @@ class Game {
             }
             // 2. 空中狀態：自動開槍
             else if (this.state === 'SKY' && !this.isFiring && this.hitCooldown === 0) {
-                // 檢查餘額
                 if (this.balance >= this.betAmount) {
                     this.startShootingRound(0, 0);
-                    // 扣除局數
                     if (this.auto.rounds < 9999) {
                         this.auto.rounds--;
                         this.updateAutoStatusBtn();
                         if (this.auto.rounds <= 0) this.stopAuto();
                     }
                 } else {
-                    this.stopAuto(); // 餘額不足自動停止
+                    this.stopAuto(); 
                     this.spawnText("NO MONEY", this.width/2, this.height/2, '#ef4444', 60);
                 }
             }
         }
-        // === 邏輯結束 ===
-
+        
         // 馬的物理更新 (略過 EXPLODING 狀態以免位置跑掉)
         if (this.state !== 'EXPLODING') {
             const targetScale = 1.0;
             const stiffness = 0.2; 
-            const damping = 0.8;     
+            const damping = 0.8;      
             const forceX = (targetScale - this.horse.animScaleX) * stiffness;
             this.horse.scaleVx += forceX;
             this.horse.scaleVx *= damping;
@@ -1386,7 +1362,7 @@ class Game {
                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; 
             }
         } 
-        // [新增] EXPLODING 狀態邏輯 (大獎滯空表演)
+        // EXPLODING 狀態邏輯 (大獎滯空表演)
         else if (this.state === 'EXPLODING') {
             this.explosionTimer--;
             
@@ -1575,18 +1551,37 @@ class Game {
         }
     }
 
+    // [修改] 文字物理更新：支援 BIG_WIN 的特殊漂浮與脈衝效果
     updateTexts() {
         for (let i = this.texts.length - 1; i >= 0; i--) {
             let t = this.texts[i];
-            t.y += t.vy;
-            t.life--;
-            t.vy *= 0.92;
-            if (t.type === 'comic') {
-                if (t.life > 50) t.size += 2; 
-                else if (t.life < 10) t.size *= 0.8; 
+
+            if (t.type === 'BIG_WIN') {
+                // [新增] 大獎文字的特殊物理
+                t.life -= 0.5; // 生命流逝較慢 (停留更久)
+                t.y += -0.5;   // 緩慢上升，而不是快速飛走
+                
+                // 增加一個 pulse 屬性做心跳動畫
+                if (!t.pulse) t.pulse = 0;
+                t.pulse += 0.1;
+                // 計算動態大小：基礎大小 + 正弦波浮動
+                t.currentSize = t.size + Math.sin(t.pulse) * 10;
+                
             } else {
-                if (this.state === 'GROUND') t.x -= 4; 
+                // 普通文字原有邏輯
+                t.y += t.vy;
+                t.life--;
+                t.vy *= 0.92;
+                t.currentSize = t.size; // 普通文字保持原大小邏輯
+
+                if (t.type === 'comic') {
+                    if (t.life > 50) t.currentSize += 2;
+                    else if (t.life < 10) t.currentSize *= 0.8;
+                } else {
+                    if (this.state === 'GROUND') t.x -= 4;
+                }
             }
+
             if (t.life <= 0) this.texts.splice(i, 1);
         }
     }
@@ -1893,6 +1888,7 @@ class Game {
         this.ctx.restore();
     }
 
+    // [修改] 繪圖效果：區分普通文字與 BIG_WIN 文字，實現分層渲染
     drawEffects() {
         this.particles.forEach(p => {
             this.ctx.save();
@@ -1913,12 +1909,77 @@ class Game {
             this.ctx.restore();
         });
 
+        // 2. 繪製文字 (進行了分層處理)
+        // 先畫普通文字
         this.texts.forEach(t => {
-            this.ctx.globalAlpha = t.life / t.maxLife;
-            this.ctx.strokeStyle = 'black'; this.ctx.lineWidth = 6; this.ctx.font = `900 ${t.size}px "Black Ops One", sans-serif`; this.ctx.lineJoin = 'round';
-            this.ctx.strokeText(t.str, t.x - 40, t.y); this.ctx.fillStyle = t.color; this.ctx.fillText(t.str, t.x - 40, t.y);
-            this.ctx.globalAlpha = 1.0;
+            if (t.type === 'BIG_WIN') return; // 大獎文字稍後單獨畫
+
+            this.ctx.save();
+            this.ctx.globalAlpha = Math.max(0, t.life / t.maxLife);
+            // 使用 updateTexts 中計算的 currentSize
+            let size = t.currentSize || t.size; 
+            this.ctx.font = `900 ${size}px "Black Ops One", sans-serif`;
+            this.ctx.lineJoin = 'round';
+            this.ctx.textAlign = 'center'; // 統一置中比較好控制
+
+            // 確保 x, y 是文字中心
+            this.ctx.strokeStyle = 'black'; 
+            this.ctx.lineWidth = 6; 
+            this.ctx.strokeText(t.str, t.x, t.y); 
+            this.ctx.fillStyle = t.color; 
+            this.ctx.fillText(t.str, t.x, t.y);
+            this.ctx.restore();
         });
+
+        // 3. [新增] 獨立繪製 BIG_WIN 文字 (確保在最上層)
+        const bigWinText = this.texts.find(t => t.type === 'BIG_WIN');
+        if (bigWinText) {
+            this.ctx.save();
+            
+            // A. 繪製背景遮罩 (讓文字更突出)
+            // 創建一個徑向漸層，中心透明，向外變黑
+            let g = this.ctx.createRadialGradient(
+                bigWinText.x, bigWinText.y, 50, 
+                bigWinText.x, bigWinText.y, this.width * 0.8
+            );
+            g.addColorStop(0, 'rgba(0,0,0,0.4)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            this.ctx.fillStyle = g;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+
+            // B. 繪製大獎文字
+            this.ctx.globalAlpha = Math.min(1, bigWinText.life / 20); // 淡出效果
+            let size = bigWinText.currentSize;
+            this.ctx.font = `900 ${size}px "Black Ops One", sans-serif`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+
+            // 強烈的光暈
+            this.ctx.shadowBlur = 40;
+            this.ctx.shadowColor = '#FACC15';
+            
+            // 粗黑描邊
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 15; 
+            this.ctx.strokeText(bigWinText.str, bigWinText.x, bigWinText.y);
+            
+            // 白色內描邊 (增加層次感)
+            this.ctx.shadowBlur = 0; // 內描邊不需要光暈
+            this.ctx.strokeStyle = '#FFFFFF';
+            this.ctx.lineWidth = 4;
+            this.ctx.strokeText(bigWinText.str, bigWinText.x, bigWinText.y);
+
+            // 金色主體
+            this.ctx.fillStyle = '#FACC15';
+            this.ctx.fillText(bigWinText.str, bigWinText.x, bigWinText.y);
+
+            // 頂部高光 (模擬金屬質感)
+            this.ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            this.ctx.fillText(bigWinText.str, bigWinText.x, bigWinText.y - 2);
+
+            this.ctx.restore();
+        }
     }
 
     loop(timestamp) {
