@@ -7,7 +7,7 @@
     <!-- iOS PWA 相關設置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>飛天神駒 PRO - FURY EDITION</title>
+    <title>飛天神駒 PRO - FURY RELOADED</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
@@ -138,6 +138,14 @@
         .animate-flash {
             animation: flash-pulse 0.5s infinite;
         }
+
+        /* [新增] 自動按鈕選中樣式 */
+        .auto-opt-btn.selected {
+            background-color: #2563eb;
+            border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(37,99,235,0.6);
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -174,9 +182,8 @@
                     <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
                     <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
                 </div>
-                
+               
                 <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
-                    <!-- 1. 給 Bonus 標籤加 ID 方便控制 -->
                     <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
                     <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
                 </div>
@@ -198,30 +205,21 @@
             </div>
         </div>
 
-        <!-- 中央醒目提示框 (戰術 HUD) -->
-        <div id="centerHUD" class="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none transition-opacity duration-200 opacity-0 flex flex-col items-center justify-center">
-            <!-- 閃爍底版 -->
-            <div id="centerAlertBg" class="absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_30px_rgba(0,0,0,0.5)]"></div>
-            <!-- 內容 -->
-            <div class="relative px-12 py-5 flex flex-col items-center z-10">
-                <span id="centerAlertIcon" class="text-6xl mb-2 drop-shadow-md filter grayscale-0"></span>
-                <span id="centerAlertText" class="text-5xl font-black ui-font text-white drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap"></span>
-            </div>
-        </div>
-        
         <!-- 左輪彈夾冷卻指示器 -->
         <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center scale-110">
+            <!-- Reload 提示條 -->
+            <div id="reloadHintBar" class="mb-4 opacity-0 transition-all duration-200 transform translate-y-4">
+                <div class="bg-yellow-500 text-black font-black px-4 py-1 rounded-md text-xl ui-font tracking-widest border-2 border-yellow-300 shadow-[0_0_15px_#eab308] animate-pulse">
+                    RELOADING
+                </div>
+            </div>
+
             <div class="relative w-32 h-32">
                 <!-- 彈夾主體 -->
                 <div class="absolute inset-0 rounded-full bg-gray-900 border-[6px] border-gray-600 shadow-2xl overflow-hidden">
-                    <!-- 背景裝飾 -->
                     <div class="absolute inset-0 rounded-full border-[20px] border-gray-800 opacity-50"></div>
-                    
-                    <!-- 彈巢容器 (旋轉部分) -->
-                    <div id="revolverContainer" class="absolute inset-0 w-full h-full transition-transform duration-100 ease-out origin-center">
-                        <!-- 子彈將由 JS 生成 -->
-                    </div>
-                    
+                    <!-- 彈巢容器 -->
+                    <div id="revolverContainer" class="absolute inset-0 w-full h-full transition-transform duration-100 ease-out origin-center"></div>
                     <!-- 中心軸 -->
                     <div class="absolute top-1/2 left-1/2 w-14 h-14 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
                         <span id="ammoText" class="text-xs font-black text-gray-400 leading-tight text-center ui-font">RDY</span>
@@ -229,6 +227,45 @@
                 </div>
             </div>
             <span class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
+        </div>
+
+        <!-- [修改] 自動託管設定面板：巨大化介面 -->
+        <div id="autoPanel" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <!-- 寬度改為 90%，最大 600px，適應手機與平板 -->
+            <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-8 w-[90%] max-w-[600px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
+                <h2 class="text-white ui-font text-5xl text-center mb-8 tracking-widest drop-shadow-[0_4px_0_#000]">AUTO PILOT</h2>
+                
+                <!-- 局數選擇 -->
+                <div class="mb-8">
+                    <label class="text-blue-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">ROUNDS</label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <button onclick="game.setAutoRounds(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="10">10</button>
+                        <button onclick="game.setAutoRounds(20)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="20">20</button>
+                        <button onclick="game.setAutoRounds(50)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="50">50</button>
+                        <button onclick="game.setAutoRounds(9999)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-3xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="9999">∞</button>
+                    </div>
+                </div>
+
+                <!-- 觸發倍率選擇 (擴充至 500x) -->
+                <div class="mb-10">
+                    <label class="text-yellow-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">MIN MULTIPLIER</label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <button onclick="game.setAutoMinMul(2)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="2">x2</button>
+                        <button onclick="game.setAutoMinMul(5)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="5">x5</button>
+                        <button onclick="game.setAutoMinMul(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="10">x10</button>
+                        <button onclick="game.setAutoMinMul(25)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="25">x25</button>
+                        <button onclick="game.setAutoMinMul(50)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="50">x50</button>
+                        <button onclick="game.setAutoMinMul(100)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="100">x100</button>
+                        <button onclick="game.setAutoMinMul(200)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="200">x200</button>
+                        <button onclick="game.setAutoMinMul(500)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="500">x500</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all">CANCEL</button>
+                    <button onclick="game.startAuto()" class="flex-[1.5] bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-6 rounded-2xl shadow-lg hover:brightness-110 ui-font tracking-wide text-3xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all">START RUN</button>
+                </div>
+            </div>
         </div>
 
         <!-- 底部控制區 -->
@@ -241,13 +278,29 @@
             </div>
 
             <!-- 下注操作區 -->
-            <div id="betPanel" class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-6 transition-opacity duration-200">
-                <div class="flex items-baseline gap-2 mb-3 bg-black/60 px-6 py-2 rounded-full border border-white/10">
-                    <span class="text-gray-400 text-sm font-bold uppercase">CLIP COST</span>
-                    <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md">$10.00</span>
-                </div>
+            <div id="betPanel" class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-4 pb-6 transition-opacity duration-200">
                 
-                <div class="grid grid-cols-5 gap-2 w-full max-w-xl">
+                <!-- [修改] 功能控制列 (高度加高到 80px) -->
+                <div class="flex items-stretch justify-between w-full max-w-xl mb-5 gap-3 min-h-[80px]">
+                    <!-- 顯示押注額 (左側) -->
+                    <div class="flex-1 flex flex-col justify-center bg-black/60 px-5 py-2 rounded-2xl border border-white/10">
+                        <span class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">TOTAL BET</span>
+                        <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md leading-none">$10.00</span>
+                    </div>
+
+                    <!-- AUTO 按鈕 (右側超大版，增加權重 flex-1.2) -->
+                    <button id="autoToggleBtn" onclick="game.toggleAutoPanel(true)" class="flex-[1.2] bg-gray-800 border-2 border-blue-500/50 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden hover:bg-gray-700 active:scale-95 transition-all shadow-lg group">
+                        <div class="flex items-center gap-2 mb-0">
+                            <div id="autoStatusDot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_8px_rgba(0,0,0,0.5)] transition-colors duration-300"></div>
+                            <span class="text-gray-400 text-xs font-bold tracking-[0.2em] group-hover:text-white transition-colors">MODE</span>
+                        </div>
+                        <span id="autoStatusText" class="text-white font-black text-4xl tracking-wider leading-none ui-font mt-1">AUTO</span>
+                        <!-- 裝飾光 -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    </button>
+                </div>
+               
+                <div class="grid grid-cols-5 gap-3 w-full max-w-xl">
                     <button onclick="game.setBet(1)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-emerald-400 active:bg-gray-900 shadow-lg group">
                         <div class="w-5 h-5 rounded-full bg-emerald-400 mb-1 shadow-[0_0_10px_#34d399] group-hover:scale-110 transition-transform"></div>
                         <span class="ui-font text-lg">1</span>
@@ -419,6 +472,47 @@ class AudioController {
     }
 }
 
+// --- [新增] 數學模型類別 (RTP & Volatility 控制) ---
+class MathModel {
+    constructor(targetRTP = 0.96) {
+        this.targetRTP = targetRTP;
+        this.cyclePhase = Math.random() * Math.PI * 2; 
+        this.spinCount = 0;
+    }
+
+    getResult(multiplier, hits) {
+        this.spinCount++;
+        this.cyclePhase += 0.2; 
+        const luckFactor = 1.0 + Math.sin(this.cyclePhase) * 0.2;
+        let smallWinChance = 0.40 * luckFactor; 
+        const jackpotRTPContribution = this.targetRTP - (smallWinChance * 0.5); 
+        let jackpotChance = jackpotRTPContribution / multiplier;
+        jackpotChance = Math.max(0.000001, Math.min(0.5, jackpotChance));
+        jackpotChance *= luckFactor;
+        let baseRisk = 0.02; 
+        if (multiplier >= 50) baseRisk = 0.04;
+        let explodeRisk = baseRisk + (hits * 0.015);
+
+        const roll = Math.random();
+        if (roll < jackpotChance) {
+            return 'JACKPOT';
+        }
+        const subRoll = Math.random();
+        if (subRoll < (explodeRisk / luckFactor)) {
+            return 'BAD_EXPLODE';
+        }
+        if (subRoll < smallWinChance) {
+            return 'SMALL_WIN';
+        }
+        return 'MISS';
+    }
+
+    getSmallWinAmount(bet) {
+        if (Math.random() < 0.1) return Math.floor(bet * 1.5);
+        return Math.floor(bet * (0.2 + Math.random() * 0.6));
+    }
+}
+
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
@@ -426,6 +520,17 @@ class Game {
         this.wrapper = document.getElementById('game-wrapper');
         this.audio = new AudioController(); 
         
+        // 初始化數學模組
+        this.math = new MathModel(0.96);
+
+        // [新增] 自動託管設定
+        this.auto = {
+            active: false,
+            rounds: 10,
+            maxRounds: 10,
+            minMul: 2
+        };
+
         this.width = 900; 
         this.height = 1600; 
         
@@ -441,13 +546,11 @@ class Game {
         this.betAmount = 10;
         this.currentMultiplier = 1;
         
-        // 射擊邏輯變數
         this.isFiring = false;
-        this.fireQueue = 0; // 待發射子彈數
-        this.fireTimer = 0; // 射速控制
-        this.pendingResult = null; // 預存的結果
+        this.fireQueue = 0; 
+        this.fireTimer = 0; 
+        this.pendingResult = null; 
 
-        // 新增：連勝狂暴系統
         this.winStreak = 0;
         this.isFury = false;
 
@@ -467,7 +570,7 @@ class Game {
             scale: 2.2,
             targetX: 0, targetY: 0,
             moveTimer: 0,
-            pinataHits: 0,    
+            pinataHits: 0,     
             wobble: 0,
             animScaleX: 1, 
             animScaleY: 1,
@@ -507,7 +610,6 @@ class Game {
             });
         }
 
-        // 初始化左輪彈夾 UI
         this.initRevolverUI();
 
         window.addEventListener('resize', () => this.resize());
@@ -533,15 +635,88 @@ class Game {
         this.updateUI();
         this.updateRoadmapUI(); 
         
-        // 修正：鎖定 FPS 為 60
         this.fps = 60;
         this.frameInterval = 1000 / this.fps;
         this.lastFrameTime = 0;
-        this.loop(0); // 傳入初始時間
+        this.loop(0); 
         
         setTimeout(() => {
             this.wrapper.style.opacity = 1;
+            // 確保按鈕預設選中狀態
+            this.updateAutoPanelUI();
         }, 100);
+    }
+
+    // [新增] 切換自動設定面板顯隱
+    toggleAutoPanel(show) {
+        const panel = document.getElementById('autoPanel');
+        const content = document.getElementById('autoPanelContent');
+        if (show) {
+            if (this.auto.active) {
+                this.stopAuto(); // 如果正在跑，點擊按鈕則停止
+            } else {
+                panel.style.pointerEvents = 'auto';
+                panel.style.opacity = '1';
+                content.style.transform = 'scale(1)';
+                this.updateAutoPanelUI();
+            }
+        } else {
+            panel.style.opacity = '0';
+            panel.style.pointerEvents = 'none';
+            content.style.transform = 'scale(0.9)';
+        }
+    }
+
+    // [新增] 設定自動參數
+    setAutoRounds(val) { this.auto.maxRounds = val; this.updateAutoPanelUI(); }
+    setAutoMinMul(val) { this.auto.minMul = val; this.updateAutoPanelUI(); }
+
+    // [新增] 更新面板按鈕樣式
+    updateAutoPanelUI() {
+        document.querySelectorAll('.auto-opt-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            const type = btn.dataset.type;
+            const val = parseInt(btn.dataset.val);
+            if (type === 'rounds' && val === this.auto.maxRounds) btn.classList.add('selected');
+            if (type === 'mul' && val === this.auto.minMul) btn.classList.add('selected');
+        });
+    }
+
+    // [新增] 開始自動
+    startAuto() {
+        this.auto.active = true;
+        this.auto.rounds = this.auto.maxRounds;
+        this.toggleAutoPanel(false);
+        this.updateAutoStatusBtn();
+    }
+
+    // [新增] 停止自動
+    stopAuto() {
+        this.auto.active = false;
+        this.updateAutoStatusBtn();
+    }
+
+    // [新增] 更新主介面 AUTO 按鈕狀態
+    updateAutoStatusBtn() {
+        const dot = document.getElementById('autoStatusDot');
+        const text = document.getElementById('autoStatusText');
+        const btn = document.getElementById('autoToggleBtn');
+        
+        if (this.auto.active) {
+            dot.className = "w-4 h-4 rounded-full bg-green-400 shadow-[0_0_10px_#4ade80] animate-pulse";
+            text.innerText = this.auto.rounds >= 9999 ? "∞" : this.auto.rounds;
+            
+            btn.classList.remove('border-blue-500/50');
+            btn.classList.add('border-green-500');
+            btn.classList.add('bg-green-900/30');
+        } else {
+            dot.className = "w-4 h-4 rounded-full bg-gray-500";
+            text.innerText = "AUTO";
+            
+            btn.classList.add('border-blue-500/50');
+            btn.classList.remove('border-green-500');
+            btn.classList.remove('bg-green-900/30');
+        }
     }
 
     initRevolverUI() {
@@ -601,7 +776,6 @@ class Game {
         return selected;
     }
 
-    // 1. 輔助函式：取得倍率對應的顏色 (與生成邏輯一致)
     getSpringColor(mul) {
         if(mul >= 10000) return '#00ffff';
         if(mul >= 1000) return '#ffffff';
@@ -614,11 +788,7 @@ class Game {
         return '#22c55e'; // x2 default
     }
 
-    // 新增：取得畫面最左側的有效彈簧 (作為 Target)
     getTargetSpring() {
-        // 忽略已經跑過頭的彈簧 (馬在 0.3*900 = 270)
-        // 設定一個閾值，例如 180，小於此值的彈簧視為已錯過
-        // 這樣 UI 會在彈簧經過馬屁股後立刻切換到下一個
         const threshold = 180;
         return this.springs.find(s => s.x > threshold);
     }
@@ -627,7 +797,6 @@ class Game {
         const pastContainer = document.getElementById('roadmapPast');
         const futureContainer = document.getElementById('roadmapFuture');
         
-        // 新增邏輯：將場景上尚未錯過的彈簧加入 Upcoming 列表最前端，實現同步
         const activeSprings = this.springs.filter(s => s.active && s.x > 180);
         
         const showPast = this.roadmapPast.slice(-5);
@@ -641,7 +810,6 @@ class Game {
         });
         pastContainer.innerHTML = pastHTML;
 
-        // 合併 Active + Future
         const combinedFuture = [...activeSprings, ...this.roadmapFuture];
         const showFuture = combinedFuture.slice(0, 10);
         
@@ -713,51 +881,37 @@ class Game {
     updateUI() {
         document.getElementById('balanceDisplay').innerText = this.formatCurrency(this.balance);
         
-        // 需求1: 右上角 Bonus 顯示邏輯 (修正)
         let displayMul = this.currentMultiplier;
-        let displayColor = '#60a5fa'; // 預設藍
+        let displayColor = '#60a5fa'; 
         let labelText = "ACTIVE";
 
         if (this.state === 'GROUND') {
             labelText = "TARGET";
-            // 優先抓取場景上「即將遭遇」的彈簧
             const target = this.getTargetSpring();
             if (target) {
                 displayMul = target.mul;
                 displayColor = target.color;
             } else if (this.roadmapFuture.length > 0) {
-                // 如果場景空了，顯示未來第一個
                 displayMul = this.roadmapFuture[0].mul;
                 displayColor = this.roadmapFuture[0].color;
             }
         } else {
-            // SKY 模式：顯示當前作用中的倍率
             displayColor = this.getSpringColor(this.currentMultiplier);
         }
 
         const mulDisplay = document.getElementById('multiplierDisplay');
         mulDisplay.innerText = 'x' + displayMul;
         mulDisplay.style.color = displayColor;
-        
         document.getElementById('bonusLabel').innerText = labelText;
-        
         document.getElementById('currentBetDisplay').innerText = this.formatCurrency(this.betAmount);
 
+        // UI 元素引用
         const skyHUD = document.getElementById('skyHUD');
         const groundControls = document.getElementById('groundControls');
         const hitUI = document.getElementById('hitCooldownUI');
         const betPanel = document.getElementById('betPanel');
+        const reloadHintBar = document.getElementById('reloadHintBar');
         
-        const centerHUD = document.getElementById('centerHUD');
-        const centerAlertBg = document.getElementById('centerAlertBg');
-        const centerAlertText = document.getElementById('centerAlertText');
-        const centerAlertIcon = document.getElementById('centerAlertIcon');
-        
-        // 修正：移除地面狀態下的中央閃爍提示
-        if (this.state === 'GROUND') {
-            centerHUD.style.opacity = 0;
-        }
-
         if (this.state === 'SKY' || this.state === 'LAUNCHING') {
             skyHUD.style.opacity = 1;
             groundControls.style.opacity = 0;
@@ -772,40 +926,39 @@ class Game {
             let rotation = 0;
 
             if (this.hitCooldown > 0) {
-                // 冷卻中
                 const progress = 1 - (this.hitCooldown / this.hitCooldownMax);
                 bulletsLoaded = Math.floor(progress * 6); 
                 rotation = bulletsLoaded * 60;
                 
-                ammoText.innerText = "LOAD";
-                ammoText.className = "text-xl font-black text-yellow-400 ui-font animate-pulse";
+                ammoText.innerText = ""; // 裝填時隱藏文字
                 betPanel.classList.add('processing');
 
-                centerHUD.style.opacity = 1;
-                centerAlertBg.className = "absolute inset-0 rounded-xl transform -skew-x-12 shadow-[0_0_30px_rgba(250,204,21,0.6)] bg-yellow-600/80 border-4 border-yellow-400 animate-flash";
-                centerAlertText.innerText = "RELOADING...";
-                centerAlertText.className = "text-5xl font-black ui-font text-yellow-100 drop-shadow-[0_4px_0_#000] tracking-widest italic whitespace-nowrap";
-                centerAlertIcon.innerText = "⚠️";
+                // 顯示 Reload 條
+                reloadHintBar.style.opacity = 1;
+                reloadHintBar.style.transform = "translateY(0)";
 
             } else if (this.isFiring) {
                 // 射擊中
                 bulletsLoaded = 0;
                 rotation = this.gameTick * 30; 
-                
                 ammoText.innerText = "FIRE";
                 ammoText.className = "text-xl font-black text-red-500 ui-font";
                 betPanel.classList.add('processing');
-                centerHUD.style.opacity = 0; 
+                
+                // 隱藏 Reload 條
+                reloadHintBar.style.opacity = 0;
+                reloadHintBar.style.transform = "translateY(1rem)";
             } else {
                 // 就緒
                 bulletsLoaded = 6;
                 rotation = 0;
-                
                 ammoText.innerText = "RDY";
                 ammoText.className = "text-xl font-black text-green-400 ui-font";
                 betPanel.classList.remove('processing');
 
-                centerHUD.style.opacity = 0;
+                // 隱藏 Reload 條
+                reloadHintBar.style.opacity = 0;
+                reloadHintBar.style.transform = "translateY(1rem)";
             }
 
             revolverContainer.style.transform = `rotate(${rotation}deg)`;
@@ -828,7 +981,6 @@ class Game {
             groundControls.style.opacity = 1;
             hitUI.style.opacity = 0;
             betPanel.classList.remove('processing');
-            // Ground check moved to top of function
         }
     }
 
@@ -845,7 +997,7 @@ class Game {
         if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
         if (this.state === 'GROUND') {
-            // 需求4: 點擊任意處起飛，鎖定「當前顯示」的彈簧
+            // 點擊任意處起飛，鎖定「當前顯示」的彈簧
             const target = this.getTargetSpring();
             if (target) {
                 this.attemptLaunch(target);
@@ -930,22 +1082,14 @@ class Game {
         }, 50);
     }
 
+    // 射擊計算：改用 MathModel
     startShootingRound(inputX, inputY) {
         this.balance -= this.betAmount;
         this.saveBalance();
         this.updateUI();
 
-        let winChance = 0.96 / this.currentMultiplier;
-        let roll = Math.random();
-        
-        let result = 'MISS';
-        if (roll < winChance) {
-            result = 'WIN';
-        } else {
-            let explodeRisk = 0.0 + (this.horse.pinataHits * 0.015);
-            if (this.currentMultiplier >= 100) explodeRisk += 0.01;
-            if (Math.random() < explodeRisk) result = 'EXPLODE';
-        }
+        // 使用數學模組計算結果
+        const result = this.math.getResult(this.currentMultiplier, this.horse.pinataHits);
         
         this.pendingResult = result;
         this.isFiring = true;
@@ -967,6 +1111,7 @@ class Game {
         this.fireQueue--;
     }
 
+    // [修改] 子彈命中邏輯
     bulletHit(b) {
         this.horse.pinataHits++;
         
@@ -980,64 +1125,114 @@ class Game {
         
         this.createParticles(this.horse.x, this.horse.y, 20, '#fff', 'spark');
 
+        // 只有最後一發子彈決定該輪結果
         if (b.isLast) {
             this.isFiring = false;
             this.hitCooldown = this.hitCooldownMax;
             this.audio.playReload();
+            this.skyTimer = this.skyDurationMax; // 命中重置滯空時間
 
-            this.skyTimer = this.skyDurationMax; 
+            // 根據預存結果執行邏輯
+            switch(this.pendingResult) {
+                case 'JACKPOT':
+                    setTimeout(() => { this.explodePinata(true); }, 200);
+                    break;
 
-            if (this.pendingResult === 'WIN') {
-                this.triggerWin();
-            } else {
-                // 斷連勝邏輯
-                if (this.pendingResult === 'EXPLODE') {
-                    setTimeout(() => { this.explodePinata(); }, 200);
-                } else {
-                    this.spawnText("MISS!", this.horse.x, this.horse.y - 80, '#9ca3af', 40);
-                }
-                
-                // 如果之前有連勝，顯示連勝中斷
-                if (this.winStreak >= 3) {
-                     this.spawnText("STREAK LOST", this.horse.x, this.horse.y + 50, '#ef4444', 40);
-                }
-                this.winStreak = 0;
+                case 'SMALL_WIN':
+                    this.triggerSmallWin();
+                    break;
+
+                case 'BAD_EXPLODE':
+                    setTimeout(() => { this.explodePinata(false); }, 200);
+                    this.spawnText("JAMMED!", this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
+                    break;
+
+                default: // MISS
+                    this.spawnText("MISS", this.horse.x, this.horse.y - 80, '#9ca3af', 40);
+                    if (this.winStreak >= 3) {
+                        this.spawnText("STREAK LOST", this.horse.x, this.horse.y + 50, '#ef4444', 40);
+                    }
+                    this.winStreak = 0;
+                    break;
             }
             this.updateUI();
         }
     }
 
-    explodePinata() {
-        this.shakeScreen(60); 
-        this.flashAlpha = 1.0; 
+    // 返水邏輯：改用 MathModel
+    triggerSmallWin() {
+        // 使用數學模組計算返水金額
+        const win = this.math.getSmallWinAmount(this.betAmount);
+        
+        if (win > 0) {
+            this.balance += win;
+            this.saveBalance();
+            // 返水文字 (大且亮)
+            this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x + (Math.random()-0.5)*40, this.horse.y - 60, '#fff', 70);
+            this.createParticles(this.horse.x, this.horse.y, 5, '#fef08a', 'coin');
+            this.audio.playTone(880, 'sine', 0.1, 0.1); 
+        } else {
+            this.spawnText("CLINK!", this.horse.x, this.horse.y - 60, '#fff', 30);
+        }
+    }
+
+    // 爆炸邏輯：移除 JACKPOT 文字，加入滯空表演狀態切換
+    explodePinata(isWin = false) {
         this.audio.playExplode(); 
         
-        this.createParticles(this.horse.x, this.horse.y, 100, '#ec4899', 'confetti');
-        this.createParticles(this.horse.x, this.horse.y, 50, '#fff', 'spark');
-        this.createParticles(this.horse.x, this.horse.y, 5, '#fff', 'shockwave');
-        this.createParticles(this.horse.x, this.horse.y, 20, '#ffff00', 'line');
+        if (isWin) {
+            // === 大獎：進入 EXPLODING 狀態 (滯空表演) ===
+            this.state = 'EXPLODING';
+            this.explosionTimer = 100; // 滯空約 1.6 秒 (60fps)
+            this.horse.vy = 0;
+            
+            this.shakeScreen(100); // 強烈震動
+            this.flashAlpha = 1.0; // 強烈閃光
+
+            const totalWin = this.betAmount * this.currentMultiplier;
+            this.balance += totalWin;
+            this.saveBalance();
+            this.audio.playWin();
+
+            this.winStreak++;
+
+            // [修改] 移除了 "JACKPOT!!" 文字，只顯示巨大金額
+            this.spawnText(`+${this.formatCurrency(totalWin)}`, this.horse.x, this.horse.y - 50, '#ffffff', 120);
+
+            // 第一波爆發
+            this.createParticles(this.horse.x, this.horse.y, 150, '#ec4899', 'confetti');
+            this.createParticles(this.horse.x, this.horse.y, 80, '#FACC15', 'coin');
+            
+        } else {
+            // === 失敗：直接墜落 ===
+            this.state = 'FALLING';
+            this.horse.vy = 0;
+            this.shakeScreen(40);
+            this.flashAlpha = 0.3;
+
+            this.winStreak = 0;
+            this.spawnText("BROKEN!", this.horse.x, this.horse.y - 50, '#ef4444', 70);
+            this.createParticles(this.horse.x, this.horse.y, 50, '#4b5563', 'spark'); 
+            this.createParticles(this.horse.x, this.horse.y, 30, '#ef4444', 'line');  
+        }
         
-        this.spawnText("BROKEN!", this.horse.x, this.horse.y - 50, '#ef4444', 90);
-        
-        this.state = 'FALLING';
-        this.horse.vy = 0;
-        this.winStreak = 0; // 爆炸也會重置連勝
         this.updateUI();
     }
 
     triggerWin() {
+        // 保留給舊邏輯參考，目前已被 explodePinata(true) 取代
         const win = this.betAmount * this.currentMultiplier;
         this.balance += win;
         this.saveBalance(); 
         this.audio.playWin(); 
         
-        this.winStreak++; // 增加連勝
+        this.winStreak++; 
         
         this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x, this.horse.y - 100, '#FACC15', 60);
         
         if (this.winStreak >= 2) {
-             let streakColor = this.winStreak >= 3 ? '#ef4444' : '#fbbf24';
-             this.spawnText(`STREAK x${this.winStreak}`, this.horse.x, this.horse.y - 160, streakColor, 40, 'comic');
+            let streakColor = this.winStreak >= 3 ? '#ef4444' : '#fbbf24';
+            this.spawnText(`STREAK x${this.winStreak}`, this.horse.x, this.horse.y - 160, streakColor, 40, 'comic');
         }
 
         this.createParticles(this.horse.x, this.horse.y, 40, '#FACC15', 'coin');
@@ -1109,39 +1304,76 @@ class Game {
             if (this.camera.shake < 0.5) this.camera.shake = 0;
         }
 
-        if (this.state !== 'LAUNCHING') {
+        // 地面捲動邏輯 (非滯空時)
+        if (this.state !== 'LAUNCHING' && this.state !== 'EXPLODING') {
             this.bgScroll += this.groundSpeed;
         }
 
+        // Reload 倒數
         if (this.hitCooldown > 0) {
             this.hitCooldown--;
             if (this.hitCooldown % 2 === 0) this.updateUI(); 
         }
 
-        // Q彈物理
-        const targetScale = 1.0;
-        const stiffness = 0.2; 
-        const damping = 0.8;    
+        // === [新增] AUTO-BOT 邏輯 ===
+        if (this.auto.active) {
+            // 1. 地面狀態：尋找合適倍率起飛
+            if (this.state === 'GROUND') {
+                const target = this.getTargetSpring();
+                // 只有當倍率 >= 設定值，且彈簧處於可觸發位置時才跳
+                if (target && target.active && target.mul >= this.auto.minMul) {
+                    // 模擬隨機延遲，讓機器人看起來像真人
+                    if (!this.autoDelay) this.autoDelay = Math.random() * 5;
+                    this.autoDelay--;
+                    if (this.autoDelay <= 0) {
+                        this.attemptLaunch(target);
+                        this.autoDelay = 0;
+                    }
+                }
+            }
+            // 2. 空中狀態：自動開槍
+            else if (this.state === 'SKY' && !this.isFiring && this.hitCooldown === 0) {
+                // 檢查餘額
+                if (this.balance >= this.betAmount) {
+                    this.startShootingRound(0, 0);
+                    // 扣除局數
+                    if (this.auto.rounds < 9999) {
+                        this.auto.rounds--;
+                        this.updateAutoStatusBtn();
+                        if (this.auto.rounds <= 0) this.stopAuto();
+                    }
+                } else {
+                    this.stopAuto(); // 餘額不足自動停止
+                    this.spawnText("NO MONEY", this.width/2, this.height/2, '#ef4444', 60);
+                }
+            }
+        }
+        // === 邏輯結束 ===
 
-        const forceX = (targetScale - this.horse.animScaleX) * stiffness;
-        this.horse.scaleVx += forceX;
-        this.horse.scaleVx *= damping;
-        this.horse.animScaleX += this.horse.scaleVx;
-
-        const forceY = (targetScale - this.horse.animScaleY) * stiffness;
-        this.horse.scaleVy += forceY;
-        this.horse.scaleVy *= damping;
-        this.horse.animScaleY += this.horse.scaleVy;
+        // 馬的物理更新 (略過 EXPLODING 狀態以免位置跑掉)
+        if (this.state !== 'EXPLODING') {
+            const targetScale = 1.0;
+            const stiffness = 0.2; 
+            const damping = 0.8;     
+            const forceX = (targetScale - this.horse.animScaleX) * stiffness;
+            this.horse.scaleVx += forceX;
+            this.horse.scaleVx *= damping;
+            this.horse.animScaleX += this.horse.scaleVx;
+            const forceY = (targetScale - this.horse.animScaleY) * stiffness;
+            this.horse.scaleVy += forceY;
+            this.horse.scaleVy *= damping;
+            this.horse.animScaleY += this.horse.scaleVy;
+        }
 
         if (this.horse.faceTimer > 0) this.horse.faceTimer--;
 
+        // 狀態機邏輯
         if (this.state === 'SKY' && this.horse.faceTimer <= 0) {
+            // SKY 狀態的一般飛行邏輯
             const breath = Math.sin(this.gameTick * 0.15); 
             this.horse.animScaleX = 1.0 + breath * 0.1; 
             this.horse.animScaleY = 1.0 - breath * 0.1;
-            
             this.horse.y += Math.sin(this.gameTick * 0.1) * 2;
-
             if (Math.random() < 0.03) {
                 this.horse.tongueOut = 1.0; 
                 setTimeout(() => { this.horse.tongueOut = 0; }, 1200);
@@ -1150,17 +1382,43 @@ class Game {
                 this.horse.buttWiggle = 1.0;
                 setTimeout(() => { this.horse.buttWiggle = 0; }, 1000);
             }
-            
             if (this.horse.buttWiggle > 0 || this.horse.tongueOut > 0) {
-                 this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; 
+                this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; 
             }
-        } else {
+        } 
+        // [新增] EXPLODING 狀態邏輯 (大獎滯空表演)
+        else if (this.state === 'EXPLODING') {
+            this.explosionTimer--;
+            
+            // 持續震動
+            this.shakeScreen(5);
+            
+            // 持續噴發粒子
+            if (this.gameTick % 2 === 0) {
+                this.createParticles(this.horse.x, this.horse.y, 2, '#FACC15', 'coin');
+                this.createParticles(this.horse.x, this.horse.y, 1, '#fff', 'spark');
+            }
+
+            // 馬旋轉爆炸感
+            this.horse.angle += 0.5;
+            this.horse.animScaleX = 1.5 + Math.sin(this.gameTick) * 0.2;
+            this.horse.animScaleY = 1.5 + Math.cos(this.gameTick) * 0.2;
+
+            // 時間到，切換至墜落
+            if (this.explosionTimer <= 0) {
+                this.state = 'FALLING';
+                this.horse.angle = 0;
+                this.flashAlpha = 0.5; // 再次閃光提醒開始墜落
+            }
+        }
+        else {
             this.horse.tongueOut = 0;
             this.horse.buttWiggle = 0;
         }
 
-        this.audio.setSkyMode(this.state === 'SKY' || this.state === 'LAUNCHING');
+        this.audio.setSkyMode(this.state === 'SKY' || this.state === 'LAUNCHING' || this.state === 'EXPLODING');
 
+        // 雲層移動
         this.clouds.forEach(c => {
             c.x -= c.speed;
             if (c.x < -200) {
@@ -1176,7 +1434,7 @@ class Game {
         // 射擊循環
         if (this.isFiring && this.fireQueue > 0) {
             this.fireTimer++;
-            if (this.fireTimer >= 3) { // 每 3 幀發射一發 (高速)
+            if (this.fireTimer >= 3) { 
                 this.spawnBullet();
                 this.fireTimer = 0;
             }
@@ -1190,7 +1448,6 @@ class Game {
             let angle = Math.atan2(dy, dx);
             b.x += Math.cos(angle) * b.speed;
             b.y += Math.sin(angle) * b.speed;
-            
             let dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < 60) {
                 this.bulletHit(b);
@@ -1200,31 +1457,23 @@ class Game {
             }
         }
 
+        // 狀態機流程控制
         if (this.state === 'GROUND') {
             this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 6;
             this.horse.x = this.width * 0.3; 
-            
             this.springSpawnTimer++;
             if (this.springSpawnTimer > 22) { 
                 this.spawnSpring();
                 this.springSpawnTimer = 0;
                 this.springSpawnTimer -= Math.random() * 10; 
             }
-
             for (let i = this.springs.length - 1; i >= 0; i--) {
                 let s = this.springs[i];
                 s.x -= this.groundSpeed;
-                
                 if (s.compress > 0) s.compress *= 0.8;
                 s.pulse = Math.sin(this.gameTick * 0.2) * 0.1 + 1; 
-
-                if (s.x < -200) {
-                    this.springs.splice(i, 1);
-                }
+                if (s.x < -200) this.springs.splice(i, 1);
             }
-            
-            // 加入動態更新 UI，確保 TARGET 倍數即時同步
-            // 每 15 幀更新一次路途 UI，避免過度消耗效能
             if (this.gameTick % 15 === 0) {
                 this.updateUI();
                 this.updateRoadmapUI();
@@ -1234,9 +1483,7 @@ class Game {
             let targetY = this.height * 0.3;
             this.horse.y += (targetY - this.horse.y) * 0.08;
             this.horse.x = this.width * 0.3; 
-            
             this.springs.forEach(s => s.x -= this.groundSpeed * 3);
-            
             if (Math.abs(this.horse.y - targetY) < 20) {
                 this.state = 'SKY';
             }
@@ -1248,13 +1495,10 @@ class Game {
                 this.horse.targetY = this.height * 0.15 + Math.random() * (this.height * 0.4);
                 this.horse.moveTimer = 40 + Math.random() * 40; 
             }
-            
             let dx = this.horse.targetX - this.horse.x;
             let dy = this.horse.targetY - this.horse.y;
-            
             this.horse.x += dx * 0.05;
             this.horse.y += dy * 0.05;
-
             if (this.horse.state === 'SPIN') {
                 this.horse.angle += 0.4; 
                 this.horse.spinTimer--;
@@ -1266,25 +1510,20 @@ class Game {
                 this.horse.wobble += 0.05;
                 this.horse.angle = Math.sin(this.horse.wobble) * 0.1;
             }
-
             if (!this.isFiring && this.hitCooldown === 0) {
                 this.skyTimer--;
             }
             this.updateUI();
-
             if (this.skyTimer <= 0) {
-                this.explodePinata();
+                this.explodePinata(false);
             }
         }
         else if (this.state === 'FALLING') {
             let targetY = this.horseBaseY;
             this.horse.y += (targetY - this.horse.y) * 0.06;
-            
             let targetX = this.width * 0.3;
             this.horse.x += (targetX - this.horse.x) * 0.06;
-            
             this.horse.angle += 0.2; 
-            
             if (Math.abs(this.horse.y - targetY) < 20) {
                 this.state = 'GROUND';
                 this.currentMultiplier = 1; 
@@ -1294,7 +1533,6 @@ class Game {
                 this.horse.x = this.width * 0.3;
                 this.shakeScreen(15);
                 this.createParticles(this.horse.x, this.horse.y+80, 50, '#5c4033', 'spark');
-                
                 this.springs = [];
                 this.springSpawnTimer = 40;
                 this.updateUI();
@@ -1364,102 +1602,46 @@ class Game {
         
         if (this.state === 'GROUND') this.drawGroundElements();
         
-        if (this.state === 'SKY') {
+        if (this.state === 'SKY' || this.state === 'EXPLODING') { 
             this.drawPinata();
         } else {
             this.drawHorse();
         }
         
-        // 繪製 KUSO 子彈
         this.bullets.forEach(b => {
-            this.ctx.save();
-            this.ctx.translate(b.x, b.y);
-            
-            // 計算朝向角度
-            const dx = this.horse.x - b.x;
-            const dy = this.horse.y - b.y;
-            const angle = Math.atan2(dy, dx);
-            this.ctx.rotate(angle);
-
-            if (b.betAmount === 1) {
-                // $1: 豌豆 (Green Pea)
+             this.ctx.save();
+             this.ctx.translate(b.x, b.y);
+             const dx = this.horse.x - b.x;
+             const dy = this.horse.y - b.y;
+             const angle = Math.atan2(dy, dx);
+             this.ctx.rotate(angle);
+             
+             if (b.betAmount === 1) {
                 this.ctx.fillStyle = '#4ade80';
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, 8, 0, Math.PI*2);
-                this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.arc(0, 0, 8, 0, Math.PI*2); this.ctx.fill();
                 this.ctx.fillStyle = '#bbf7d0';
-                this.ctx.beginPath();
-                this.ctx.arc(-3, -3, 3, 0, Math.PI*2);
-                this.ctx.fill();
-
-            } else if (b.betAmount === 10) {
-                // $10: 藍白拖 (Blue Slipper)
-                this.ctx.rotate(Math.PI/2); // 橫向飛
+                this.ctx.beginPath(); this.ctx.arc(-3, -3, 3, 0, Math.PI*2); this.ctx.fill();
+             } else if (b.betAmount === 10) {
+                this.ctx.rotate(Math.PI/2);
                 this.ctx.fillStyle = '#3b82f6';
-                this.ctx.beginPath();
-                this.ctx.roundRect(-15, -25, 30, 50, 10);
-                this.ctx.fill();
-                this.ctx.strokeStyle = 'white';
-                this.ctx.lineWidth = 5;
-                this.ctx.beginPath();
-                this.ctx.moveTo(-15, -10);
-                this.ctx.lineTo(0, -25);
-                this.ctx.lineTo(15, -10);
-                this.ctx.stroke();
-
-            } else if (b.betAmount === 50) {
-                // $50: 紅磚頭 (Red Brick)
-                this.ctx.fillStyle = '#b91c1c';
-                this.ctx.fillRect(-20, -12, 40, 24);
-                // 磚孔
-                this.ctx.fillStyle = '#7f1d1d';
-                this.ctx.beginPath();
-                this.ctx.arc(-10, 0, 4, 0, Math.PI*2);
-                this.ctx.arc(10, 0, 4, 0, Math.PI*2);
-                this.ctx.fill();
-
-            } else if (b.betAmount === 100) {
-                // $100: 鈔票磚 (Money)
-                this.ctx.fillStyle = '#22c55e';
-                this.ctx.fillRect(-20, -12, 40, 24);
-                this.ctx.strokeStyle = '#dcfce7';
-                this.ctx.lineWidth = 3;
-                this.ctx.strokeRect(-20, -12, 40, 24);
-                this.ctx.fillStyle = '#dcfce7';
-                this.ctx.font = 'bold 16px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText('$', 0, 2);
-
-            } else { // $1000 & Default
-                // $1000: 飛彈 (Missile)
-                this.ctx.fillStyle = '#e5e7eb'; // 銀身
-                this.ctx.beginPath();
-                this.ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2);
-                this.ctx.fill();
-                this.ctx.fillStyle = '#ef4444'; // 紅頭
-                this.ctx.beginPath();
-                this.ctx.moveTo(15, -7);
-                this.ctx.lineTo(30, 0);
-                this.ctx.lineTo(15, 7);
-                this.ctx.fill();
-                this.ctx.fillStyle = '#374151'; // 尾翼
-                this.ctx.beginPath();
-                this.ctx.moveTo(-15, -8); this.ctx.lineTo(-25, -15); this.ctx.lineTo(-20, -2);
-                this.ctx.fill();
-                this.ctx.beginPath();
-                this.ctx.moveTo(-15, 8); this.ctx.lineTo(-25, 15); this.ctx.lineTo(-20, 2);
-                this.ctx.fill();
-                // 尾焰
-                this.ctx.strokeStyle = '#f59e0b';
-                this.ctx.lineWidth = 4;
-                this.ctx.beginPath();
-                this.ctx.moveTo(-25, 0);
-                this.ctx.lineTo(-40 - Math.random()*10, 0);
-                this.ctx.stroke();
-            }
-
-            this.ctx.restore();
+                this.ctx.beginPath(); this.ctx.roundRect(-15, -25, 30, 50, 10); this.ctx.fill();
+                this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 5;
+                this.ctx.beginPath(); this.ctx.moveTo(-15, -10); this.ctx.lineTo(0, -25); this.ctx.lineTo(15, -10); this.ctx.stroke();
+             } else if (b.betAmount === 50) {
+                this.ctx.fillStyle = '#b91c1c'; this.ctx.fillRect(-20, -12, 40, 24);
+                this.ctx.fillStyle = '#7f1d1d'; this.ctx.beginPath(); this.ctx.arc(-10, 0, 4, 0, Math.PI*2); this.ctx.arc(10, 0, 4, 0, Math.PI*2); this.ctx.fill();
+             } else if (b.betAmount === 100) {
+                this.ctx.fillStyle = '#22c55e'; this.ctx.fillRect(-20, -12, 40, 24);
+                this.ctx.strokeStyle = '#dcfce7'; this.ctx.lineWidth = 3; this.ctx.strokeRect(-20, -12, 40, 24);
+                this.ctx.fillStyle = '#dcfce7'; this.ctx.font = 'bold 16px Arial'; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText('$', 0, 2);
+             } else {
+                this.ctx.fillStyle = '#e5e7eb'; this.ctx.beginPath(); this.ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.fillStyle = '#ef4444'; this.ctx.beginPath(); this.ctx.moveTo(15, -7); this.ctx.lineTo(30, 0); this.ctx.lineTo(15, 7); this.ctx.fill();
+                this.ctx.fillStyle = '#374151'; this.ctx.beginPath(); this.ctx.moveTo(-15, -8); this.ctx.lineTo(-25, -15); this.ctx.lineTo(-20, -2); this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.moveTo(-15, 8); this.ctx.lineTo(-25, 15); this.ctx.lineTo(-20, 2); this.ctx.fill();
+                this.ctx.strokeStyle = '#f59e0b'; this.ctx.lineWidth = 4; this.ctx.beginPath(); this.ctx.moveTo(-25, 0); this.ctx.lineTo(-40 - Math.random()*10, 0); this.ctx.stroke();
+             }
+             this.ctx.restore();
         });
 
         this.drawEffects();
@@ -1471,18 +1653,17 @@ class Game {
             if (this.flashAlpha < 0.01) this.flashAlpha = 0;
         }
         
-        // 繪製 Streak UI
-        if (this.state === 'SKY' && this.winStreak >= 2) {
-             this.ctx.save();
-             this.ctx.textAlign = 'center';
-             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-             this.ctx.font = '900 120px "Black Ops One"';
-             this.ctx.translate(this.width/2, this.height/2 + 200);
-             this.ctx.rotate(-0.1);
-             this.ctx.fillText(`${this.winStreak}`, 0, 0);
-             this.ctx.font = '900 40px "Black Ops One"';
-             this.ctx.fillText("STREAK", 0, 50);
-             this.ctx.restore();
+        if ((this.state === 'SKY' || this.state === 'EXPLODING') && this.winStreak >= 2) {
+            this.ctx.save();
+            this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            this.ctx.font = '900 120px "Black Ops One"';
+            this.ctx.translate(this.width/2, this.height/2 + 200);
+            this.ctx.rotate(-0.1);
+            this.ctx.fillText(`${this.winStreak}`, 0, 0);
+            this.ctx.font = '900 40px "Black Ops One"';
+            this.ctx.fillText("STREAK", 0, 50);
+            this.ctx.restore();
         }
 
         this.ctx.restore();
@@ -1494,55 +1675,46 @@ class Game {
         if (this.state === 'GROUND') {
             grd.addColorStop(0, "#1e40af");
             grd.addColorStop(1, "#60a5fa");
-        } else if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+        } else if (this.state === 'SKY' || this.state === 'LAUNCHING' || this.state === 'EXPLODING') {
             if (this.horse.faceTimer > 0) {
                 const hue = (this.gameTick * 20) % 360;
                 grd = this.ctx.createLinearGradient(0, 0, 0, this.height);
                 grd.addColorStop(0, `hsl(${hue}, 70%, 20%)`);
                 grd.addColorStop(1, `hsl(${hue + 60}, 70%, 40%)`);
             } else {
-                // 3. 尊爵不凡背景：根據倍率改變背景色調
                 if (this.currentMultiplier >= 1000) {
-                    grd.addColorStop(0, "#000000");
-                    grd.addColorStop(1, "#2e1065"); // 深紫宇宙
+                    grd.addColorStop(0, "#000000"); grd.addColorStop(1, "#2e1065");
                 } else if (this.currentMultiplier >= 50) {
-                    grd.addColorStop(0, "#451a03"); // 金色氛圍
-                    grd.addColorStop(1, "#b45309");
+                    grd.addColorStop(0, "#451a03"); grd.addColorStop(1, "#b45309");
                 } else {
-                    grd.addColorStop(0, "#4a044e");
-                    grd.addColorStop(1, "#c026d3");
+                    grd.addColorStop(0, "#4a044e"); grd.addColorStop(1, "#c026d3");
                 }
                 
-                // 狂暴模式：背景脈衝
                 if (this.winStreak >= 3) {
-                     let pulse = Math.sin(this.gameTick * 0.2) * 0.2;
-                     // 疊加紅色濾鏡
-                     this.ctx.save();
-                     this.ctx.globalCompositeOperation = 'overlay';
+                    this.ctx.save();
+                    this.ctx.globalCompositeOperation = 'overlay';
                 }
             }
         } else {
-            grd.addColorStop(0, "#1d4ed8");
-            grd.addColorStop(1, "#93c5fd");
+            grd.addColorStop(0, "#1d4ed8"); grd.addColorStop(1, "#93c5fd");
         }
         this.ctx.fillStyle = grd;
         this.ctx.fillRect(0, 0, this.width, this.height);
         
-        // 狂暴模式的紅色濾鏡
-        if (this.state === 'SKY' && this.winStreak >= 3) {
-             this.ctx.fillStyle = `rgba(255, 0, 0, ${0.1 + Math.sin(this.gameTick*0.2)*0.05})`;
-             this.ctx.fillRect(0, 0, this.width, this.height);
+        if ((this.state === 'SKY' || this.state === 'EXPLODING') && this.winStreak >= 3) {
+            this.ctx.fillStyle = `rgba(255, 0, 0, ${0.1 + Math.sin(this.gameTick*0.2)*0.05})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
         }
 
-        if (this.state === 'SKY' || this.state === 'LAUNCHING') {
-             this.ctx.fillStyle = 'white';
-             for(let i=0; i<30; i++) {
-                 let sx = (this.gameTick * 2 + i * 137) % this.width;
-                 let sy = (i * 93) % this.height;
-                 this.ctx.globalAlpha = 0.5 + Math.sin(this.gameTick * 0.1 + i) * 0.5;
-                 this.ctx.fillRect(sx, sy, 3, 3);
-             }
-             this.ctx.globalAlpha = 1.0;
+        if (this.state === 'SKY' || this.state === 'LAUNCHING' || this.state === 'EXPLODING') {
+            this.ctx.fillStyle = 'white';
+            for(let i=0; i<30; i++) {
+                let sx = (this.gameTick * 2 + i * 137) % this.width;
+                let sy = (i * 93) % this.height;
+                this.ctx.globalAlpha = 0.5 + Math.sin(this.gameTick * 0.1 + i) * 0.5;
+                this.ctx.fillRect(sx, sy, 3, 3);
+            }
+            this.ctx.globalAlpha = 1.0;
         }
 
         this.clouds.forEach(c => {
@@ -1570,291 +1742,119 @@ class Game {
     drawGroundElements() {
         this.ctx.fillStyle = '#166534';
         this.ctx.fillRect(0, this.groundLevel, this.width, this.height - this.groundLevel);
-        
         this.ctx.fillStyle = '#14532d';
         let stripeWidth = 80;
         let offset = -(this.bgScroll % stripeWidth);
         for (let x = offset; x < this.width; x += stripeWidth) {
-             this.ctx.beginPath();
-             this.ctx.moveTo(x, this.height);
-             this.ctx.lineTo(x + 50, this.groundLevel);
-             this.ctx.lineTo(x + 20, this.groundLevel);
-             this.ctx.lineTo(x - 30, this.height);
-             this.ctx.fill();
+            this.ctx.beginPath(); this.ctx.moveTo(x, this.height); this.ctx.lineTo(x + 50, this.groundLevel); this.ctx.lineTo(x + 20, this.groundLevel); this.ctx.lineTo(x - 30, this.height); this.ctx.fill();
         }
-
         this.ctx.fillStyle = '#facc15';
-        let dashWidth = 100;
-        let dashGap = 100;
+        let dashWidth = 100; let dashGap = 100;
         let dashOffset = -(this.bgScroll % (dashWidth + dashGap));
         for (let x = dashOffset; x < this.width; x += (dashWidth + dashGap)) {
             this.ctx.fillRect(x, this.groundLevel + 20, dashWidth, 15);
         }
-
         this.springs.forEach(s => {
-            if (!s.active) this.ctx.globalAlpha = 0.5; 
-
-            // >500倍 特別特效
+            if (!s.active) this.ctx.globalAlpha = 0.5;
             if (s.mul >= 500) {
                 this.ctx.save();
                 this.ctx.translate(s.x, s.y);
-                // 1. 底座光環
                 this.ctx.shadowBlur = 30;
                 this.ctx.shadowColor = s.mul >= 10000 ? '#00ffff' : '#ffd700';
-                
-                // 2. 旋轉光芒背景
                 this.ctx.rotate(this.gameTick * 0.05);
                 this.ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + Math.sin(this.gameTick * 0.1) * 0.1})`;
                 this.ctx.beginPath();
-                for(let i=0; i<8; i++) {
-                    this.ctx.rotate(Math.PI/4);
-                    this.ctx.rect(-60, -5, 120, 10);
-                }
+                for(let i=0; i<8; i++) { this.ctx.rotate(Math.PI/4); this.ctx.rect(-60, -5, 120, 10); }
                 this.ctx.fill();
-                
-                // 3. 向上光束
-                this.ctx.rotate(-this.gameTick * 0.05); // 轉回來
-                this.ctx.fillStyle = `linear-gradient(to top, ${s.color}, transparent)`;
-                // Canvas gradient needs absolute coords, simplified:
+                this.ctx.rotate(-this.gameTick * 0.05);
                 let grad = this.ctx.createLinearGradient(0, 0, 0, -200);
-                grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
-                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                this.ctx.fillStyle = grad;
-                this.ctx.fillRect(-40, -200, 80, 200);
-
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)'); grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                this.ctx.fillStyle = grad; this.ctx.fillRect(-40, -200, 80, 200);
                 this.ctx.restore();
             }
-
-            this.ctx.fillStyle = '#1f2937';
+            this.ctx.fillStyle = '#1f2937'; this.ctx.beginPath(); this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5); this.ctx.fill();
+            this.ctx.strokeStyle = '#9ca3af'; this.ctx.lineWidth = 12; this.ctx.lineCap = 'round';
             this.ctx.beginPath();
-            this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5);
-            this.ctx.fill();
-
-            this.ctx.strokeStyle = '#9ca3af';
-            this.ctx.lineWidth = 12;
-            this.ctx.lineCap = 'round';
-            this.ctx.beginPath();
-            let y = s.y;
-            let h = s.h;
-            let ph = h * s.pulse - s.compress; 
-            ph = Math.max(10, ph);
-
-            this.ctx.moveTo(s.x - 40, y);
-            this.ctx.lineTo(s.x + 40, y - ph*0.3);
-            this.ctx.lineTo(s.x - 40, y - ph*0.6);
-            this.ctx.lineTo(s.x + 40, y - ph);
-            this.ctx.moveTo(s.x, y - ph);
+            let y = s.y; let h = s.h; let ph = h * s.pulse - s.compress; ph = Math.max(10, ph);
+            this.ctx.moveTo(s.x - 40, y); this.ctx.lineTo(s.x + 40, y - ph*0.3); this.ctx.lineTo(s.x - 40, y - ph*0.6); this.ctx.lineTo(s.x + 40, y - ph); this.ctx.moveTo(s.x, y - ph);
             this.ctx.stroke();
-
-            let boxY = s.y - ph - 25;
-            let boxW = 110;
-            let boxH = 70;
-            
-            this.ctx.save();
-            this.ctx.translate(s.x, boxY);
-            let scaleY = 1 - (s.compress / 60);
-            this.ctx.scale(s.pulse, s.pulse * scaleY);
-            
-            this.ctx.shadowBlur = s.glow ? 50 : 30;
-            this.ctx.shadowColor = s.color;
-            
-            this.ctx.fillStyle = s.color;
-            this.ctx.beginPath();
-            this.ctx.roundRect(-boxW/2, -boxH/2, boxW, boxH, 15);
-            this.ctx.fill();
-            
-            this.ctx.strokeStyle = 'white';
-            this.ctx.lineWidth = 4;
-            this.ctx.stroke();
-            
-            this.ctx.shadowBlur = 0;
-
+            let boxY = s.y - ph - 25; let boxW = 110; let boxH = 70;
+            this.ctx.save(); this.ctx.translate(s.x, boxY); let scaleY = 1 - (s.compress / 60); this.ctx.scale(s.pulse, s.pulse * scaleY);
+            this.ctx.shadowBlur = s.glow ? 50 : 30; this.ctx.shadowColor = s.color;
+            this.ctx.fillStyle = s.color; this.ctx.beginPath(); this.ctx.roundRect(-boxW/2, -boxH/2, boxW, boxH, 15); this.ctx.fill();
+            this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 4; this.ctx.stroke(); this.ctx.shadowBlur = 0;
             this.ctx.fillStyle = s.textColor;
-            let fontSize = 48;
-            if (s.label.length >= 4) fontSize = 36;
-            this.ctx.font = `900 ${fontSize}px "Black Ops One"`; 
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(s.label, 0, 4); 
-
-            this.ctx.restore();
-            this.ctx.globalAlpha = 1.0;
+            let fontSize = 48; if (s.label.length >= 4) fontSize = 36;
+            this.ctx.font = `900 ${fontSize}px "Black Ops One"`; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText(s.label, 0, 4);
+            this.ctx.restore(); this.ctx.globalAlpha = 1.0;
         });
     }
 
     drawPinata() {
         this.ctx.save();
         this.ctx.translate(this.horse.x, this.horse.y);
-        
         let scaleX = this.horse.scale * 1.8 * this.horse.animScaleX;
         let scaleY = this.horse.scale * 1.8 * this.horse.animScaleY;
         this.ctx.scale(scaleX, scaleY); 
         this.ctx.rotate(this.horse.angle);
 
-        // 狂暴光環
         if (this.winStreak >= 3) {
-             this.ctx.shadowBlur = 20 + Math.sin(this.gameTick*0.5)*10;
-             this.ctx.shadowColor = '#ef4444';
+            this.ctx.shadowBlur = 20 + Math.sin(this.gameTick*0.5)*10; this.ctx.shadowColor = '#ef4444';
         }
 
-        this.ctx.strokeStyle = '#fff';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -60);
-        this.ctx.lineTo(0, -1000); 
-        this.ctx.stroke();
+        this.ctx.strokeStyle = '#fff'; this.ctx.lineWidth = 2; this.ctx.beginPath(); this.ctx.moveTo(0, -60); this.ctx.lineTo(0, -1000); this.ctx.stroke();
 
-        // 3. 尊爵不凡 PINATA 外觀切換
-        let colors = ['#ec4899', '#a855f7', '#3b82f6', '#22c55e', '#eab308']; // 預設 x2
-        let isMetal = false;
-        let isGold = false;
-        let isCosmic = false;
+        let colors = ['#ec4899', '#a855f7', '#3b82f6', '#22c55e', '#eab308'];
+        let isMetal = false; let isGold = false; let isCosmic = false;
 
         if (this.currentMultiplier >= 1000) {
-            isCosmic = true;
-            colors = ['#000', '#1e1b4b', '#312e81', '#4338ca', '#000']; 
+            isCosmic = true; colors = ['#000', '#1e1b4b', '#312e81', '#4338ca', '#000']; 
         } else if (this.currentMultiplier >= 50) {
-            isGold = true;
-            colors = ['#f59e0b', '#fbbf24', '#fcd34d', '#b45309', '#78350f']; 
+            isGold = true; colors = ['#f59e0b', '#fbbf24', '#fcd34d', '#b45309', '#78350f']; 
         } else if (this.currentMultiplier >= 10) {
-            isMetal = true;
-            // 3. 視覺調整：機械版改為 Cyberpunk 風格
-            colors = ['#1e293b', '#334155', '#475569', '#06b6d4', '#0891b2'];
+            isMetal = true; colors = ['#1e293b', '#334155', '#475569', '#06b6d4', '#0891b2'];
         }
         
-        // 狂暴模式下身體顏色變化
-        if (this.winStreak >= 3) {
-             colors[0] = '#ef4444'; // 頭部變紅
-             colors[1] = '#b91c1c'; // 耳朵變深紅
-        }
+        if (this.winStreak >= 3) { colors[0] = '#ef4444'; colors[1] = '#b91c1c'; }
         
-        // 繪製身體
         for(let i=0; i<5; i++) {
             this.ctx.fillStyle = colors[i % colors.length];
             let offset = Math.sin(this.gameTick * 0.2 + i) * 2;
-            this.ctx.beginPath();
-            this.ctx.roundRect(-35 + offset, -30 + i*12, 70, 15, 2);
-            this.ctx.fill();
-            
-            if (isGold) { // 黃金光澤
-                this.ctx.strokeStyle = '#fef08a';
-                this.ctx.lineWidth = 1;
-                this.ctx.stroke();
-            }
-            if (isMetal) { // 3. 機械版：增加能量線條
-                this.ctx.strokeStyle = '#06b6d4';
-                this.ctx.lineWidth = 2;
-                this.ctx.shadowBlur = 5;
-                this.ctx.shadowColor = '#06b6d4';
-                this.ctx.beginPath();
-                this.ctx.moveTo(-35 + offset + 10, -30 + i*12 + 7);
-                this.ctx.lineTo(-35 + offset + 60, -30 + i*12 + 7);
-                this.ctx.stroke();
-                this.ctx.shadowBlur = 0;
-            }
+            this.ctx.beginPath(); this.ctx.roundRect(-35 + offset, -30 + i*12, 70, 15, 2); this.ctx.fill();
+            if (isGold) { this.ctx.strokeStyle = '#fef08a'; this.ctx.lineWidth = 1; this.ctx.stroke(); }
+            if (isMetal) { this.ctx.strokeStyle = '#06b6d4'; this.ctx.lineWidth = 2; this.ctx.shadowBlur = 5; this.ctx.shadowColor = '#06b6d4'; this.ctx.beginPath(); this.ctx.moveTo(-35 + offset + 10, -30 + i*12 + 7); this.ctx.lineTo(-35 + offset + 60, -30 + i*12 + 7); this.ctx.stroke(); this.ctx.shadowBlur = 0; }
         }
 
-        // 神聖光環 (宇宙版)
         if (isCosmic) {
-            this.ctx.shadowBlur = 30;
-            this.ctx.shadowColor = '#8b5cf6';
-            this.ctx.strokeStyle = 'white';
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 80, 0, Math.PI*2);
-            this.ctx.stroke();
-            this.ctx.shadowBlur = 0;
+            this.ctx.shadowBlur = 30; this.ctx.shadowColor = '#8b5cf6'; this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, 80, 0, Math.PI*2); this.ctx.stroke(); this.ctx.shadowBlur = 0;
         }
 
-        this.ctx.save();
-        this.ctx.translate(35, -20);
-        this.ctx.rotate(-0.2);
-        this.ctx.fillStyle = colors[0]; // 頭部顏色
-        this.ctx.beginPath();
-        this.ctx.roundRect(-10, -30, 40, 30, 5);
-        this.ctx.fill();
+        this.ctx.save(); this.ctx.translate(35, -20); this.ctx.rotate(-0.2); this.ctx.fillStyle = colors[0]; this.ctx.beginPath(); this.ctx.roundRect(-10, -30, 40, 30, 5); this.ctx.fill();
         
-        // 眼睛
         if (this.winStreak >= 3) {
-            // 狂暴眼
-            this.ctx.shadowBlur = 20;
-            this.ctx.shadowColor = '#ffff00';
-            this.ctx.fillStyle = '#fff';
-            this.ctx.beginPath();
-            this.ctx.moveTo(10, -18); this.ctx.lineTo(22, -12);
-            this.ctx.lineTo(10, -6);
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
+            this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#ffff00'; this.ctx.fillStyle = '#fff'; this.ctx.beginPath(); this.ctx.moveTo(10, -18); this.ctx.lineTo(22, -12); this.ctx.lineTo(10, -6); this.ctx.fill(); this.ctx.shadowBlur = 0;
         } else if (isMetal) {
-            // 機械眼
-            this.ctx.fillStyle = '#06b6d4'; // 青光眼
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = '#06b6d4';
-            this.ctx.beginPath();
-            this.ctx.rect(10, -20, 20, 8);
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = '#06b6d4'; this.ctx.shadowBlur = 15; this.ctx.shadowColor = '#06b6d4'; this.ctx.beginPath(); this.ctx.rect(10, -20, 20, 8); this.ctx.fill(); this.ctx.shadowBlur = 0;
         } else {
-            // 一般眼
             if (this.horse.faceTimer > 0) {
-                // 暈眩
-                this.ctx.strokeStyle = isCosmic ? 'cyan' : 'black';
-                this.ctx.beginPath();
-                this.ctx.moveTo(12, -18); this.ctx.lineTo(18, -12);
-                this.ctx.moveTo(18, -18); this.ctx.lineTo(12, -12);
-                this.ctx.stroke();
+                this.ctx.strokeStyle = isCosmic ? 'cyan' : 'black'; this.ctx.beginPath(); this.ctx.moveTo(12, -18); this.ctx.lineTo(18, -12); this.ctx.moveTo(18, -18); this.ctx.lineTo(12, -12); this.ctx.stroke();
             } else {
-                // 正常
-                this.ctx.fillStyle = 'white';
-                this.ctx.beginPath();
-                this.ctx.arc(15, -15, 6, 0, Math.PI*2);
-                this.ctx.fill();
-                this.ctx.fillStyle = 'black';
-                this.ctx.beginPath();
-                let lookX = Math.sin(this.gameTick * 0.05) * 2;
-                this.ctx.arc(17 + lookX, -15, 2, 0, Math.PI*2);
-                this.ctx.fill();
+                this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(15, -15, 6, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.fillStyle = 'black'; this.ctx.beginPath(); let lookX = Math.sin(this.gameTick * 0.05) * 2; this.ctx.arc(17 + lookX, -15, 2, 0, Math.PI*2); this.ctx.fill();
             }
         }
         
-        this.ctx.fillStyle = colors[1]; // 耳朵
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -30);
-        this.ctx.lineTo(10, -50);
-        this.ctx.lineTo(20, -30);
-        this.ctx.fill();
+        this.ctx.fillStyle = colors[1]; this.ctx.beginPath(); this.ctx.moveTo(0, -30); this.ctx.lineTo(10, -50); this.ctx.lineTo(20, -30); this.ctx.fill();
         this.ctx.restore();
 
-        // 1. PINATA 四肢表演
         let legWiggle = 0;
-        if (this.horse.faceTimer > 0) {
-            // 被打時劇烈晃動
-            legWiggle = Math.sin(this.gameTick * 1.5) * 20; 
-        } else if (this.horse.buttWiggle > 0) {
-            // 欠打時扭屁股
-            legWiggle = Math.sin(this.gameTick * 0.5) * 15 * this.horse.buttWiggle;
-        }
+        if (this.horse.faceTimer > 0) legWiggle = Math.sin(this.gameTick * 1.5) * 20; 
+        else if (this.horse.buttWiggle > 0) legWiggle = Math.sin(this.gameTick * 0.5) * 15 * this.horse.buttWiggle;
 
         this.ctx.fillStyle = colors[4];
-        this.ctx.save();
-        this.ctx.translate(-20, 30);
-        this.ctx.rotate(legWiggle * 0.05);
-        this.ctx.fillRect(-5, 0, 10, 30);
-        this.ctx.restore();
-
-        this.ctx.save();
-        this.ctx.translate(20, 30);
-        this.ctx.rotate(-legWiggle * 0.05);
-        this.ctx.fillRect(-5, 0, 10, 30);
-        this.ctx.restore();
-        
-        this.ctx.fillStyle = colors[2];
-        this.ctx.beginPath();
-        this.ctx.moveTo(-35, -10);
-        this.ctx.lineTo(-55, 10 + legWiggle); 
-        this.ctx.lineTo(-45, 20 + legWiggle);
-        this.ctx.fill();
-
+        this.ctx.save(); this.ctx.translate(-20, 30); this.ctx.rotate(legWiggle * 0.05); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.restore();
+        this.ctx.save(); this.ctx.translate(20, 30); this.ctx.rotate(-legWiggle * 0.05); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.restore();
+        this.ctx.fillStyle = colors[2]; this.ctx.beginPath(); this.ctx.moveTo(-35, -10); this.ctx.lineTo(-55, 10 + legWiggle); this.ctx.lineTo(-45, 20 + legWiggle); this.ctx.fill();
         this.ctx.restore();
     }
 
@@ -1865,98 +1865,31 @@ class Game {
         this.ctx.rotate(this.horse.angle);
 
         if (this.state === 'GROUND') {
-            this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, 45, 40, 8, 0, 0, Math.PI*2);
-            this.ctx.fill();
+            this.ctx.fillStyle = 'rgba(0,0,0,0.3)'; this.ctx.beginPath(); this.ctx.ellipse(0, 45, 40, 8, 0, 0, Math.PI*2); this.ctx.fill();
         }
 
         const bob = Math.sin(this.gameTick * 0.4) * 3; 
         const legSwing = Math.sin(this.gameTick * 0.8) * 0.8; 
         
-        this.ctx.save();
-        this.ctx.fillStyle = '#5D4037';
-        this.ctx.translate(-20, 10 + bob);
-        this.ctx.rotate(-legSwing); 
-        this.ctx.fillRect(-5, 0, 10, 30);
-        this.ctx.translate(0, 30);
-        this.ctx.rotate(legSwing * 0.5 + 0.5); 
-        this.ctx.fillRect(-4, 0, 8, 20);
-        this.ctx.restore();
+        this.ctx.save(); this.ctx.fillStyle = '#5D4037'; this.ctx.translate(-20, 10 + bob); this.ctx.rotate(-legSwing); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.translate(0, 30); this.ctx.rotate(legSwing * 0.5 + 0.5); this.ctx.fillRect(-4, 0, 8, 20); this.ctx.restore();
+        this.ctx.save(); this.ctx.fillStyle = '#5D4037'; this.ctx.translate(20, 10 + bob); this.ctx.rotate(legSwing); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.translate(0, 30); this.ctx.rotate(-legSwing * 0.5 + 0.5); this.ctx.fillRect(-4, 0, 8, 20); this.ctx.restore();
 
-        this.ctx.save();
-        this.ctx.fillStyle = '#5D4037';
-        this.ctx.translate(20, 10 + bob);
-        this.ctx.rotate(legSwing);
-        this.ctx.fillRect(-5, 0, 10, 30);
-        this.ctx.translate(0, 30);
-        this.ctx.rotate(-legSwing * 0.5 + 0.5);
-        this.ctx.fillRect(-4, 0, 8, 20);
-        this.ctx.restore();
+        this.ctx.fillStyle = '#854d0e'; this.ctx.beginPath(); this.ctx.roundRect(-40, -20 + bob, 80, 40, 20); this.ctx.fill();
 
-        this.ctx.fillStyle = '#854d0e'; 
-        this.ctx.beginPath();
-        this.ctx.roundRect(-40, -20 + bob, 80, 40, 20);
-        this.ctx.fill();
+        this.ctx.save(); this.ctx.translate(-40, -10 + bob); this.ctx.rotate(Math.sin(this.gameTick * 0.5) * 0.5 + 0.5); this.ctx.fillStyle = '#3f1f10'; this.ctx.beginPath(); this.ctx.moveTo(0, 0); this.ctx.quadraticCurveTo(-20, 10, -10, 30); this.ctx.lineTo(0, 10); this.ctx.fill(); this.ctx.restore();
 
-        this.ctx.save();
-        this.ctx.translate(-40, -10 + bob);
-        this.ctx.rotate(Math.sin(this.gameTick * 0.5) * 0.5 + 0.5); 
-        this.ctx.fillStyle = '#3f1f10';
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, 0);
-        this.ctx.quadraticCurveTo(-20, 10, -10, 30);
-        this.ctx.lineTo(0, 10);
-        this.ctx.fill();
-        this.ctx.restore();
-
-        this.ctx.save();
-        this.ctx.translate(30, -15 + bob); 
-        this.ctx.rotate(-0.5 + Math.sin(this.gameTick * 0.4) * 0.1); 
-        this.ctx.fillStyle = '#854d0e';
-        this.ctx.fillRect(-10, -30, 20, 40);
-        this.ctx.translate(0, -30);
-        this.ctx.beginPath();
-        this.ctx.roundRect(-12, -20, 35, 25, 8); 
-        this.ctx.fill();
-        this.ctx.fillStyle = '#3f1f10';
-        this.ctx.beginPath();
-        this.ctx.moveTo(-5, -20);
-        this.ctx.lineTo(0, -35);
-        this.ctx.lineTo(5, -20);
-        this.ctx.fill();
-        this.ctx.beginPath();
-        this.ctx.moveTo(-10, 0);
-        this.ctx.quadraticCurveTo(-20, 20, -10, 40); 
-        this.ctx.lineTo(10, 0);
-        this.ctx.fill();
-        this.ctx.fillStyle = 'white';
-        this.ctx.beginPath();
-        this.ctx.arc(5, -12, 5, 0, Math.PI*2);
-        this.ctx.fill();
-        this.ctx.fillStyle = 'black';
-        this.ctx.beginPath();
-        this.ctx.arc(7, -12, 2, 0, Math.PI*2);
-        this.ctx.fill();
+        this.ctx.save(); this.ctx.translate(30, -15 + bob); this.ctx.rotate(-0.5 + Math.sin(this.gameTick * 0.4) * 0.1); this.ctx.fillStyle = '#854d0e'; this.ctx.fillRect(-10, -30, 20, 40); this.ctx.translate(0, -30); this.ctx.beginPath(); this.ctx.roundRect(-12, -20, 35, 25, 8); this.ctx.fill();
+        this.ctx.fillStyle = '#3f1f10'; this.ctx.beginPath(); this.ctx.moveTo(-5, -20); this.ctx.lineTo(0, -35); this.ctx.lineTo(5, -20); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.moveTo(-10, 0); this.ctx.quadraticCurveTo(-20, 20, -10, 40); this.ctx.lineTo(10, 0); this.ctx.fill();
+        this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(5, -12, 5, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.fillStyle = 'black'; this.ctx.beginPath(); this.ctx.arc(7, -12, 2, 0, Math.PI*2); this.ctx.fill();
         this.ctx.restore();
 
         if (this.horse.state !== 'RUN') {
-            this.ctx.save();
-            this.ctx.translate(5, bob - 15);
-            let flap = Math.sin(this.gameTick * 0.8) * 0.5;
-            this.ctx.scale(1, 1 - flap * 0.5);
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, 0);
-            this.ctx.lineTo(-40, -60); 
-            this.ctx.lineTo(30, -25);
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#cbd5e1';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-            this.ctx.restore();
+            this.ctx.save(); this.ctx.translate(5, bob - 15); let flap = Math.sin(this.gameTick * 0.8) * 0.5; this.ctx.scale(1, 1 - flap * 0.5);
+            this.ctx.fillStyle = '#ffffff'; this.ctx.beginPath(); this.ctx.moveTo(0, 0); this.ctx.lineTo(-40, -60); this.ctx.lineTo(30, -25); this.ctx.fill();
+            this.ctx.strokeStyle = '#cbd5e1'; this.ctx.lineWidth = 2; this.ctx.stroke(); this.ctx.restore();
         }
-
         this.ctx.restore();
     }
 
@@ -1965,65 +1898,33 @@ class Game {
             this.ctx.save();
             this.ctx.globalAlpha = p.life / 50;
             this.ctx.translate(p.x, p.y);
-            
             if (p.type === 'coin') {
-                this.ctx.fillStyle = '#FACC15';
-                this.ctx.strokeStyle = '#B45309';
-                this.ctx.lineWidth = 3;
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
-                this.ctx.fill();
-                this.ctx.stroke();
-                this.ctx.fillStyle = 'white';
-                this.ctx.beginPath();
-                this.ctx.arc(-3, -3, 2, 0, Math.PI*2);
-                this.ctx.fill();
+                this.ctx.fillStyle = '#FACC15'; this.ctx.strokeStyle = '#B45309'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.fill(); this.ctx.stroke();
+                this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(-3, -3, 2, 0, Math.PI*2); this.ctx.fill();
             } else if (p.type === 'line') {
-                this.ctx.fillStyle = p.color;
-                this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                this.ctx.fillStyle = p.color; this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
             } else if (p.type === 'shockwave') {
-                this.ctx.strokeStyle = p.color;
-                this.ctx.lineWidth = 4;
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
-                this.ctx.stroke();
+                this.ctx.strokeStyle = p.color; this.ctx.lineWidth = 4; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.stroke();
             } else if (p.type === 'confetti') {
-                this.ctx.fillStyle = p.color;
-                this.ctx.rotate(p.rotation * Math.PI / 180);
-                this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                this.ctx.fillStyle = p.color; this.ctx.rotate(p.rotation * Math.PI / 180); this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
             } else {
-                this.ctx.fillStyle = p.color;
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, p.size, 0, Math.PI*2);
-                this.ctx.fill();
+                this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.fill();
             }
             this.ctx.restore();
         });
 
         this.texts.forEach(t => {
             this.ctx.globalAlpha = t.life / t.maxLife;
-            this.ctx.strokeStyle = 'black';
-            this.ctx.lineWidth = 6;
-            this.ctx.font = `900 ${t.size}px "Black Ops One", sans-serif`;
-            this.ctx.lineJoin = 'round';
-            this.ctx.strokeText(t.str, t.x - 40, t.y);
-            this.ctx.fillStyle = t.color;
-            this.ctx.fillText(t.str, t.x - 40, t.y);
+            this.ctx.strokeStyle = 'black'; this.ctx.lineWidth = 6; this.ctx.font = `900 ${t.size}px "Black Ops One", sans-serif`; this.ctx.lineJoin = 'round';
+            this.ctx.strokeText(t.str, t.x - 40, t.y); this.ctx.fillStyle = t.color; this.ctx.fillText(t.str, t.x - 40, t.y);
             this.ctx.globalAlpha = 1.0;
         });
     }
 
     loop(timestamp) {
-        // 使用 timestamp 與 requestAnimationFrame 實現穩定的 60FPS
         requestAnimationFrame((t) => this.loop(t));
-
-        if (!this.lastFrameTime) {
-            this.lastFrameTime = timestamp;
-            return;
-        }
-
+        if (!this.lastFrameTime) { this.lastFrameTime = timestamp; return; }
         const elapsed = timestamp - this.lastFrameTime;
-
         if (elapsed > this.frameInterval) {
             this.lastFrameTime = timestamp - (elapsed % this.frameInterval);
             this.update();
