@@ -2,108 +2,60 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <!-- 加入 viewport-fit=cover 與 user-scalable=no 以適應全面屏手機並禁止縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- iOS PWA 相關設置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>飛天神駒 PRO - FURY RELOADED</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@500;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+SC:wght@500;900&family=Noto+Sans+TC:wght@500;900&display=swap');
 
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            position: fixed; /* 鎖定視口 */
-            overflow: hidden;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            position: fixed; overflow: hidden;
             background-color: #000; 
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
+            touch-action: none; user-select: none; -webkit-user-select: none;
         }
 
         #game-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            /* 寬度固定 900，高度由 JS 動態決定 */
-            width: 900px;  
-            height: 1600px; /* 預設高度 */
+            position: absolute; top: 0; left: 0;
+            width: 900px; height: 1600px;
             background-color: #1a1a2e;
-            overflow: hidden;
-            opacity: 0; 
-            transition: opacity 0.5s;
-            /* 預設左上角，resize 會動態調整 */
-            transform-origin: 0 0;
+            overflow: hidden; opacity: 0; 
+            transition: opacity 0.5s; transform-origin: 0 0;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        canvas { display: block; width: 100%; height: 100%; }
 
-        .ui-font {
-            font-family: 'Black Ops One', cursive;
-            letter-spacing: 1px;
-        }
+        .ui-font { font-family: 'Black Ops One', 'Noto Sans SC', sans-serif; letter-spacing: 1px; }
         
         .ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; z-index: 10;
         }
         
-        .pointer-events-auto {
-            pointer-events: auto;
-        }
+        .pointer-events-auto { pointer-events: auto; }
         
-        /* 按鈕樣式優化 */
         .neon-btn {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.1s;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
+            position: relative; overflow: hidden; transition: all 0.1s;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
-        .neon-btn:active {
-            transform: scale(0.92);
-        }
+        .neon-btn:active { transform: scale(0.92); }
         .neon-btn::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
+            content: ''; position: absolute; top: 0; left: -100%;
             width: 100%; height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             transition: 0.5s;
         }
-        .neon-btn:hover::after {
-            left: 100%;
-        }
-
-        /* 下注按鈕選取樣式 */
+        .neon-btn:hover::after { left: 100%; }
         .neon-btn.selected {
-            background-color: #374151; /* gray-700 */
-            border-color: #fbbf24; /* amber-400 */
-            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
-            transform: scale(1.1);
-            z-index: 20;
+            background-color: #374151; border-color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); transform: scale(1.1); z-index: 20;
         }
 
-        .shake {
-            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
-        }
+        .shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
             10%, 90% { transform: translate3d(-1px, 0, 0); }
             20%, 80% { transform: translate3d(2px, 0, 0); }
@@ -113,48 +65,21 @@
         
         .control-panel {
             background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
-            padding-bottom: max(2rem, env(safe-area-inset-bottom)); 
-            padding-top: 6rem;
+            padding-bottom: max(2rem, env(safe-area-inset-bottom)); padding-top: 6rem;
         }
         
-        /* 掃光動畫 */
-        @keyframes slide {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
+        @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .roadmap-item { transition: all 0.3s ease-out; }
+        .processing { filter: brightness(0.5); pointer-events: none; }
 
-        /* CD ICON 動畫 */
-        .cd-overlay {
-            transition: height 0.1s linear;
-        }
-
-        /* 路途滾動條樣式 */
-        .roadmap-item {
-            transition: all 0.3s ease-out;
-        }
-        
-        /* 處理中狀態 */
-        .processing {
-            filter: brightness(0.5);
-            pointer-events: none;
-        }
-
-        /* 底版閃爍動畫 */
-        @keyframes flash-pulse {
-            0%, 100% { opacity: 0.8; transform: scale(1) skewX(-12deg); }
-            50% { opacity: 1; transform: scale(1.05) skewX(-12deg); }
-        }
-        .animate-flash {
-            animation: flash-pulse 0.5s infinite;
-        }
-
-        /* 自動按鈕選中樣式 */
         .auto-opt-btn.selected {
-            background-color: #2563eb;
-            border-color: #60a5fa;
-            box-shadow: 0 0 15px rgba(37,99,235,0.6);
-            transform: scale(1.05);
+            background-color: #2563eb; border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(37,99,235,0.6); transform: scale(1.05);
         }
+
+        /* Toggle Switch Style */
+        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
     </style>
 </head>
 <body>
@@ -163,45 +88,31 @@
     <canvas id="gameCanvas"></canvas>
 
     <div class="ui-layer safe-area-inset">
-        <!-- 頂部區域容器 (包含 HUD 和 Roadmap) -->
+        <!-- 頂部區域 -->
         <div class="flex flex-col w-full relative z-20 pt-8 pointer-events-none">
-            
-            <!-- 路途 (Roadmap) -->
+            <!-- 路途 -->
             <div class="w-full flex justify-center items-center mb-2 overflow-hidden px-4">
                 <div class="bg-black/60 backdrop-blur-sm rounded-full px-5 py-3 border border-white/10 flex items-center gap-3 shadow-lg max-w-[98%]">
-                    <span class="text-xs text-gray-400 font-bold uppercase mr-1 tracking-wider">HISTORY</span>
-                    <!-- 過去 -->
-                    <div id="roadmapPast" class="flex gap-2 opacity-60 scale-90 origin-right">
-                        <!-- JS 填充 -->
-                    </div>
-                    
+                    <span id="lblHistory" class="text-xs text-gray-400 font-bold uppercase mr-1 tracking-wider">HISTORY</span>
+                    <div id="roadmapPast" class="flex gap-2 opacity-60 scale-90 origin-right"></div>
                     <div class="w-[1px] h-8 bg-white/30 mx-1"></div>
-                    
-                    <!-- 未來 -->
-                    <div id="roadmapFuture" class="flex gap-2 items-center">
-                        <!-- JS 填充 -->
-                    </div>
-                    <span class="text-xs text-blue-400 font-bold uppercase ml-1 tracking-wider">UPCOMING</span>
+                    <div id="roadmapFuture" class="flex gap-2 items-center"></div>
+                    <span id="lblUpcoming" class="text-xs text-blue-400 font-bold uppercase ml-1 tracking-wider">UPCOMING</span>
                 </div>
             </div>
 
             <!-- HUD -->
             <div class="flex justify-between items-start px-6"> 
-                <!-- 左側：餘額 -->
                 <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
-                    <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
+                    <div id="lblBalance" class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
                     <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
                 </div>
                 
-                <!-- 右側：倍數顯示 + 說明按鈕 -->
                 <div class="flex flex-col items-end gap-3 transform scale-90 origin-top-right">
-                    <!-- 倍數 -->
                     <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl min-w-[120px] text-right">
                         <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
                         <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
                     </div>
-                    
-                    <!-- 說明按鈕 (唯一保留的說明按鈕) -->
                     <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-lg">
                         <span class="text-white font-bold text-2xl ui-font">?</span>
                     </button>
@@ -209,7 +120,7 @@
             </div>
         </div>
         
-        <!-- 天空飛行計時條 -->
+        <!-- 天空計時條 -->
         <div id="skyHUD" class="absolute top-[200px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
             <div class="relative">
                 <div class="absolute inset-0 bg-pink-500 blur-md opacity-30 rounded-full"></div>
@@ -219,86 +130,112 @@
                     </div>
                 </div>
                 <div class="absolute -top-7 left-1/2 -translate-x-1/2 w-full text-center">
-                    <span class="text-pink-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">PINATA TIME</span>
+                    <span id="lblPinataTime" class="text-pink-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">PINATA TIME</span>
                 </div>
             </div>
         </div>
 
-        <!-- 左輪彈夾冷卻指示器 -->
+        <!-- Reload UI -->
         <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center scale-110">
-            <!-- Reload 提示條 -->
             <div id="reloadHintBar" class="mb-4 opacity-0 transition-all duration-200 transform translate-y-4">
-                <div class="bg-yellow-500 text-black font-black px-4 py-1 rounded-md text-xl ui-font tracking-widest border-2 border-yellow-300 shadow-[0_0_15px_#eab308] animate-pulse">
+                <div id="lblReloading" class="bg-yellow-500 text-black font-black px-4 py-1 rounded-md text-xl ui-font tracking-widest border-2 border-yellow-300 shadow-[0_0_15px_#eab308] animate-pulse">
                     RELOADING
                 </div>
             </div>
-
             <div class="relative w-32 h-32">
-                <!-- 彈夾主體 -->
                 <div class="absolute inset-0 rounded-full bg-gray-900 border-[6px] border-gray-600 shadow-2xl overflow-hidden">
                     <div class="absolute inset-0 rounded-full border-[20px] border-gray-800 opacity-50"></div>
-                    <!-- 彈巢容器 -->
                     <div id="revolverContainer" class="absolute inset-0 w-full h-full transition-transform duration-100 ease-out origin-center"></div>
-                    <!-- 中心軸 -->
                     <div class="absolute top-1/2 left-1/2 w-14 h-14 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
                         <span id="ammoText" class="text-xs font-black text-gray-400 leading-tight text-center ui-font">RDY</span>
                     </div>
                 </div>
             </div>
-            <span class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
+            <span id="lblBurstFire" class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
         </div>
 
         <!-- 遊戲說明 Modal -->
         <div id="helpModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
             <div class="bg-gray-900 border-4 border-white/20 rounded-[3rem] p-10 w-[95%] max-w-4xl shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden" id="helpContent">
-                <!-- 裝飾背景 -->
                 <div class="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                
-                <h2 class="text-white ui-font text-6xl text-center mb-10 tracking-widest text-yellow-400 drop-shadow-md">HOW TO PLAY</h2>
-                
+                <h2 id="lblHowToPlay" class="text-white ui-font text-6xl text-center mb-10 tracking-widest text-yellow-400 drop-shadow-md">HOW TO PLAY</h2>
                 <div class="space-y-8 text-gray-200">
                     <div class="flex gap-6 items-center">
                         <div class="w-16 h-16 shrink-0 rounded-full bg-blue-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-blue-400">1</div>
                         <div>
-                            <h3 class="font-bold text-blue-300 text-3xl uppercase mb-2 ui-font">Launch</h3>
-                            <p class="text-xl opacity-90 leading-relaxed">Wait for a high multiplier spring to appear on the <strong>Roadmap</strong>, then tap anywhere to launch!</p>
+                            <h3 id="help1Title" class="font-bold text-blue-300 text-3xl uppercase mb-2 ui-font">Launch</h3>
+                            <p id="help1Desc" class="text-xl opacity-90 leading-relaxed">Wait for a high multiplier spring to appear on the <strong>Roadmap</strong>, then tap anywhere to launch!</p>
                         </div>
                     </div>
-                    
                     <div class="flex gap-6 items-center">
                         <div class="w-16 h-16 shrink-0 rounded-full bg-pink-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-pink-400">2</div>
                         <div>
-                            <h3 class="font-bold text-pink-300 text-3xl uppercase mb-2 ui-font">Sky Battle</h3>
-                            <p class="text-xl opacity-90 leading-relaxed">In the air, tap rapidly to shoot the <strong>Pinata</strong>. Each hit shakes coins loose!</p>
+                            <h3 id="help2Title" class="font-bold text-pink-300 text-3xl uppercase mb-2 ui-font">Sky Battle</h3>
+                            <p id="help2Desc" class="text-xl opacity-90 leading-relaxed">In the air, tap rapidly to shoot the <strong>Pinata</strong>. Each hit shakes coins loose!</p>
                         </div>
                     </div>
-
                     <div class="flex gap-6 items-center">
                         <div class="w-16 h-16 shrink-0 rounded-full bg-yellow-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-yellow-400">3</div>
                         <div>
-                            <h3 class="font-bold text-yellow-300 text-3xl uppercase mb-2 ui-font">Big Win</h3>
-                            <p class="text-xl opacity-90 leading-relaxed">Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!</p>
+                            <h3 id="help3Title" class="font-bold text-yellow-300 text-3xl uppercase mb-2 ui-font">Big Win</h3>
+                            <p id="help3Desc" class="text-xl opacity-90 leading-relaxed">Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!</p>
                         </div>
                     </div>
-                    
                     <div class="bg-white/5 p-6 rounded-2xl border border-white/10 mt-6">
-                        <h3 class="font-bold text-green-300 text-2xl uppercase mb-2 ui-font">Auto Pilot</h3>
-                        <p class="text-lg opacity-80">Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.</p>
+                        <h3 id="helpAutoTitle" class="font-bold text-green-300 text-2xl uppercase mb-2 ui-font">Auto Pilot</h3>
+                        <p id="helpAutoDesc" class="text-lg opacity-80">Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.</p>
+                    </div>
+                </div>
+                <button id="btnGotIt" onclick="game.toggleHelp(false)" class="w-full mt-10 bg-white text-black font-black py-6 rounded-2xl hover:bg-gray-200 text-4xl ui-font transition-colors shadow-xl">GOT IT!</button>
+            </div>
+        </div>
+
+        <!-- 設定 Modal (新) -->
+        <div id="settingsModal" class="absolute inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 border-4 border-gray-600 rounded-[2rem] p-8 w-[90%] max-w-[500px] shadow-2xl transform scale-95 transition-transform duration-300 relative">
+                <h2 id="lblSettings" class="text-white ui-font text-5xl text-center mb-10 tracking-widest text-gray-200">SETTINGS</h2>
+                
+                <div class="space-y-6">
+                    <!-- Music -->
+                    <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/10">
+                        <span id="lblMusic" class="text-white text-2xl font-bold ui-font tracking-wide">MUSIC</span>
+                        <div class="relative inline-block w-16 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="toggleMusic" class="toggle-checkbox absolute block w-8 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-600 transition-all duration-300 left-0" onclick="game.toggleMusic(this.checked)"/>
+                            <label for="toggleMusic" class="toggle-label block overflow-hidden h-8 rounded-full bg-gray-700 cursor-pointer border border-gray-600"></label>
+                        </div>
+                    </div>
+
+                    <!-- Sound -->
+                    <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/10">
+                        <span id="lblSound" class="text-white text-2xl font-bold ui-font tracking-wide">SOUND FX</span>
+                        <div class="relative inline-block w-16 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="toggleSound" class="toggle-checkbox absolute block w-8 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-600 transition-all duration-300 left-0" onclick="game.toggleSound(this.checked)"/>
+                            <label for="toggleSound" class="toggle-label block overflow-hidden h-8 rounded-full bg-gray-700 cursor-pointer border border-gray-600"></label>
+                        </div>
+                    </div>
+
+                    <!-- Language -->
+                    <div class="flex flex-col gap-3 bg-black/40 p-4 rounded-xl border border-white/10">
+                        <span id="lblLanguage" class="text-white text-xl font-bold ui-font tracking-wide mb-2">LANGUAGE</span>
+                        <div class="flex gap-2">
+                            <button onclick="game.setLanguage('en')" id="btnLangEn" class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-bold border-2 border-blue-400 hover:bg-blue-500 transition-colors">English</button>
+                            <button onclick="game.setLanguage('zh')" id="btnLangZh" class="flex-1 py-3 rounded-lg bg-gray-700 text-gray-400 font-bold border-2 border-gray-600 hover:bg-gray-600 transition-colors">简体中文</button>
+                        </div>
                     </div>
                 </div>
 
-                <button onclick="game.toggleHelp(false)" class="w-full mt-10 bg-white text-black font-black py-6 rounded-2xl hover:bg-gray-200 text-4xl ui-font transition-colors shadow-xl">GOT IT!</button>
+                <button id="btnCloseSettings" onclick="game.toggleSettings(false)" class="w-full mt-10 bg-gray-200 text-gray-900 font-black py-4 rounded-xl hover:bg-white text-3xl ui-font transition-colors shadow-lg">CLOSE</button>
             </div>
         </div>
 
         <!-- 自動託管設定面板 -->
         <div id="autoPanel" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
             <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-10 w-[95%] max-w-[800px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
-                <h2 class="text-white ui-font text-5xl text-center mb-8 tracking-widest drop-shadow-[0_4px_0_#000]">AUTO PILOT</h2>
+                <h2 id="lblAutoPilot" class="text-white ui-font text-5xl text-center mb-8 tracking-widest drop-shadow-[0_4px_0_#000]">AUTO PILOT</h2>
                 
-                <!-- 局數選擇 -->
+                <!-- 局數 -->
                 <div class="mb-8">
-                    <label class="text-blue-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">ROUNDS</label>
+                    <label id="lblRounds" class="text-blue-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">ROUNDS</label>
                     <div class="grid grid-cols-4 gap-3">
                         <button onclick="game.setAutoRounds(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="10">10</button>
                         <button onclick="game.setAutoRounds(20)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="20">20</button>
@@ -307,9 +244,9 @@
                     </div>
                 </div>
 
-                <!-- 觸發倍率選擇 -->
+                <!-- 倍率 -->
                 <div class="mb-10">
-                    <label class="text-yellow-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">MIN MULTIPLIER</label>
+                    <label id="lblMinMul" class="text-yellow-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">MIN MULTIPLIER</label>
                     <div class="grid grid-cols-5 gap-2">
                         <button onclick="game.setAutoMinMul(2)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="2">x2</button>
                         <button onclick="game.setAutoMinMul(5)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="5">x5</button>
@@ -325,8 +262,8 @@
                 </div>
 
                 <div class="flex gap-4">
-                    <button onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all">CANCEL</button>
-                    <button onclick="game.startAuto()" class="flex-[1.5] bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-6 rounded-2xl shadow-lg hover:brightness-110 ui-font tracking-wide text-3xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all">START RUN</button>
+                    <button id="btnCancel" onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all">CANCEL</button>
+                    <button id="btnStartRun" onclick="game.startAuto()" class="flex-[1.5] bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-6 rounded-2xl shadow-lg hover:brightness-110 ui-font tracking-wide text-3xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all">START RUN</button>
                 </div>
             </div>
         </div>
@@ -347,29 +284,25 @@
                 <div class="flex items-stretch justify-between w-full max-w-xl mb-5 gap-3 min-h-[80px]">
                     <!-- 顯示押注額 -->
                     <div class="flex-1 flex flex-col justify-center bg-black/60 px-5 py-2 rounded-2xl border border-white/10">
-                        <span class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">TOTAL BET</span>
+                        <span id="lblTotalBet" class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">TOTAL BET</span>
                         <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md leading-none">$10.00</span>
                     </div>
 
-                    <!-- AUTO 按鈕 [修改] 啟動後顯示全版面資訊 (局數 + 倍數) -->
+                    <!-- AUTO 按鈕 -->
                     <button id="autoToggleBtn" onclick="game.toggleAutoPanel(true)" class="flex-[1.2] bg-gray-800 border-2 border-blue-500/50 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden hover:bg-gray-700 active:scale-95 transition-all shadow-lg group">
                         
-                        <!-- 啟動狀態遮罩 -->
+                        <!-- 啟動狀態 -->
                         <div id="autoActiveBadge" class="absolute inset-0 flex flex-col items-center justify-center bg-green-900/95 z-20 hidden transition-opacity duration-300 backdrop-blur-sm">
-                            
-                            <!-- 倍數顯示：右上角獨立標籤 -->
                             <div class="absolute top-0 right-0 bg-yellow-400 text-black font-black ui-font text-xl px-3 py-1 rounded-bl-2xl shadow-lg z-30 border-b-2 border-l-2 border-yellow-200">
                                 <span id="autoActiveMul">x10</span>
                             </div>
-
-                            <!-- 剩餘局數 (置中大字) -->
                             <div class="flex flex-col items-center justify-center w-full mt-2">
-                                <span class="text-green-300 text-[10px] font-black tracking-[0.2em] uppercase leading-none mb-1 opacity-80">ROUNDS LEFT</span>
+                                <span id="lblRoundsLeft" class="text-green-300 text-[10px] font-black tracking-[0.2em] uppercase leading-none mb-1 opacity-80">ROUNDS LEFT</span>
                                 <span id="autoActiveRounds" class="text-white text-6xl font-black ui-font leading-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">10</span>
                             </div>
                         </div>
 
-                        <!-- 未啟動狀態內容 (預設) -->
+                        <!-- 未啟動狀態 -->
                         <div id="autoDefaultContent" class="flex flex-col items-center justify-center w-full h-full">
                             <div class="flex items-center gap-2 mb-0 z-10">
                                 <div id="autoStatusDot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_8px_rgba(0,0,0,0.5)] transition-colors duration-300"></div>
@@ -377,9 +310,16 @@
                             </div>
                             <span id="autoStatusText" class="text-white font-black text-4xl tracking-wider leading-none ui-font mt-1 z-10">AUTO</span>
                         </div>
-                        
-                        <!-- 裝飾光 -->
+                         <!-- 裝飾光 -->
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    </button>
+                    
+                    <!-- 設定按鈕 (右下角) -->
+                     <button onclick="game.toggleSettings(true)" class="flex-[0.5] bg-gray-900 border-2 border-gray-600 rounded-2xl flex items-center justify-center hover:bg-gray-800 active:scale-95 transition-all shadow-lg group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                     </button>
                 </div>
                 
@@ -411,11 +351,111 @@
 </div>
 
 <script>
+// I18N Data
+const I18N = {
+    en: {
+        balance: "Balance",
+        history: "HISTORY",
+        upcoming: "UPCOMING",
+        nextTarget: "NEXT TARGET",
+        pinataTime: "PINATA TIME",
+        reloading: "RELOADING",
+        burstFire: "BURST FIRE",
+        rdy: "RDY",
+        fire: "FIRE",
+        rounds: "ROUNDS",
+        autoPilot: "AUTO PILOT",
+        minMul: "MIN MULTIPLIER",
+        cancel: "CANCEL",
+        startRun: "START RUN",
+        tapToStart: "TAP ANYWHERE TO START",
+        totalBet: "TOTAL BET",
+        mode: "MODE",
+        auto: "AUTO",
+        roundsLeft: "ROUNDS LEFT",
+        target: "TARGET",
+        howToPlay: "HOW TO PLAY",
+        gotIt: "GOT IT!",
+        settings: "SETTINGS",
+        music: "MUSIC",
+        sound: "SOUND FX",
+        language: "LANGUAGE",
+        noMoney: "NO MONEY!",
+        legendary: "LEGENDARY!",
+        boost: "BOOST!",
+        misfire: "MISFIRE!",
+        miss: "MISS",
+        streakLost: "STREAK LOST",
+        clink: "CLINK!",
+        broken: "BROKEN!",
+        streak: "STREAK",
+        bigWin: "BIG WIN",
+        help1Title: "Launch",
+        help1Desc: "Wait for a high multiplier spring to appear on the <strong>Roadmap</strong>, then tap anywhere to launch!",
+        help2Title: "Sky Battle",
+        help2Desc: "In the air, tap rapidly to shoot the <strong>Pinata</strong>. Each hit shakes coins loose!",
+        help3Title: "Big Win",
+        help3Desc: "Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!",
+        helpAutoTitle: "Auto Pilot",
+        helpAutoDesc: "Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.",
+        close: "CLOSE"
+    },
+    zh: {
+        balance: "余额",
+        history: "历史记录",
+        upcoming: "即将到来",
+        nextTarget: "下个目标",
+        pinataTime: "彩马时刻",
+        reloading: "装填中",
+        burstFire: "连射模式",
+        rdy: "就绪",
+        fire: "射击",
+        rounds: "局数",
+        autoPilot: "自动托管",
+        minMul: "最小倍数",
+        cancel: "取消",
+        startRun: "开始运行",
+        tapToStart: "点击任意处开始",
+        totalBet: "总押注",
+        mode: "模式",
+        auto: "自动",
+        roundsLeft: "剩余局数",
+        target: "目标",
+        howToPlay: "游戏说明",
+        gotIt: "知道了!",
+        settings: "设置",
+        music: "音乐",
+        sound: "音效",
+        language: "语言",
+        noMoney: "余额不足!",
+        legendary: "传奇!",
+        boost: "爆发!",
+        misfire: "哑火!",
+        miss: "未命中",
+        streakLost: "连胜中断",
+        clink: "叮当!",
+        broken: "击碎!",
+        streak: "连胜",
+        bigWin: "大奖",
+        help1Title: "起飞",
+        help1Desc: "等待高倍数弹簧出现在<strong>路途</strong>上，然后点击任意处起飞！",
+        help2Title: "空中战斗",
+        help2Desc: "在空中快速点击射击<strong>彩马</strong>。每次击中都会掉落金币！",
+        help3Title: "大奖",
+        help3Desc: "击碎彩马赢得<strong>倍数奖励</strong>。小心'哑火'！",
+        helpAutoTitle: "自动托管",
+        helpAutoDesc: "使用自动模式，当弹簧满足您的最小倍数条件时自动起飞。",
+        close: "关闭"
+    }
+};
+
 // --- 音效控制器類別 ---
 class AudioController {
     constructor() {
         this.ctx = null;
         this.enabled = false;
+        this.musicEnabled = true; // Default On
+        this.sfxEnabled = true;   // Default On
         this.bgmTimer = null;
         this.currentBPM = 110; 
         this.targetBPM = 110;
@@ -472,30 +512,36 @@ class AudioController {
     }
 
     playJump() {
+        if (!this.sfxEnabled) return;
         this.playTone(150, 'square', 0.1, 0.1, 600); 
     }
 
     playHit() {
+        if (!this.sfxEnabled) return;
         this.playNoise(0.1, 0.3); 
         this.playTone(100, 'sawtooth', 0.1, 0.2, 50);
     }
 
     playShoot() {
+        if (!this.sfxEnabled) return;
         this.playNoise(0.05, 0.2);
         this.playTone(200, 'sawtooth', 0.05, 0.2, 50);
     }
 
     playReload() {
+        if (!this.sfxEnabled) return;
         this.playTone(400, 'sine', 0.1, 0.1, 600);
         setTimeout(() => this.playTone(600, 'sine', 0.1, 0.1, 800), 150);
     }
 
     playWin() {
+        if (!this.sfxEnabled) return;
         this.playTone(1200, 'sine', 0.1, 0.1);
         setTimeout(() => this.playTone(1800, 'sine', 0.2, 0.1), 50);
     }
 
     playExplode() {
+        if (!this.sfxEnabled) return;
         this.playNoise(0.8, 0.8); 
         this.playTone(100, 'sawtooth', 0.5, 0.5, 10); 
     }
@@ -513,7 +559,9 @@ class AudioController {
                 return;
             }
             while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
-                this.scheduleNote(this.noteIdx, this.nextNoteTime);
+                if (this.musicEnabled) {
+                    this.scheduleNote(this.noteIdx, this.nextNoteTime);
+                }
                 this.noteIdx++;
                 this.currentBPM += (this.targetBPM - this.currentBPM) * 0.1;
                 const secondsPerBeat = 60.0 / this.currentBPM;
@@ -605,6 +653,9 @@ class Game {
         
         // 初始化數學模組
         this.math = new MathModel(0.96);
+
+        // Lang
+        this.lang = 'en';
 
         // 自動託管設定
         this.auto = {
@@ -719,6 +770,11 @@ class Game {
         // [新增] 初始化時設定按鈕選取狀態
         this.setBet(this.betAmount);
         
+        // 初始化設定 UI 狀態
+        document.getElementById('toggleMusic').checked = this.audio.musicEnabled;
+        document.getElementById('toggleSound').checked = this.audio.sfxEnabled;
+        this.setLanguage('en'); // Default
+
         this.updateUI();
         this.updateRoadmapUI(); 
         
@@ -732,6 +788,90 @@ class Game {
             // 確保按鈕預設選中狀態
             this.updateAutoPanelUI();
         }, 100);
+    }
+
+    // Toggle Settings Modal
+    toggleSettings(show) {
+        const modal = document.getElementById('settingsModal');
+        if (show) {
+            modal.style.pointerEvents = 'auto';
+            modal.style.opacity = '1';
+            modal.firstElementChild.style.transform = 'scale(1)';
+        } else {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            modal.firstElementChild.style.transform = 'scale(0.95)';
+        }
+    }
+
+    toggleMusic(val) {
+        this.audio.musicEnabled = val;
+    }
+
+    toggleSound(val) {
+        this.audio.sfxEnabled = val;
+    }
+
+    setLanguage(lang) {
+        this.lang = lang;
+        const btnEn = document.getElementById('btnLangEn');
+        const btnZh = document.getElementById('btnLangZh');
+        
+        if (lang === 'en') {
+            btnEn.classList.replace('bg-gray-700', 'bg-blue-600');
+            btnEn.classList.replace('text-gray-400', 'text-white');
+            btnEn.classList.replace('border-gray-600', 'border-blue-400');
+            
+            btnZh.classList.replace('bg-blue-600', 'bg-gray-700');
+            btnZh.classList.replace('text-white', 'text-gray-400');
+            btnZh.classList.replace('border-blue-400', 'border-gray-600');
+        } else {
+            btnZh.classList.replace('bg-gray-700', 'bg-blue-600');
+            btnZh.classList.replace('text-gray-400', 'text-white');
+            btnZh.classList.replace('border-gray-600', 'border-blue-400');
+            
+            btnEn.classList.replace('bg-blue-600', 'bg-gray-700');
+            btnEn.classList.replace('text-white', 'text-gray-400');
+            btnEn.classList.replace('border-blue-400', 'border-gray-600');
+        }
+
+        // Update all text elements
+        const t = I18N[this.lang];
+        document.getElementById('lblHistory').innerText = t.history;
+        document.getElementById('lblUpcoming').innerText = t.upcoming;
+        document.getElementById('lblBalance').innerText = t.balance;
+        document.getElementById('bonusLabel').innerText = t.nextTarget;
+        document.getElementById('lblPinataTime').innerText = t.pinataTime;
+        document.getElementById('lblReloading').innerText = t.reloading;
+        document.getElementById('ammoText').innerText = t.rdy; // dynamic will override
+        document.getElementById('lblBurstFire').innerText = t.burstFire;
+        document.getElementById('lblHowToPlay').innerText = t.howToPlay;
+        document.getElementById('help1Title').innerText = t.help1Title;
+        document.getElementById('help1Desc').innerHTML = t.help1Desc;
+        document.getElementById('help2Title').innerText = t.help2Title;
+        document.getElementById('help2Desc').innerHTML = t.help2Desc;
+        document.getElementById('help3Title').innerText = t.help3Title;
+        document.getElementById('help3Desc').innerHTML = t.help3Desc;
+        document.getElementById('helpAutoTitle').innerText = t.helpAutoTitle;
+        document.getElementById('helpAutoDesc').innerText = t.helpAutoDesc;
+        document.getElementById('btnGotIt').innerText = t.gotIt;
+        document.getElementById('lblSettings').innerText = t.settings;
+        document.getElementById('lblMusic').innerText = t.music;
+        document.getElementById('lblSound').innerText = t.sound;
+        document.getElementById('lblLanguage').innerText = t.language;
+        document.getElementById('btnCloseSettings').innerText = t.close;
+        document.getElementById('lblAutoPilot').innerText = t.autoPilot;
+        document.getElementById('lblRounds').innerText = t.rounds;
+        document.getElementById('lblMinMul').innerText = t.minMul;
+        document.getElementById('btnCancel').innerText = t.cancel;
+        document.getElementById('btnStartRun').innerText = t.startRun;
+        document.getElementById('startHint').innerText = t.tapToStart;
+        document.getElementById('lblTotalBet').innerText = t.totalBet;
+        document.getElementById('autoModeLabel').innerText = t.mode;
+        document.getElementById('autoStatusText').innerText = t.auto;
+        document.getElementById('lblRoundsLeft').innerText = t.roundsLeft;
+
+        this.updateUI(); // refresh dynamic bits
     }
 
     // [新增] 切換說明視窗
@@ -1000,10 +1140,10 @@ class Game {
         
         let displayMul = this.currentMultiplier;
         let displayColor = '#60a5fa'; 
-        let labelText = "ACTIVE";
+        let labelText = I18N[this.lang].nextTarget;
+        if (this.auto.active) labelText = I18N[this.lang].target;
 
         if (this.state === 'GROUND') {
-            labelText = "TARGET";
             const target = this.getTargetSpring();
             if (target) {
                 displayMul = target.mul;
@@ -1058,7 +1198,7 @@ class Game {
                 // 射擊中
                 bulletsLoaded = 0;
                 rotation = this.gameTick * 30; 
-                ammoText.innerText = "FIRE";
+                ammoText.innerText = I18N[this.lang].fire;
                 ammoText.className = "text-xl font-black text-red-500 ui-font";
                 betPanel.classList.add('processing');
                 
@@ -1069,7 +1209,7 @@ class Game {
                 // 就緒
                 bulletsLoaded = 6;
                 rotation = 0;
-                ammoText.innerText = "RDY";
+                ammoText.innerText = I18N[this.lang].rdy;
                 ammoText.className = "text-xl font-black text-green-400 ui-font";
                 betPanel.classList.remove('processing');
 
@@ -1126,7 +1266,7 @@ class Game {
             if (this.balance >= this.betAmount) {
                 this.startShootingRound(x, y);
             } else {
-                this.spawnText("NO MONEY!", this.horse.x, this.horse.y, '#ef4444', 50);
+                this.spawnText(I18N[this.lang].noMoney, this.horse.x, this.horse.y, '#ef4444', 50);
             }
         }
     }
@@ -1180,7 +1320,7 @@ class Game {
 
             this.shakeScreen(20);
             
-            let label = spring.mul >= 1000 ? 'LEGENDARY!' : `x${spring.mul} BOOST!`;
+            let label = spring.mul >= 1000 ? I18N[this.lang].legendary : `x${spring.mul} ${I18N[this.lang].boost}`;
             this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
             
             for(let i=0; i<30; i++) {
@@ -1261,13 +1401,13 @@ class Game {
 
                 case 'BAD_EXPLODE':
                     setTimeout(() => { this.explodePinata(false); }, 200);
-                    this.spawnText("MISFIRE!", this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
+                    this.spawnText(I18N[this.lang].misfire, this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
                     break;
 
                 default: // MISS
-                    this.spawnText("MISS", this.horse.x, this.horse.y - 80, '#9ca3af', 40);
+                    this.spawnText(I18N[this.lang].miss, this.horse.x, this.horse.y - 80, '#9ca3af', 40);
                     if (this.winStreak >= 3) {
-                        this.spawnText("STREAK LOST", this.horse.x, this.horse.y + 50, '#ef4444', 40);
+                        this.spawnText(I18N[this.lang].streakLost, this.horse.x, this.horse.y + 50, '#ef4444', 40);
                     }
                     this.winStreak = 0;
                     break;
@@ -1288,7 +1428,7 @@ class Game {
             this.createParticles(this.horse.x, this.horse.y, 5, '#fef08a', 'coin');
             this.audio.playTone(880, 'sine', 0.1, 0.1); 
         } else {
-            this.spawnText("CLINK!", this.horse.x, this.horse.y - 60, '#fff', 30);
+            this.spawnText(I18N[this.lang].clink, this.horse.x, this.horse.y - 60, '#fff', 30);
         }
     }
 
@@ -1332,7 +1472,7 @@ class Game {
             this.flashAlpha = 0.3;
 
             this.winStreak = 0;
-            this.spawnText("BROKEN!", this.horse.x, this.horse.y - 50, '#ef4444', 70);
+            this.spawnText(I18N[this.lang].broken, this.horse.x, this.horse.y - 50, '#ef4444', 70);
             this.createParticles(this.horse.x, this.horse.y, 50, '#4b5563', 'spark'); 
             this.createParticles(this.horse.x, this.horse.y, 30, '#ef4444', 'line');  
         }
@@ -1441,7 +1581,7 @@ class Game {
                     }
                 } else {
                     this.stopAuto(); 
-                    this.spawnText("NO MONEY", this.width/2, this.height/2, '#ef4444', 60);
+                    this.spawnText(I18N[this.lang].noMoney, this.width/2, this.height/2, '#ef4444', 60);
                 }
             }
         }
@@ -1775,9 +1915,8 @@ class Game {
             this.ctx.font = '900 120px "Black Ops One"';
             this.ctx.translate(this.width/2, this.height/2 + 200);
             this.ctx.rotate(-0.1);
-            this.ctx.fillText(`${this.winStreak}`, 0, 0);
-            this.ctx.font = '900 40px "Black Ops One"';
-            this.ctx.fillText("STREAK", 0, 50);
+            this.ctx.fillText(I18N[this.lang].streak, 0, 50); // Using I18N here
+            this.ctx.fillText(`${this.winStreak}`, 0, -50);
             this.ctx.restore();
         }
 
