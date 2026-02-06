@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>飛天神駒 PRO - FURY RELOADED</title>
+    <title>飞天神驹</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+SC:wght@500;900&family=Noto+Sans+TC:wght@500;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+SC:wght@500;700;900&family=Noto+Sans+TC:wght@500;900&display=swap');
 
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
@@ -97,6 +97,16 @@
         .custom-scroll::-webkit-scrollbar-track { background: #1f2937; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        .icon-shadow { filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5)); }
+        
+        /* Tap Hand Animation */
+        @keyframes tap {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(0.9); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        .tap-anim { animation: tap 1.5s infinite ease-in-out; }
     </style>
 </head>
 <body>
@@ -110,36 +120,54 @@
             <!-- 路途 -->
             <div class="w-full flex justify-center items-center mb-2 overflow-hidden px-4">
                 <div class="bg-black/60 backdrop-blur-sm rounded-full px-5 py-3 border border-white/10 flex items-center gap-3 shadow-lg max-w-[98%]">
-                    <span id="lblHistory" class="text-xs text-gray-400 font-bold uppercase mr-1 tracking-wider">HISTORY</span>
+                    <!-- History Icon -->
+                    <div class="text-gray-400 mr-1" title="History">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
                     <div id="roadmapPast" class="flex gap-2 opacity-60 scale-90 origin-right"></div>
                     <div class="w-[1px] h-8 bg-white/30 mx-1"></div>
                     <div id="roadmapFuture" class="flex gap-2 items-center"></div>
-                    <span id="lblUpcoming" class="text-xs text-blue-400 font-bold uppercase ml-1 tracking-wider">UPCOMING</span>
+                    <!-- Upcoming Icon -->
+                    <div class="text-blue-400 ml-1" title="Upcoming">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                    </div>
                 </div>
             </div>
 
             <!-- HUD -->
             <div class="flex justify-between items-start px-6"> 
-                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
-                    <div id="lblBalance" class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
+                <!-- [修改] 餘額顯示改為文字標題 -->
+                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left min-w-[200px]">
+                    <div id="lblBalanceTitle" class="text-yellow-400 text-lg font-bold mb-1 ui-font tracking-wider">BALANCE</div>
                     <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
                 </div>
                 
                 <div class="flex flex-col items-end gap-3 transform scale-90 origin-top-right">
-                    <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl min-w-[120px] text-right">
-                        <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
+                    <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl min-w-[120px] text-right flex flex-col items-end">
+                        <div class="text-blue-300 opacity-80 mb-1" id="bonusLabelIcon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
                         <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
                     </div>
                     
-                    <!-- 歷史按鈕 & 說明按鈕 (優化：垂直排列，放大3倍) -->
+                    <!-- 歷史按鈕 & 說明按鈕 -->
                     <div class="flex flex-col gap-4 mt-2">
-                         <button onclick="game.toggleHistory(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-blue-600/80 backdrop-blur-md border-4 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <button onclick="game.toggleHistory(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-blue-600/80 backdrop-blur-md border-4 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-xl group">
+                            <!-- [Icon] Clock -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white group-hover:scale-110 transition-transform icon-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
-                        <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-white/20 backdrop-blur-md border-4 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-xl">
-                            <span class="text-white font-bold text-6xl ui-font">?</span>
+                        <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-blue-600/80 backdrop-blur-md border-4 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-xl group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white group-hover:scale-110 transition-transform icon-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -156,7 +184,12 @@
                     </div>
                 </div>
                 <div class="absolute -top-7 left-1/2 -translate-x-1/2 w-full text-center">
-                    <span id="lblPinataTime" class="text-pink-200 text-lg font-bold drop-shadow-md tracking-[0.2em] ui-font">PINATA TIME</span>
+                    <!-- Timer Icon -->
+                    <div class="text-pink-200 drop-shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
                 </div>
             </div>
         </div>
@@ -173,30 +206,42 @@
                     <div class="absolute inset-0 rounded-full border-[20px] border-gray-800 opacity-50"></div>
                     <div id="revolverContainer" class="absolute inset-0 w-full h-full transition-transform duration-100 ease-out origin-center"></div>
                     <div class="absolute top-1/2 left-1/2 w-14 h-14 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
-                        <span id="ammoText" class="text-xs font-black text-gray-400 leading-tight text-center ui-font">RDY</span>
+                        <div id="ammoIcon">
+                            <!-- JS will inject SVG here -->
+                        </div>
                     </div>
                 </div>
             </div>
-            <span id="lblBurstFire" class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
+            <div class="mt-3 text-yellow-400 bg-black/50 px-3 py-2 rounded-full border border-yellow-400/30">
+                <!-- Burst Fire Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
         </div>
 
-        <!-- 歷史報表 Modal (優化：全螢幕) -->
+        <!-- 歷史報表 Modal -->
         <div id="historyModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 opacity-0 pointer-events-none">
             <div class="bg-gray-900 w-full h-full flex flex-col shadow-2xl transform scale-100 transition-transform duration-300">
                 <div class="flex justify-between items-center p-6 border-b border-gray-800 bg-gray-900/50">
-                    <h2 id="lblHistoryTitle" class="text-white ui-font text-5xl tracking-widest text-blue-400">GAME HISTORY</h2>
+                    <!-- [修改] 標題改為文字，使用 ID 方便切換語言 -->
+                    <div id="lblHistoryTitle" class="text-white text-3xl font-black ui-font tracking-wider">
+                        历史报表
+                    </div>
                     <button onclick="game.toggleHistory(false)" class="text-gray-400 hover:text-white transition-colors p-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
                 
-                <!-- Table Header -->
-                <div class="grid grid-cols-5 text-gray-400 font-bold text-xl uppercase tracking-wider border-b border-gray-700 py-6 px-8 bg-gray-800/30">
-                    <div id="colId">ROUND ID</div>
-                    <div id="colTime">TIME</div>
-                    <div id="colMul" class="text-center">MUL</div>
-                    <div id="colBet" class="text-right">BET</div>
-                    <div id="colWin" class="text-right">WIN</div>
+                <!-- Table Header (Text) -->
+                <!-- [修改] 增加欄位並使用文字 ID 方便切換語言 -->
+                <div class="grid grid-cols-6 text-gray-400 font-bold text-xl border-b border-gray-700 py-6 px-8 bg-gray-800/30 items-center justify-items-center">
+                    <div class="justify-self-start" id="colSerial">#</div>
+                    <div id="colTime">Time</div>
+                    <div id="colMul">Mul</div>
+                    <div class="justify-self-end" id="colBet">Bet</div>
+                    <div class="justify-self-end" id="colWin">Win</div>
+                    <div class="justify-self-end text-yellow-500" id="colBal">Balance</div>
                 </div>
 
                 <!-- Table Body -->
@@ -206,51 +251,120 @@
             </div>
         </div>
 
-        <!-- 遊戲說明 Modal -->
+        <!-- 遊戲說明 Modal (Full Screen - Updated) -->
         <div id="helpModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
-            <div class="bg-gray-900 border-4 border-white/20 rounded-[3rem] p-10 w-[95%] max-w-4xl shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden" id="helpContent">
-                <div class="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                <h2 id="lblHowToPlay" class="text-white ui-font text-6xl text-center mb-10 tracking-widest text-yellow-400 drop-shadow-md">HOW TO PLAY</h2>
-                <div class="space-y-8 text-gray-200">
-                    <div class="flex gap-6 items-center">
-                        <div class="w-16 h-16 shrink-0 rounded-full bg-blue-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-blue-400">1</div>
-                        <div>
-                            <h3 id="help1Title" class="font-bold text-blue-300 text-3xl uppercase mb-2 ui-font">Launch</h3>
-                            <p id="help1Desc" class="text-xl opacity-90 leading-relaxed">Wait for a high multiplier spring to appear on the <strong>Roadmap</strong>, then tap anywhere to launch!</p>
+            <!-- [修改] 增加 overflow-x-hidden 防止左右拖曳 -->
+            <div class="bg-gray-900 w-full h-full flex flex-col relative overflow-hidden" id="helpContent">
+                
+                <!-- Header -->
+                <div class="flex justify-between items-center px-8 py-6 border-b border-gray-800 bg-gray-900/95 z-20 shrink-0">
+                    <div class="flex items-center gap-4">
+                        <div class="text-yellow-400">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
+                        <h2 class="text-5xl font-black text-white ui-font tracking-wider">GAME GUIDE</h2>
                     </div>
-                    <div class="flex gap-6 items-center">
-                        <div class="w-16 h-16 shrink-0 rounded-full bg-pink-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-pink-400">2</div>
-                        <div>
-                            <h3 id="help2Title" class="font-bold text-pink-300 text-3xl uppercase mb-2 ui-font">Sky Battle</h3>
-                            <p id="help2Desc" class="text-xl opacity-90 leading-relaxed">In the air, tap rapidly to shoot the <strong>Pinata</strong>. Each hit shakes coins loose!</p>
+                     <button onclick="game.toggleHelp(false)" class="bg-gray-800 p-4 rounded-full hover:bg-gray-700 transition-colors pointer-events-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Content Scroll -->
+                <div class="flex-1 overflow-y-auto custom-scroll p-8 pb-40 space-y-12 relative z-10 w-full overflow-x-hidden">
+                    
+                    <!-- Background Decoration -->
+                    <div class="fixed top-20 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+
+                    <!-- Container to limit width on large screens -->
+                    <div class="max-w-5xl mx-auto space-y-12">
+
+                        <!-- Game Goal -->
+                        <div class="bg-white/5 rounded-[2rem] p-10 border border-white/10 shadow-lg">
+                            <h3 id="helpGoalTitle" class="text-4xl font-bold text-yellow-400 mb-6 ui-font flex items-center gap-4">
+                                <span class="text-5xl">🎯</span> Game Goal
+                            </h3>
+                            <p id="helpGoalDesc" class="text-3xl text-gray-200 leading-relaxed font-medium"></p>
                         </div>
-                    </div>
-                    <div class="flex gap-6 items-center">
-                        <div class="w-16 h-16 shrink-0 rounded-full bg-yellow-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-yellow-400">3</div>
-                        <div>
-                            <h3 id="help3Title" class="font-bold text-yellow-300 text-3xl uppercase mb-2 ui-font">Big Win</h3>
-                            <p id="help3Desc" class="text-xl opacity-90 leading-relaxed">Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!</p>
+
+                        <!-- Controls -->
+                        <div class="bg-white/5 rounded-[2rem] p-10 border border-white/10 shadow-lg">
+                            <h3 id="helpControlsTitle" class="text-4xl font-bold text-blue-400 mb-8 ui-font flex items-center gap-4">
+                                <span class="text-5xl">🎮</span> Controls
+                            </h3>
+                            <div class="space-y-10">
+                                <div class="flex items-start gap-8">
+                                    <div class="w-16 h-16 rounded-2xl bg-blue-600 shrink-0 flex items-center justify-center text-4xl font-black text-white shadow-lg shadow-blue-500/30">1</div>
+                                    <div class="text-2xl text-gray-300 leading-relaxed pt-2" id="helpControlsLaunch"></div>
+                                </div>
+                                <div class="flex items-start gap-8">
+                                    <div class="w-16 h-16 rounded-2xl bg-pink-600 shrink-0 flex items-center justify-center text-4xl font-black text-white shadow-lg shadow-pink-500/30">2</div>
+                                    <div class="text-2xl text-gray-300 leading-relaxed pt-2" id="helpControlsShoot"></div>
+                                </div>
+                                <div class="flex items-start gap-8">
+                                    <div class="w-16 h-16 rounded-2xl bg-yellow-600 shrink-0 flex items-center justify-center text-4xl font-black text-white shadow-lg shadow-yellow-500/30">3</div>
+                                    <div class="text-2xl text-gray-300 leading-relaxed pt-2" id="helpControlsJackpot"></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10 mt-6">
-                        <h3 id="helpAutoTitle" class="font-bold text-green-300 text-2xl uppercase mb-2 ui-font">Auto Pilot</h3>
-                        <p id="helpAutoDesc" class="text-lg opacity-80">Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.</p>
+
+                        <!-- UI Functions -->
+                        <div class="bg-white/5 rounded-[2rem] p-10 border border-white/10 shadow-lg">
+                            <h3 id="helpUiTitle" class="text-4xl font-bold text-green-400 mb-8 ui-font flex items-center gap-4">
+                                <span class="text-5xl">⚙️</span> Interface
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">💰</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiBet"></span>
+                                </div>
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">🗺️</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiRoadmap"></span>
+                                </div>
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">▶️</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiAuto"></span>
+                                </div>
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">🕒</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiHistory"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <button id="btnGotIt" onclick="game.toggleHelp(false)" class="w-full mt-10 bg-white text-black font-black py-6 rounded-2xl hover:bg-gray-200 text-4xl ui-font transition-colors shadow-xl">GOT IT!</button>
+                
+                <!-- Fixed Bottom Button (Enhanced) -->
+                <div class="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-gray-950 via-gray-900 to-transparent pointer-events-none flex justify-center z-30">
+                      <button id="btnGotIt" onclick="game.toggleHelp(false)" class="pointer-events-auto w-full max-w-lg bg-white text-black font-black py-6 rounded-3xl hover:bg-gray-200 text-4xl ui-font transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] active:scale-95 border-b-8 border-gray-400 active:border-b-0 active:translate-y-2">
+                        OK, I GOT IT!
+                    </button>
+                </div>
+
             </div>
         </div>
 
-        <!-- 設定 Modal (新) -->
+        <!-- 設定 Modal -->
         <div id="settingsModal" class="absolute inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
             <div class="bg-gray-900 border-4 border-gray-600 rounded-[2rem] p-8 w-[90%] max-w-[500px] shadow-2xl transform scale-95 transition-transform duration-300 relative">
-                <h2 id="lblSettings" class="text-white ui-font text-5xl text-center mb-10 tracking-widest text-gray-200">SETTINGS</h2>
+                <div class="text-center mb-10 text-gray-200">
+                    <!-- Settings Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
                 
                 <div class="space-y-6">
                     <!-- Music -->
                     <div class="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/10">
-                        <span id="lblMusic" class="text-white text-2xl font-bold ui-font tracking-wide">MUSIC</span>
+                        <span id="lblMusic" class="text-white text-2xl font-bold ui-font tracking-wide">
+                            Music
+                        </span>
                         <label class="setting-toggle">
                             <input type="checkbox" id="toggleMusic" onclick="game.toggleMusic(this.checked)">
                             <span class="slider"></span>
@@ -259,7 +373,9 @@
 
                     <!-- Sound -->
                     <div class="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/10">
-                        <span id="lblSound" class="text-white text-2xl font-bold ui-font tracking-wide">SOUND FX</span>
+                        <span id="lblSound" class="text-white text-2xl font-bold ui-font tracking-wide">
+                            Sound
+                        </span>
                         <label class="setting-toggle">
                             <input type="checkbox" id="toggleSound" onclick="game.toggleSound(this.checked)">
                             <span class="slider"></span>
@@ -268,26 +384,40 @@
 
                     <!-- Language -->
                     <div class="flex flex-col gap-3 bg-black/40 p-5 rounded-2xl border border-white/10">
-                        <span id="lblLanguage" class="text-white text-xl font-bold ui-font tracking-wide mb-2">LANGUAGE</span>
+                        <span id="lblLang" class="text-white text-xl font-bold ui-font tracking-wide mb-2">
+                            Language
+                        </span>
                         <div class="flex gap-2">
-                            <button onclick="game.setLanguage('en')" id="btnLangEn" class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-bold border-2 border-blue-400 hover:bg-blue-500 transition-colors">English</button>
-                            <button onclick="game.setLanguage('zh')" id="btnLangZh" class="flex-1 py-3 rounded-lg bg-gray-700 text-gray-400 font-bold border-2 border-gray-600 hover:bg-gray-600 transition-colors">简体中文</button>
+                            <button onclick="game.setLanguage('en')" id="btnLangEn" class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-bold border-2 border-blue-400 hover:bg-blue-500 transition-colors">EN</button>
+                            <button onclick="game.setLanguage('zh')" id="btnLangZh" class="flex-1 py-3 rounded-lg bg-gray-700 text-gray-400 font-bold border-2 border-gray-600 hover:bg-gray-600 transition-colors">中文</button>
                         </div>
                     </div>
                 </div>
 
-                <button id="btnCloseSettings" onclick="game.toggleSettings(false)" class="w-full mt-10 bg-gray-200 text-gray-900 font-black py-4 rounded-xl hover:bg-white text-3xl ui-font transition-colors shadow-lg">CLOSE</button>
+                <button id="btnCloseSettings" onclick="game.toggleSettings(false)" class="w-full mt-10 bg-gray-200 text-gray-900 font-black py-4 rounded-xl hover:bg-white text-3xl ui-font transition-colors shadow-lg flex justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
         </div>
 
         <!-- 自動託管設定面板 -->
         <div id="autoPanel" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
             <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-10 w-[95%] max-w-[800px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
-                <h2 id="lblAutoPilot" class="text-white ui-font text-5xl text-center mb-8 tracking-widest drop-shadow-[0_4px_0_#000]">AUTO PILOT</h2>
+                <div class="text-center mb-8 text-white">
+                    <!-- [Icon] Play -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
                 
                 <!-- 局數 -->
                 <div class="mb-8">
-                    <label id="lblRounds" class="text-blue-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">ROUNDS</label>
+                    <div class="text-blue-400 mb-3 flex justify-center">
+                        <span id="lblAutoRounds" class="text-2xl font-bold ui-font">Rounds</span>
+                    </div>
                     <div class="grid grid-cols-4 gap-3">
                         <button onclick="game.setAutoRounds(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="10">10</button>
                         <button onclick="game.setAutoRounds(20)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="20">20</button>
@@ -298,7 +428,9 @@
 
                 <!-- 倍率 -->
                 <div class="mb-10">
-                    <label id="lblMinMul" class="text-yellow-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">MIN MULTIPLIER</label>
+                    <div class="text-yellow-400 mb-3 flex justify-center">
+                        <span id="lblAutoMinMul" class="text-2xl font-bold ui-font">Min Multiplier</span>
+                    </div>
                     <div class="grid grid-cols-5 gap-2">
                         <button onclick="game.setAutoMinMul(2)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="2">x2</button>
                         <button onclick="game.setAutoMinMul(5)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="5">x5</button>
@@ -314,8 +446,17 @@
                 </div>
 
                 <div class="flex gap-4">
-                    <button id="btnCancel" onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all">CANCEL</button>
-                    <button id="btnStartRun" onclick="game.startAuto()" class="flex-[1.5] bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-6 rounded-2xl shadow-lg hover:brightness-110 ui-font tracking-wide text-3xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all">START RUN</button>
+                    <button id="btnCancel" onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all flex justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <button id="btnStartRun" onclick="game.startAuto()" class="flex-[1.5] bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-6 rounded-2xl shadow-lg hover:brightness-110 ui-font tracking-wide text-3xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all flex justify-center">
+                        <!-- [Icon] Play Triangle (Simple, no ring) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 3l14 9-14 9V3z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -324,6 +465,7 @@
         <div class="control-panel flex flex-col items-center justify-end w-full">
             
             <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
+                <!-- Start Hint -->
                 <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-green-600 to-teal-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
                     TAP ANYWHERE TO START
                 </div>
@@ -336,7 +478,9 @@
                 <div class="flex items-stretch justify-between w-full max-w-xl mb-5 gap-3 min-h-[80px]">
                     <!-- 顯示押注額 -->
                     <div class="flex-1 flex flex-col justify-center bg-black/60 px-5 py-2 rounded-2xl border border-white/10">
-                        <span id="lblTotalBet" class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">TOTAL BET</span>
+                        <div id="lblBetAmount" class="text-gray-400 text-lg font-bold mb-1 ui-font">
+                            Bet Amount
+                        </div>
                         <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md leading-none">$10.00</span>
                     </div>
 
@@ -349,18 +493,22 @@
                                 <span id="autoActiveMul">x10</span>
                             </div>
                             <div class="flex flex-col items-center justify-center w-full mt-2">
-                                <span id="lblRoundsLeft" class="text-green-300 text-[10px] font-black tracking-[0.2em] uppercase leading-none mb-1 opacity-80">ROUNDS LEFT</span>
+                                <div class="text-green-300 text-[10px] font-black uppercase leading-none mb-1 opacity-80">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                </div>
                                 <span id="autoActiveRounds" class="text-white text-6xl font-black ui-font leading-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">10</span>
                             </div>
                         </div>
 
                         <!-- 未啟動狀態 -->
                         <div id="autoDefaultContent" class="flex flex-col items-center justify-center w-full h-full">
-                            <div class="flex items-center gap-2 mb-0 z-10">
-                                <div id="autoStatusDot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_8px_rgba(0,0,0,0.5)] transition-colors duration-300"></div>
-                                <span id="autoModeLabel" class="text-gray-400 text-xs font-bold tracking-[0.2em] group-hover:text-white transition-colors">MODE</span>
+                            <div class="text-white font-black text-4xl tracking-wider leading-none ui-font z-10 group-hover:scale-110 transition-transform">
+                                <!-- [Icon] Play -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                             </div>
-                            <span id="autoStatusText" class="text-white font-black text-4xl tracking-wider leading-none ui-font mt-1 z-10">AUTO</span>
                         </div>
                           <!-- 裝飾光 -->
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
@@ -368,6 +516,7 @@
                     
                     <!-- 設定按鈕 (右下角) -->
                      <button onclick="game.toggleSettings(true)" class="flex-[0.5] bg-gray-900 border-2 border-gray-600 rounded-2xl flex items-center justify-center hover:bg-gray-800 active:scale-95 transition-all shadow-lg group">
+                        <!-- [修正] Settings Icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -403,35 +552,25 @@
 </div>
 
 <script>
-// I18N Data
 const I18N = {
     en: {
-        balance: "Balance",
-        history: "HISTORY",
-        upcoming: "UPCOMING",
-        nextTarget: "NEXT TARGET",
-        pinataTime: "PINATA TIME",
+        helpGoalTitle: "🎯 Game Goal",
+        helpGoalDesc: "Your mission is to ride the Flying Horse to the skies! Observe the roadmap, time your launch perfectly on high multipliers, and destroy the Pinata in mid-air to claim massive rewards. It's a thrill ride of timing and luck!",
+        
+        helpControlsTitle: "🎮 Controls",
+        helpControlsLaunch: "<strong class='text-white'>Launch:</strong> Watch the bottom 'Roadmap' carefully. It shows upcoming spring multipliers. When a high multiplier (like x10, x50) slides into the activation zone (under the horse), <strong>TAP ANYWHERE</strong> immediately to launch!",
+        helpControlsShoot: "<strong class='text-white'>Shoot:</strong> Once airborne, your horse will fly towards the Pinata. <strong>TAP RAPIDLY</strong> anywhere on the screen to fire bullets. You have limited ammo (6 shots per reload), so make them count! Hitting the Pinata drops coins.",
+        helpControlsJackpot: "<strong class='text-white'>Jackpot:</strong> Deplete the Pinata's health or land the final blow to trigger the <strong>JACKPOT</strong>! You win the multiplier x your bet. If time runs out or you miss too much, you fall back to the ground.",
+        
+        helpUiTitle: "⚙️ Interface",
+        helpUiBet: "<strong>Bet Amount:</strong> Adjust wager amount.",
+        helpUiRoadmap: "<strong>Roadmap:</strong> Preview upcoming springs.",
+        helpUiAuto: "<strong>Auto:</strong> Setup auto-play.",
+        helpUiHistory: "<strong>History:</strong> View past results.",
+        helpBtnGotIt: "OK, I GOT IT!",
+
         reloading: "RELOADING",
-        burstFire: "BURST FIRE",
-        rdy: "RDY",
-        fire: "FIRE",
-        rounds: "ROUNDS",
-        autoPilot: "AUTO PILOT",
-        minMul: "MIN MULTIPLIER",
-        cancel: "CANCEL",
-        startRun: "START RUN",
         tapToStart: "TAP ANYWHERE TO START",
-        totalBet: "TOTAL BET",
-        mode: "MODE",
-        auto: "AUTO",
-        roundsLeft: "ROUNDS LEFT",
-        target: "TARGET",
-        howToPlay: "HOW TO PLAY",
-        gotIt: "GOT IT!",
-        settings: "SETTINGS",
-        music: "MUSIC",
-        sound: "SOUND FX",
-        language: "LANGUAGE",
         noMoney: "NO MONEY!",
         legendary: "LEGENDARY!",
         boost: "BOOST!",
@@ -442,49 +581,43 @@ const I18N = {
         broken: "BROKEN!",
         streak: "STREAK",
         bigWin: "BIG WIN",
-        help1Title: "Launch",
-        help1Desc: "Wait for a high multiplier spring to appear on the <strong>Roadmap</strong>, then tap anywhere to launch!",
-        help2Title: "Sky Battle",
-        help2Desc: "In the air, tap rapidly to shoot the <strong>Pinata</strong>. Each hit shakes coins loose!",
-        help3Title: "Big Win",
-        help3Desc: "Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!",
-        helpAutoTitle: "Auto Pilot",
-        helpAutoDesc: "Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.",
-        close: "CLOSE",
-        historyReport: "GAME HISTORY",
-        orderNo: "ROUND ID",
-        multiplier: "MUL",
-        bet: "BET",
-        win: "WIN",
-        time: "TIME"
+        rounds: "Rounds",
+        minMul: "Min Multiplier",
+        music: "Music",
+        sound: "Sound",
+        language: "Language",
+        betAmount: "Bet Amount",
+        historyReport: "History Report",
+        
+        // [新增] 餘額標題
+        balanceTitle: "BALANCE",
+
+        // History Column Headers
+        colSerial: "Serial",
+        colTime: "Time",
+        colMul: "Mul",
+        colBet: "Bet",
+        colWin: "Win",
+        colBal: "Balance"
     },
     zh: {
-        balance: "余额",
-        history: "历史记录",
-        upcoming: "即将到来",
-        nextTarget: "下个目标",
-        pinataTime: "彩马时刻",
+        helpGoalTitle: "🎯 游戏目标",
+        helpGoalDesc: "您的任務是駕駛飛天神駒直衝雲霄！觀察路途預測，在最佳時機彈射起飛，並在空中擊碎彩馬 (Pinata) 贏取巨額倍數獎金。這是一場考驗眼力與手速的刺激冒險！",
+        
+        helpControlsTitle: "🎮 操作指南",
+        helpControlsLaunch: "<strong class='text-white'>觀察路途 (Roadmap)：</strong> 緊盯螢幕上方的路途預測。當您心儀的高倍數彈簧（如 x10, x50, MAX）移動到神駒腳下時，<strong>點擊螢幕任意處</strong>立即起飛！",
+        helpControlsShoot: "<strong class='text-white'>空中射擊 (Shoot)：</strong> 飛入空中後，<strong>快速點擊螢幕</strong>發射子彈攻擊彩馬。彈巢有 6 發子彈，射完需等待裝填。每次命中都有機會掉落額外金幣獎勵。",
+        helpControlsJackpot: "<strong class='text-white'>贏取大獎 (Jackpot)：</strong> 在滯空時間結束前擊碎彩馬，即可獲得該次起飛倍數的超級大獎！若未能在時間內擊碎，神駒將會墜落地面，連勝紀錄也會中斷。",
+        
+        helpUiTitle: "⚙️ 界面功能",
+        helpUiBet: "<strong>押注额:</strong> 调整单局投入金额。",
+        helpUiRoadmap: "<strong>路途 (顶部):</strong> 预告即将出现的弹簧。",
+        helpUiAuto: "<strong>自动 (播放键):</strong> 设定自动游玩。",
+        helpUiHistory: "<strong>历史:</strong> 查看过往输赢纪录。",
+        helpBtnGotIt: "好的，我知道了！",
+
         reloading: "装填中",
-        burstFire: "连射模式",
-        rdy: "就绪",
-        fire: "射击",
-        rounds: "局数",
-        autoPilot: "自动托管",
-        minMul: "最小倍数",
-        cancel: "取消",
-        startRun: "开始运行",
         tapToStart: "点击任意处开始",
-        totalBet: "总押注",
-        mode: "模式",
-        auto: "自动",
-        roundsLeft: "剩余局数",
-        target: "目标",
-        howToPlay: "游戏说明",
-        gotIt: "知道了!",
-        settings: "设置",
-        music: "音乐",
-        sound: "音效",
-        language: "语言",
         noMoney: "余额不足!",
         legendary: "传奇!",
         boost: "爆发!",
@@ -495,25 +628,27 @@ const I18N = {
         broken: "击碎!",
         streak: "连胜",
         bigWin: "大奖",
-        help1Title: "起飞",
-        help1Desc: "等待高倍数弹簧出现在<strong>路途</strong>上，然后点击任意处起飞！",
-        help2Title: "空中战斗",
-        help2Desc: "在空中快速点击射击<strong>彩马</strong>。每次击中都会掉落金币！",
-        help3Title: "大奖",
-        help3Desc: "击碎彩马赢得<strong>倍数奖励</strong>。小心'炸裂'！",
-        helpAutoTitle: "自动托管",
-        helpAutoDesc: "使用自动模式，当弹簧满足您的最小倍数条件时自动起飞。",
-        close: "关闭",
+        rounds: "局数",
+        minMul: "最小倍数",
+        music: "音乐",
+        sound: "音效",
+        language: "语言",
+        betAmount: "押注额",
         historyReport: "历史报表",
-        orderNo: "单号",
-        multiplier: "倍数",
-        bet: "押注",
-        win: "赢分",
-        time: "时间"
+
+        // [新增] 餘額標題
+        balanceTitle: "余额",
+
+        // History Column Headers
+        colSerial: "序号",
+        colTime: "时间",
+        colMul: "倍数",
+        colBet: "押注",
+        colWin: "赢分",
+        colBal: "余额"
     }
 };
 
-// --- 音效控制器類別 ---
 class AudioController {
     constructor() {
         this.ctx = null;
@@ -585,6 +720,12 @@ class AudioController {
         noise.connect(gain);
         gain.connect(this.ctx.destination);
         noise.start();
+    }
+
+    // [新增] 小獎音效Wrapper，確保可靜音
+    playSmallWin() {
+        if (!this.sfxEnabled) return;
+        this.playTone(880, 'sine', 0.1, 0.1); 
     }
 
     playJump() {
@@ -676,7 +817,7 @@ class AudioController {
                 
                 // 偶爾加一點高八度裝飾
                 if (Math.random() < 0.3) {
-                     this.playToneScheduled(melNote * 2, 'sine', 0.05, 0.03, time + 0.05);
+                    this.playToneScheduled(melNote * 2, 'sine', 0.05, 0.03, time + 0.05);
                 }
             }
         }
@@ -700,7 +841,6 @@ class AudioController {
     }
 }
 
-// --- 數學模型類別 (RTP & Volatility 控制) ---
 class MathModel {
     constructor(targetRTP = 0.96) {
         this.targetRTP = targetRTP;
@@ -814,7 +954,7 @@ class Game {
             scale: 2.2,
             targetX: 0, targetY: 0,
             moveTimer: 0,
-            pinataHits: 0,       
+            pinataHits: 0,         
             wobble: 0,
             animScaleX: 1, 
             animScaleY: 1,
@@ -934,12 +1074,14 @@ class Game {
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
         
+        // [新增] 將結算後的餘額寫入歷史紀錄
         this.gameHistory.unshift({
             id: this.currentRoundId,
             time: timeStr,
             mul: this.currentRoundMul,
             bet: this.currentRoundBet,
-            win: winAmount
+            win: winAmount,
+            bal: this.balance // Snapshot current balance
         });
 
         // 最多 3000 筆
@@ -961,14 +1103,18 @@ class Game {
             let winClass = isWin ? 'text-green-400' : 'text-red-500';
             // 移除 "+" 號
             let winText = h.win.toFixed(2);
+            // [新增] 餘額格式化
+            let balText = this.formatCurrency(h.bal || 0);
             
+            // [修改] 增加第 6 欄顯示餘額
             html += `
-                <div class="grid grid-cols-5 text-lg py-4 px-4 border-b border-gray-800 hover:bg-white/5 transition-colors items-center">
-                    <div class="text-gray-400 font-mono text-sm">#${h.id}</div>
+                <div class="grid grid-cols-6 text-lg py-4 px-4 border-b border-gray-800 hover:bg-white/5 transition-colors items-center">
+                    <div class="text-gray-400 font-mono text-sm">#${h.id.slice(-4)}</div>
                     <div class="text-gray-500 text-sm">${h.time}</div>
                     <div class="text-center font-black text-blue-400 text-xl">x${h.mul}</div>
                     <div class="text-right text-white font-bold text-xl">${h.bet}</div>
                     <div class="text-right font-black ${winClass} text-2xl">${winText}</div>
+                    <div class="text-right text-yellow-500 font-bold text-xl">${balText}</div>
                 </div>
             `;
         });
@@ -1009,47 +1155,45 @@ class Game {
             btnEn.classList.replace('border-blue-400', 'border-gray-600');
         }
 
-        // Update all text elements
+        // Update help text elements (Icons are language neutral)
         const t = I18N[this.lang];
-        document.getElementById('lblHistory').innerText = t.history;
-        document.getElementById('lblUpcoming').innerText = t.upcoming;
-        document.getElementById('lblBalance').innerText = t.balance;
-        document.getElementById('bonusLabel').innerText = t.nextTarget;
-        document.getElementById('lblPinataTime').innerText = t.pinataTime;
+        // [修正] 更新新版說明介面的所有文字 ID
+        document.getElementById('helpGoalTitle').innerHTML = t.helpGoalTitle;
+        document.getElementById('helpGoalDesc').innerHTML = t.helpGoalDesc;
+        document.getElementById('helpControlsTitle').innerHTML = t.helpControlsTitle;
+        document.getElementById('helpControlsLaunch').innerHTML = t.helpControlsLaunch;
+        document.getElementById('helpControlsShoot').innerHTML = t.helpControlsShoot;
+        document.getElementById('helpControlsJackpot').innerHTML = t.helpControlsJackpot;
+        document.getElementById('helpUiTitle').innerHTML = t.helpUiTitle;
+        document.getElementById('helpUiBet').innerHTML = t.helpUiBet;
+        document.getElementById('helpUiRoadmap').innerHTML = t.helpUiRoadmap;
+        document.getElementById('helpUiAuto').innerHTML = t.helpUiAuto;
+        document.getElementById('helpUiHistory').innerHTML = t.helpUiHistory;
+        document.getElementById('btnGotIt').innerText = t.helpBtnGotIt;
+        
+        // [修改] 全介面文字更新
         document.getElementById('lblReloading').innerText = t.reloading;
-        document.getElementById('ammoText').innerText = t.rdy; 
-        document.getElementById('lblBurstFire').innerText = t.burstFire;
-        document.getElementById('lblHowToPlay').innerText = t.howToPlay;
-        document.getElementById('help1Title').innerText = t.help1Title;
-        document.getElementById('help1Desc').innerHTML = t.help1Desc;
-        document.getElementById('help2Title').innerText = t.help2Title;
-        document.getElementById('help2Desc').innerHTML = t.help2Desc;
-        document.getElementById('help3Title').innerText = t.help3Title;
-        document.getElementById('help3Desc').innerHTML = t.help3Desc;
-        document.getElementById('helpAutoTitle').innerText = t.helpAutoTitle;
-        document.getElementById('helpAutoDesc').innerText = t.helpAutoDesc;
-        document.getElementById('btnGotIt').innerText = t.gotIt;
-        document.getElementById('lblSettings').innerText = t.settings;
+        document.getElementById('startHint').innerText = t.tapToStart;
+        
         document.getElementById('lblMusic').innerText = t.music;
         document.getElementById('lblSound').innerText = t.sound;
-        document.getElementById('lblLanguage').innerText = t.language;
-        document.getElementById('btnCloseSettings').innerText = t.close;
-        document.getElementById('lblAutoPilot').innerText = t.autoPilot;
-        document.getElementById('lblRounds').innerText = t.rounds;
-        document.getElementById('lblMinMul').innerText = t.minMul;
-        document.getElementById('btnCancel').innerText = t.cancel;
-        document.getElementById('btnStartRun').innerText = t.startRun;
-        document.getElementById('startHint').innerText = t.tapToStart;
-        document.getElementById('lblTotalBet').innerText = t.totalBet;
-        document.getElementById('autoModeLabel').innerText = t.mode;
-        document.getElementById('autoStatusText').innerText = t.auto;
-        document.getElementById('lblRoundsLeft').innerText = t.roundsLeft;
+        document.getElementById('lblLang').innerText = t.language;
         document.getElementById('lblHistoryTitle').innerText = t.historyReport;
-        document.getElementById('colId').innerText = t.orderNo;
-        document.getElementById('colTime').innerText = t.time;
-        document.getElementById('colMul').innerText = t.multiplier;
-        document.getElementById('colBet').innerText = t.bet;
-        document.getElementById('colWin').innerText = t.win;
+        
+        document.getElementById('lblAutoRounds').innerText = t.rounds;
+        document.getElementById('lblAutoMinMul').innerText = t.minMul;
+        document.getElementById('lblBetAmount').innerText = t.betAmount;
+
+        // [新增] 歷史報表欄位翻譯
+        document.getElementById('colSerial').innerText = t.colSerial;
+        document.getElementById('colTime').innerText = t.colTime;
+        document.getElementById('colMul').innerText = t.colMul;
+        document.getElementById('colBet').innerText = t.colBet;
+        document.getElementById('colWin').innerText = t.colWin;
+        document.getElementById('colBal').innerText = t.colBal;
+
+        // [新增] 餘額標題翻譯
+        document.getElementById('lblBalanceTitle').innerText = t.balanceTitle;
 
         this.updateUI(); 
     }
@@ -1061,11 +1205,10 @@ class Game {
         if (show) {
             modal.style.pointerEvents = 'auto';
             modal.style.opacity = '1';
-            content.style.transform = 'scale(1)';
+            // Remove scale effect for fullscreen modal, just opacity
         } else {
             modal.style.opacity = '0';
             modal.style.pointerEvents = 'none';
-            content.style.transform = 'scale(0.95)';
         }
     }
 
@@ -1225,7 +1368,10 @@ class Game {
         const pastContainer = document.getElementById('roadmapPast');
         const futureContainer = document.getElementById('roadmapFuture');
         
-        const activeSprings = this.springs.filter(s => s.active && s.x > 180);
+        // [修正] 路途 UI 顯示邏輯
+        // 移除 s.active 的判斷，只根據位置來顯示
+        // 這解決了點擊起飛瞬間 (active=false) 導致路途 UI 誤判為空而跳轉到下一個的問題
+        const activeSprings = this.springs.filter(s => s.x > 180);
         
         const showPast = this.roadmapPast.slice(-5);
         let pastHTML = '';
@@ -1320,8 +1466,7 @@ class Game {
         
         let displayMul = this.currentMultiplier;
         let displayColor = '#60a5fa'; 
-        let labelText = I18N[this.lang].nextTarget;
-        if (this.auto.active) labelText = I18N[this.lang].target;
+        // Label logic simplified as text is removed
 
         if (this.state === 'GROUND') {
             const target = this.getTargetSpring();
@@ -1339,7 +1484,10 @@ class Game {
         const mulDisplay = document.getElementById('multiplierDisplay');
         mulDisplay.innerText = 'x' + displayMul;
         mulDisplay.style.color = displayColor;
-        document.getElementById('bonusLabel').innerText = labelText;
+        
+        // Color the icon to match target
+        document.getElementById('bonusLabelIcon').className = `mb-1 ${this.auto.active ? 'text-green-400' : 'text-blue-300'} opacity-80`;
+        
         document.getElementById('currentBetDisplay').innerText = this.formatCurrency(this.betAmount);
 
         // UI 元素引用
@@ -1357,7 +1505,7 @@ class Game {
             document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
             
             const revolverContainer = document.getElementById('revolverContainer');
-            const ammoText = document.getElementById('ammoText');
+            const ammoIconDiv = document.getElementById('ammoIcon');
             
             let bulletsLoaded = 6;
             let rotation = 0;
@@ -1367,7 +1515,7 @@ class Game {
                 bulletsLoaded = Math.floor(progress * 6); 
                 rotation = bulletsLoaded * 60;
                 
-                ammoText.innerText = ""; // 裝填時隱藏文字
+                ammoIconDiv.innerHTML = ''; // Empty during reload
                 betPanel.classList.add('processing');
 
                 // 顯示 Reload 條
@@ -1378,8 +1526,7 @@ class Game {
                 // 射擊中
                 bulletsLoaded = 0;
                 rotation = this.gameTick * 30; 
-                ammoText.innerText = I18N[this.lang].fire;
-                ammoText.className = "text-xl font-black text-red-500 ui-font";
+                ammoIconDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>';
                 betPanel.classList.add('processing');
                 
                 // 隱藏 Reload 條
@@ -1389,8 +1536,7 @@ class Game {
                 // 就緒
                 bulletsLoaded = 6;
                 rotation = 0;
-                ammoText.innerText = I18N[this.lang].rdy;
-                ammoText.className = "text-xl font-black text-green-400 ui-font";
+                ammoIconDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>';
                 betPanel.classList.remove('processing');
 
                 // 隱藏 Reload 條
@@ -1483,6 +1629,30 @@ class Game {
         spring.compress = 20;
         spring.active = false; 
 
+        // [修正] 起飛時，保留當前彈簧，清除其他彈簧，讓畫面聚焦
+        // [關鍵邏輯]：找出畫面上位於當前目標右側的所有彈簧
+        const pendingSprings = this.springs.filter(s => s.x > spring.x);
+        
+        // 將這些彈簧「逆向」塞回 roadmapFuture 的最前端
+        // 這樣下次降落時，它們會依序重新生成
+        for (let i = pendingSprings.length - 1; i >= 0; i--) {
+            const s = pendingSprings[i];
+            // 重建資料結構塞回隊列
+            this.roadmapFuture.unshift({
+                mul: s.mul, 
+                color: s.color, 
+                textColor: s.textColor,
+                label: s.label, 
+                glow: s.glow
+            });
+            // 因為這些彈簧還沒真正「經過」，從 Past 移除比較合理 (雖然 Past 僅供參考)
+            this.roadmapPast.pop(); 
+        }
+
+        // 只保留當前這個起飛的彈簧
+        this.springs = [spring];
+        this.updateRoadmapUI(); // 立即更新 UI 顯示正確的預覽
+
         setTimeout(() => {
             this.state = 'LAUNCHING';
             this.currentMultiplier = spring.mul;
@@ -1500,6 +1670,9 @@ class Game {
 
             this.shakeScreen(20);
             
+            // 重置彈簧生成計時器，讓降落後稍微延遲才出現新彈簧
+            this.springSpawnTimer = -30;
+
             let label = spring.mul >= 1000 ? I18N[this.lang].legendary : `x${spring.mul} ${I18N[this.lang].boost}`;
             this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
             
@@ -1618,11 +1791,13 @@ class Game {
             // 返水文字 (大且亮)
             this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x + (Math.random()-0.5)*40, this.horse.y - 60, '#fff', 70);
             this.createParticles(this.horse.x, this.horse.y, 5, '#fef08a', 'coin');
-            this.audio.playTone(880, 'sine', 0.1, 0.1); 
+            // [修正] 使用 Wrapper 確保靜音
+            this.audio.playSmallWin();
             
             // 修正歷史記錄
             if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
                 this.gameHistory[0].win = win;
+                this.gameHistory[0].bal = this.balance; // [修正] 更新最新餘額
                 // 更新 localStorage
                 try { localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory)); } catch(e){}
             } else {
@@ -1631,8 +1806,9 @@ class Game {
 
         } else {
             this.spawnText(I18N[this.lang].clink, this.horse.x, this.horse.y - 60, '#fff', 30);
-             if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
+            if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
                 this.gameHistory[0].win = 0;
+                this.gameHistory[0].bal = this.balance; // [修正] 更新最新餘額
                 try { localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory)); } catch(e){}
             } else {
                 this.recordHistory(0);
@@ -1668,6 +1844,7 @@ class Game {
             // 贏分顯示
             const centerX = this.width / 2;
             const centerY = this.height * 0.4;
+            this.spawnText(I18N[this.lang].bigWin, centerX, centerY - 80, '#FFD700', 100);
             this.spawnText(`+${this.formatCurrency(totalWin)}`, centerX, centerY, '#FFD700', 130, 'BIG_WIN');
 
             // 第一波爆發
@@ -1745,7 +1922,7 @@ class Game {
                 p.vx *= 0.9;
                 if (this.state === 'GROUND') p.x -= this.groundSpeed;
             }
-            if (p.life <= 0) this.particles.splice(i, 1);
+            this.particles.push(p);
         }
     }
 
@@ -1758,7 +1935,8 @@ class Game {
         }
 
         // 地面捲動邏輯 (非滯空時)
-        if (this.state !== 'LAUNCHING' && this.state !== 'EXPLODING') {
+        // [修正] 起飛時也讓地面捲動，保持視覺連貫
+        if (this.state === 'GROUND') { // Only scroll in GROUND state
             this.bgScroll += this.groundSpeed;
         }
 
@@ -1802,7 +1980,7 @@ class Game {
         if (this.state !== 'EXPLODING') {
             const targetScale = 1.0;
             const stiffness = 0.2; 
-            const damping = 0.8;       
+            const damping = 0.8;          
             const forceX = (targetScale - this.horse.animScaleX) * stiffness;
             this.horse.scaleVx += forceX;
             this.horse.scaleVx *= damping;
@@ -1816,24 +1994,88 @@ class Game {
         if (this.horse.faceTimer > 0) this.horse.faceTimer--;
 
         // 狀態機邏輯
-        if (this.state === 'SKY' && this.horse.faceTimer <= 0) {
-            // SKY 狀態的一般飛行邏輯
-            const breath = Math.sin(this.gameTick * 0.15); 
-            this.horse.animScaleX = 1.0 + breath * 0.1; 
-            this.horse.animScaleY = 1.0 - breath * 0.1;
-            this.horse.y += Math.sin(this.gameTick * 0.1) * 2;
-            if (Math.random() < 0.03) {
-                this.horse.tongueOut = 1.0; 
-                setTimeout(() => { this.horse.tongueOut = 0; }, 1200);
+        if (this.state === 'GROUND') {
+            this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 6;
+            this.horse.x = this.width * 0.3; 
+            this.springSpawnTimer++;
+            if (this.springSpawnTimer > 22) { 
+                this.spawnSpring();
+                this.springSpawnTimer = 0;
+                this.springSpawnTimer -= Math.random() * 10; 
             }
-            if (Math.random() < 0.03) {
-                this.horse.buttWiggle = 1.0;
-                setTimeout(() => { this.horse.buttWiggle = 0; }, 1000);
+            for (let i = this.springs.length - 1; i >= 0; i--) {
+                let s = this.springs[i];
+                s.x -= this.groundSpeed; // Move only in GROUND
+                if (s.compress > 0) s.compress *= 0.8;
+                s.pulse = Math.sin(this.gameTick * 0.2) * 0.1 + 1; 
+                if (s.x < -200) this.springs.splice(i, 1);
             }
-            if (this.horse.buttWiggle > 0 || this.horse.tongueOut > 0) {
-                this.horse.angle = Math.sin(this.gameTick * 0.3) * 0.3; 
+            if (this.gameTick % 15 === 0) {
+                this.updateUI();
+                this.updateRoadmapUI();
             }
-        } 
+        }
+        else if (this.state === 'LAUNCHING') {
+            let targetY = this.height * 0.3;
+            this.horse.y += (targetY - this.horse.y) * 0.08;
+            this.horse.x = this.width * 0.3; 
+            // DO NOT move springs x
+            if (Math.abs(this.horse.y - targetY) < 20) {
+                this.state = 'SKY';
+            }
+        }
+        else if (this.state === 'SKY') {
+            this.horse.moveTimer--;
+            if (this.horse.moveTimer <= 0) {
+                this.horse.targetX = this.width * 0.2 + Math.random() * (this.width * 0.6);
+                this.horse.targetY = this.height * 0.15 + Math.random() * (this.height * 0.4);
+                this.horse.moveTimer = 40 + Math.random() * 40; 
+            }
+            let dx = this.horse.targetX - this.horse.x;
+            let dy = this.horse.targetY - this.horse.y;
+            this.horse.x += dx * 0.05;
+            this.horse.y += dy * 0.05;
+            if (this.horse.state === 'SPIN') {
+                this.horse.angle += 0.4; 
+                this.horse.spinTimer--;
+                if (this.horse.spinTimer <= 0) {
+                    this.horse.state = 'FLY';
+                    this.horse.angle = 0;
+                }
+            } else {
+                this.horse.wobble += 0.05;
+                this.horse.angle = Math.sin(this.horse.wobble) * 0.1;
+            }
+            if (!this.isFiring && this.hitCooldown === 0) {
+                this.skyTimer--;
+            }
+            this.updateUI();
+            if (this.skyTimer <= 0) {
+                this.explodePinata(false);
+            }
+        }
+        else if (this.state === 'FALLING') {
+            let targetY = this.horseBaseY;
+            this.horse.y += (targetY - this.horse.y) * 0.06;
+            let targetX = this.width * 0.3;
+            this.horse.x += (targetX - this.horse.x) * 0.06;
+            this.horse.angle += 0.2; 
+            if (Math.abs(this.horse.y - targetY) < 20) {
+                this.state = 'GROUND';
+                this.currentMultiplier = 1; 
+                this.horse.y = this.horseBaseY;
+                this.horse.state = 'RUN';
+                this.horse.angle = 0;
+                this.horse.x = this.width * 0.3;
+                this.shakeScreen(15);
+                this.createParticles(this.horse.x, this.horse.y+80, 50, '#5c4033', 'spark');
+                
+                // [修正] 降落時，清除所有舊的路途殘留，確保從新路途開始
+                this.springs = []; 
+                this.springSpawnTimer = -20; // 稍微延遲讓新路途生成
+                this.updateUI();
+            }
+        }
         // EXPLODING 狀態邏輯 (大獎滯空表演)
         else if (this.state === 'EXPLODING') {
             this.explosionTimer--;
@@ -1902,89 +2144,6 @@ class Game {
                 this.bullets.splice(i, 1);
             } else if (b.y < -100 || b.x < -100 || b.x > this.width + 100) {
                 this.bullets.splice(i, 1);
-            }
-        }
-
-        // 狀態機流程控制
-        if (this.state === 'GROUND') {
-            this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 6;
-            this.horse.x = this.width * 0.3; 
-            this.springSpawnTimer++;
-            if (this.springSpawnTimer > 22) { 
-                this.spawnSpring();
-                this.springSpawnTimer = 0;
-                this.springSpawnTimer -= Math.random() * 10; 
-            }
-            for (let i = this.springs.length - 1; i >= 0; i--) {
-                let s = this.springs[i];
-                s.x -= this.groundSpeed;
-                if (s.compress > 0) s.compress *= 0.8;
-                s.pulse = Math.sin(this.gameTick * 0.2) * 0.1 + 1; 
-                if (s.x < -200) this.springs.splice(i, 1);
-            }
-            if (this.gameTick % 15 === 0) {
-                this.updateUI();
-                this.updateRoadmapUI();
-            }
-        }
-        else if (this.state === 'LAUNCHING') {
-            let targetY = this.height * 0.3;
-            this.horse.y += (targetY - this.horse.y) * 0.08;
-            this.horse.x = this.width * 0.3; 
-            this.springs.forEach(s => s.x -= this.groundSpeed * 3);
-            if (Math.abs(this.horse.y - targetY) < 20) {
-                this.state = 'SKY';
-            }
-        }
-        else if (this.state === 'SKY') {
-            this.horse.moveTimer--;
-            if (this.horse.moveTimer <= 0) {
-                this.horse.targetX = this.width * 0.2 + Math.random() * (this.width * 0.6);
-                this.horse.targetY = this.height * 0.15 + Math.random() * (this.height * 0.4);
-                this.horse.moveTimer = 40 + Math.random() * 40; 
-            }
-            let dx = this.horse.targetX - this.horse.x;
-            let dy = this.horse.targetY - this.horse.y;
-            this.horse.x += dx * 0.05;
-            this.horse.y += dy * 0.05;
-            if (this.horse.state === 'SPIN') {
-                this.horse.angle += 0.4; 
-                this.horse.spinTimer--;
-                if (this.horse.spinTimer <= 0) {
-                    this.horse.state = 'FLY';
-                    this.horse.angle = 0;
-                }
-            } else {
-                this.horse.wobble += 0.05;
-                this.horse.angle = Math.sin(this.horse.wobble) * 0.1;
-            }
-            if (!this.isFiring && this.hitCooldown === 0) {
-                this.skyTimer--;
-            }
-            this.updateUI();
-            if (this.skyTimer <= 0) {
-                this.explodePinata(false);
-            }
-        }
-        else if (this.state === 'FALLING') {
-            let targetY = this.horseBaseY;
-            this.horse.y += (targetY - this.horse.y) * 0.06;
-            let targetX = this.width * 0.3;
-            this.horse.x += (targetX - this.horse.x) * 0.06;
-            this.horse.angle += 0.2; 
-            if (Math.abs(this.horse.y - targetY) < 20) {
-                this.state = 'GROUND';
-                this.currentMultiplier = 1; 
-                this.horse.y = this.horseBaseY;
-                this.horse.state = 'RUN';
-                this.horse.angle = 0;
-                this.horse.x = this.width * 0.3;
-                this.shakeScreen(15);
-                this.createParticles(this.horse.x, this.horse.y+80, 50, '#5c4033', 'spark');
-                // [修改] 移除彈簧重置代碼，保持連貫感
-                // this.springs = [];  <-- Removed
-                // this.springSpawnTimer = 40; <-- Removed
-                this.updateUI();
             }
         }
 
@@ -2068,7 +2227,10 @@ class Game {
 
         this.drawBackground();
         
-        if (this.state === 'GROUND') this.drawGroundElements();
+        // [修正] 起飛和墜落狀態也要繪製地面元素，以確保連貫感
+        if (this.state === 'GROUND' || this.state === 'LAUNCHING' || this.state === 'FALLING') {
+            this.drawGroundElements();
+        }
         
         if (this.state === 'SKY' || this.state === 'EXPLODING') { 
             this.drawPinata();
@@ -2077,39 +2239,39 @@ class Game {
         }
         
         this.bullets.forEach(b => {
-             this.ctx.save();
-             this.ctx.translate(b.x, b.y);
-             const dx = this.horse.x - b.x;
-             const dy = this.horse.y - b.y;
-             const angle = Math.atan2(dy, dx);
-             this.ctx.rotate(angle);
+            this.ctx.save();
+            this.ctx.translate(b.x, b.y);
+            const dx = this.horse.x - b.x;
+            const dy = this.horse.y - b.y;
+            const angle = Math.atan2(dy, dx);
+            this.ctx.rotate(angle);
              
-             if (b.betAmount === 1) {
+            if (b.betAmount === 1) {
                 this.ctx.fillStyle = '#4ade80';
                 this.ctx.beginPath(); this.ctx.arc(0, 0, 8, 0, Math.PI*2); this.ctx.fill();
                 this.ctx.fillStyle = '#bbf7d0';
                 this.ctx.beginPath(); this.ctx.arc(-3, -3, 3, 0, Math.PI*2); this.ctx.fill();
-             } else if (b.betAmount === 10) {
+            } else if (b.betAmount === 10) {
                 this.ctx.rotate(Math.PI/2);
                 this.ctx.fillStyle = '#3b82f6';
                 this.ctx.beginPath(); this.ctx.roundRect(-15, -25, 30, 50, 10); this.ctx.fill();
                 this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 5;
                 this.ctx.beginPath(); this.ctx.moveTo(-15, -10); this.ctx.lineTo(0, -25); this.ctx.lineTo(15, -10); this.ctx.stroke();
-             } else if (b.betAmount === 50) {
+            } else if (b.betAmount === 50) {
                 this.ctx.fillStyle = '#b91c1c'; this.ctx.fillRect(-20, -12, 40, 24);
                 this.ctx.fillStyle = '#7f1d1d'; this.ctx.beginPath(); this.ctx.arc(-10, 0, 4, 0, Math.PI*2); this.ctx.arc(10, 0, 4, 0, Math.PI*2); this.ctx.fill();
-             } else if (b.betAmount === 100) {
+            } else if (b.betAmount === 100) {
                 this.ctx.fillStyle = '#22c55e'; this.ctx.fillRect(-20, -12, 40, 24);
                 this.ctx.strokeStyle = '#dcfce7'; this.ctx.lineWidth = 3; this.ctx.strokeRect(-20, -12, 40, 24);
                 this.ctx.fillStyle = '#dcfce7'; this.ctx.font = 'bold 16px Arial'; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText('$', 0, 2);
-             } else {
+            } else {
                 this.ctx.fillStyle = '#e5e7eb'; this.ctx.beginPath(); this.ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2); this.ctx.fill();
                 this.ctx.fillStyle = '#ef4444'; this.ctx.beginPath(); this.ctx.moveTo(15, -7); this.ctx.lineTo(30, 0); this.ctx.lineTo(15, 7); this.ctx.fill();
                 this.ctx.fillStyle = '#374151'; this.ctx.beginPath(); this.ctx.moveTo(-15, -8); this.ctx.lineTo(-25, -15); this.ctx.lineTo(-20, -2); this.ctx.fill();
                 this.ctx.beginPath(); this.ctx.moveTo(-15, 8); this.ctx.lineTo(-25, 15); this.ctx.lineTo(-20, 2); this.ctx.fill();
                 this.ctx.strokeStyle = '#f59e0b'; this.ctx.lineWidth = 4; this.ctx.beginPath(); this.ctx.moveTo(-25, 0); this.ctx.lineTo(-40 - Math.random()*10, 0); this.ctx.stroke();
-             }
-             this.ctx.restore();
+            }
+            this.ctx.restore();
         });
 
         this.drawEffects();
@@ -2324,7 +2486,8 @@ class Game {
         this.ctx.fillStyle = colors[2]; this.ctx.beginPath(); this.ctx.moveTo(-35, -10); this.ctx.lineTo(-55, 10 + legWiggle); this.ctx.lineTo(-45, 20 + legWiggle); this.ctx.fill();
         this.ctx.restore();
     }
-
+    
+    // Draw Horse Function Re-added Here
     drawHorse() {
         this.ctx.save();
         this.ctx.translate(this.horse.x, this.horse.y);
@@ -2390,7 +2553,9 @@ class Game {
             this.ctx.globalAlpha = Math.max(0, t.life / t.maxLife);
             // 使用 updateTexts 中計算的 currentSize
             let size = t.currentSize || t.size; 
-            this.ctx.font = `900 ${size}px "Black Ops One", sans-serif`;
+            
+            // 使用 Emoji 字型以確保渲染
+            this.ctx.font = `900 ${size}px "Black Ops One", "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
             this.ctx.lineJoin = 'round';
             this.ctx.textAlign = 'center'; // 統一置中比較好控制
 
