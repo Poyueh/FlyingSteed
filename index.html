@@ -78,8 +78,58 @@
         }
 
         /* Toggle Switch Style */
-        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+        .setting-toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .setting-toggle input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4b5563; /* gray-600 */
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #22c55e; /* green-500 */
+        }
+        
+        input:focus + .slider {
+            box-shadow: 0 0 1px #22c55e;
+        }
+        
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
@@ -197,25 +247,25 @@
                 
                 <div class="space-y-6">
                     <!-- Music -->
-                    <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/10">
+                    <div class="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/10">
                         <span id="lblMusic" class="text-white text-2xl font-bold ui-font tracking-wide">MUSIC</span>
-                        <div class="relative inline-block w-16 mr-2 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="toggle" id="toggleMusic" class="toggle-checkbox absolute block w-8 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-600 transition-all duration-300 left-0" onclick="game.toggleMusic(this.checked)"/>
-                            <label for="toggleMusic" class="toggle-label block overflow-hidden h-8 rounded-full bg-gray-700 cursor-pointer border border-gray-600"></label>
-                        </div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="toggleMusic" onclick="game.toggleMusic(this.checked)">
+                            <span class="slider"></span>
+                        </label>
                     </div>
 
                     <!-- Sound -->
-                    <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/10">
+                    <div class="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/10">
                         <span id="lblSound" class="text-white text-2xl font-bold ui-font tracking-wide">SOUND FX</span>
-                        <div class="relative inline-block w-16 mr-2 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="toggle" id="toggleSound" class="toggle-checkbox absolute block w-8 h-8 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-600 transition-all duration-300 left-0" onclick="game.toggleSound(this.checked)"/>
-                            <label for="toggleSound" class="toggle-label block overflow-hidden h-8 rounded-full bg-gray-700 cursor-pointer border border-gray-600"></label>
-                        </div>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="toggleSound" onclick="game.toggleSound(this.checked)">
+                            <span class="slider"></span>
+                        </label>
                     </div>
 
                     <!-- Language -->
-                    <div class="flex flex-col gap-3 bg-black/40 p-4 rounded-xl border border-white/10">
+                    <div class="flex flex-col gap-3 bg-black/40 p-5 rounded-2xl border border-white/10">
                         <span id="lblLanguage" class="text-white text-xl font-bold ui-font tracking-wide mb-2">LANGUAGE</span>
                         <div class="flex gap-2">
                             <button onclick="game.setLanguage('en')" id="btnLangEn" class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-bold border-2 border-blue-400 hover:bg-blue-500 transition-colors">English</button>
@@ -457,11 +507,23 @@ class AudioController {
         this.musicEnabled = true; // Default On
         this.sfxEnabled = true;   // Default On
         this.bgmTimer = null;
-        this.currentBPM = 110; 
-        this.targetBPM = 110;
+        this.currentBPM = 120; // 稍微加快基礎節奏
+        this.targetBPM = 120;
         this.nextNoteTime = 0;
-        this.bassLine = [110, 110, 130, 110, 146, 130, 110, 98];
-        this.melodyLine = [330, 0, 392, 0, 440, 392, 330, 293]; 
+        // 修改為更輕快活潑的 Bassline (Funky/Upbeat)
+        this.bassLine = [
+            110, 0, 110, 146, 
+            0, 130, 0, 110, 
+            98, 0, 98, 110,
+            130, 0, 146, 165
+        ]; 
+        // 活潑的主旋律
+        this.melodyLine = [
+            330, 392, 440, 0,
+            392, 330, 293, 0,
+            261, 293, 330, 392,
+            440, 0, 523, 587
+        ]; 
         this.noteIdx = 0;
         this.isSkyMode = false;
     }
@@ -548,7 +610,8 @@ class AudioController {
 
     setSkyMode(isSky) {
         this.isSkyMode = isSky;
-        this.targetBPM = isSky ? 160 : 110; 
+        // 調整 Sky Mode 節奏
+        this.targetBPM = isSky ? 170 : 120; 
     }
 
     startLoop() {
@@ -565,7 +628,8 @@ class AudioController {
                 this.noteIdx++;
                 this.currentBPM += (this.targetBPM - this.currentBPM) * 0.1;
                 const secondsPerBeat = 60.0 / this.currentBPM;
-                this.nextNoteTime += secondsPerBeat * 0.5; 
+                // 加快 16 分音符的感覺
+                this.nextNoteTime += secondsPerBeat * 0.25; 
             }
             requestAnimationFrame(scheduler);
         };
@@ -573,17 +637,32 @@ class AudioController {
     }
 
     scheduleNote(idx, time) {
-        const bassFreq = this.bassLine[idx % this.bassLine.length];
-        const bassType = this.isSkyMode ? 'square' : 'triangle';
-        const bassVol = this.isSkyMode ? 0.08 : 0.05;
-        this.playToneScheduled(bassFreq, bassType, 0.2, bassVol, time);
+        // 使用取餘數讓長度對齊
+        const bassNote = this.bassLine[idx % this.bassLine.length];
+        
+        // 增加切分音 (Syncopation) 感覺：不是每個拍子都強
+        const isStrongBeat = idx % 4 === 0;
 
+        if (bassNote > 0) {
+            const bassType = this.isSkyMode ? 'square' : 'triangle';
+            // 讓 Sky Mode 音量稍微大一點
+            let bassVol = this.isSkyMode ? 0.1 : 0.06;
+            if (isStrongBeat) bassVol *= 1.2;
+
+            this.playToneScheduled(bassNote, bassType, 0.15, bassVol, time);
+        }
+
+        // Sky Mode 加入更多旋律層次
         if (this.isSkyMode) {
-            const melFreq = this.melodyLine[idx % this.melodyLine.length];
-            if (melFreq > 0) {
-                this.playToneScheduled(melFreq, 'sawtooth', 0.1, 0.05, time);
-                if (Math.random() < 0.2) {
-                    this.playToneScheduled(melFreq * 2, 'sine', 0.1, 0.03, time);
+            const melNote = this.melodyLine[idx % this.melodyLine.length];
+            if (melNote > 0) {
+                // 交替使用不同波形增加豐富度
+                const melType = (idx % 8 < 4) ? 'sawtooth' : 'square';
+                this.playToneScheduled(melNote, melType, 0.1, 0.04, time);
+                
+                // 偶爾加一點高八度裝飾
+                if (Math.random() < 0.3) {
+                     this.playToneScheduled(melNote * 2, 'sine', 0.05, 0.03, time + 0.05);
                 }
             }
         }
@@ -594,8 +673,12 @@ class AudioController {
         const gain = this.ctx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, time);
-        gain.gain.setValueAtTime(vol, time);
-        gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+        
+        // 調整 Attack/Release 讓聲音更短促有力 (Staccato)
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(vol, time + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start(time);
