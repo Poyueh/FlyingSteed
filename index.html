@@ -131,15 +131,15 @@
                         <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
                     </div>
                     
-                    <!-- 歷史按鈕 & 說明按鈕 -->
-                    <div class="flex gap-2">
-                         <button onclick="game.toggleHistory(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-blue-600/80 backdrop-blur-md border-2 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <!-- 歷史按鈕 & 說明按鈕 (優化：垂直排列，放大3倍) -->
+                    <div class="flex flex-col gap-4 mt-2">
+                         <button onclick="game.toggleHistory(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-blue-600/80 backdrop-blur-md border-4 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
-                        <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-lg">
-                            <span class="text-white font-bold text-2xl ui-font">?</span>
+                        <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-white/20 backdrop-blur-md border-4 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-xl">
+                            <span class="text-white font-bold text-6xl ui-font">?</span>
                         </button>
                     </div>
                 </div>
@@ -180,18 +180,18 @@
             <span id="lblBurstFire" class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
         </div>
 
-        <!-- 歷史報表 Modal -->
-        <div id="historyModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
-            <div class="bg-gray-900 border-4 border-blue-500/30 rounded-[2rem] p-6 w-[95%] max-w-[700px] h-[80vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 id="lblHistoryTitle" class="text-white ui-font text-4xl tracking-widest text-blue-400">GAME HISTORY</h2>
-                    <button onclick="game.toggleHistory(false)" class="text-gray-400 hover:text-white transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        <!-- 歷史報表 Modal (優化：全螢幕) -->
+        <div id="historyModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 w-full h-full flex flex-col shadow-2xl transform scale-100 transition-transform duration-300">
+                <div class="flex justify-between items-center p-6 border-b border-gray-800 bg-gray-900/50">
+                    <h2 id="lblHistoryTitle" class="text-white ui-font text-5xl tracking-widest text-blue-400">GAME HISTORY</h2>
+                    <button onclick="game.toggleHistory(false)" class="text-gray-400 hover:text-white transition-colors p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
                 
                 <!-- Table Header -->
-                <div class="grid grid-cols-5 text-gray-400 font-bold text-sm uppercase tracking-wider border-b border-gray-700 pb-3 mb-2 px-2">
+                <div class="grid grid-cols-5 text-gray-400 font-bold text-xl uppercase tracking-wider border-b border-gray-700 py-6 px-8 bg-gray-800/30">
                     <div id="colId">ROUND ID</div>
                     <div id="colTime">TIME</div>
                     <div id="colMul" class="text-center">MUL</div>
@@ -200,7 +200,7 @@
                 </div>
 
                 <!-- Table Body -->
-                <div id="historyList" class="flex-1 overflow-y-auto custom-scroll space-y-1">
+                <div id="historyList" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-2">
                     <!-- JS Populated -->
                 </div>
             </div>
@@ -362,7 +362,7 @@
                             </div>
                             <span id="autoStatusText" class="text-white font-black text-4xl tracking-wider leading-none ui-font mt-1 z-10">AUTO</span>
                         </div>
-                         <!-- 裝飾光 -->
+                          <!-- 裝飾光 -->
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </button>
                     
@@ -754,8 +754,15 @@ class Game {
         // Lang
         this.lang = 'en';
 
-        // History
+        // History [修改：讀取 LocalStorage]
         this.gameHistory = [];
+        try {
+            const savedHist = localStorage.getItem('cp_history_v2');
+            if (savedHist) {
+                this.gameHistory = JSON.parse(savedHist);
+            }
+        } catch (e) { console.error(e); }
+
         this.currentRoundId = "";
         this.currentRoundBet = 0;
         this.currentRoundMul = 0;
@@ -807,7 +814,7 @@ class Game {
             scale: 2.2,
             targetX: 0, targetY: 0,
             moveTimer: 0,
-            pinataHits: 0,      
+            pinataHits: 0,       
             wobble: 0,
             animScaleX: 1, 
             animScaleY: 1,
@@ -922,6 +929,7 @@ class Game {
         }
     }
 
+    // [修改] 歷史記錄：增加儲存與上限控制
     recordHistory(winAmount) {
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
@@ -934,27 +942,38 @@ class Game {
             win: winAmount
         });
 
-        if (this.gameHistory.length > 50) this.gameHistory.pop();
+        // 最多 3000 筆
+        if (this.gameHistory.length > 3000) this.gameHistory.pop();
+        
+        // 存入 localStorage
+        try {
+            localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory));
+        } catch (e) { console.error("Storage full", e); }
     }
 
+    // [修改] 渲染歷史記錄：全螢幕樣式與顏色邏輯
     renderHistory() {
         const list = document.getElementById('historyList');
         let html = '';
         this.gameHistory.forEach(h => {
-            let winClass = h.win > 0 ? 'text-green-400' : 'text-gray-500';
-            let winText = h.win > 0 ? `+${h.win.toFixed(2)}` : '-';
+            // 贏分大於押注才算綠色，否則紅色
+            let isWin = h.win > h.bet;
+            let winClass = isWin ? 'text-green-400' : 'text-red-500';
+            // 移除 "+" 號
+            let winText = h.win.toFixed(2);
+            
             html += `
-                <div class="grid grid-cols-5 text-sm py-3 px-2 border-b border-gray-800 hover:bg-white/5 transition-colors">
-                    <div class="text-gray-400 font-mono">#${h.id}</div>
-                    <div class="text-gray-500">${h.time}</div>
-                    <div class="text-center font-bold text-blue-400">x${h.mul}</div>
-                    <div class="text-right text-white font-bold">${h.bet}</div>
-                    <div class="text-right font-black ${winClass}">${winText}</div>
+                <div class="grid grid-cols-5 text-lg py-4 px-4 border-b border-gray-800 hover:bg-white/5 transition-colors items-center">
+                    <div class="text-gray-400 font-mono text-sm">#${h.id}</div>
+                    <div class="text-gray-500 text-sm">${h.time}</div>
+                    <div class="text-center font-black text-blue-400 text-xl">x${h.mul}</div>
+                    <div class="text-right text-white font-bold text-xl">${h.bet}</div>
+                    <div class="text-right font-black ${winClass} text-2xl">${winText}</div>
                 </div>
             `;
         });
         if (this.gameHistory.length === 0) {
-            html = `<div class="text-center text-gray-600 py-10 italic">No history yet</div>`;
+            html = `<div class="text-center text-gray-600 py-10 italic text-2xl">No history yet</div>`;
         }
         list.innerHTML = html;
     }
@@ -1604,6 +1623,8 @@ class Game {
             // 修正歷史記錄
             if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
                 this.gameHistory[0].win = win;
+                // 更新 localStorage
+                try { localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory)); } catch(e){}
             } else {
                 this.recordHistory(win);
             }
@@ -1612,6 +1633,7 @@ class Game {
             this.spawnText(I18N[this.lang].clink, this.horse.x, this.horse.y - 60, '#fff', 30);
              if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
                 this.gameHistory[0].win = 0;
+                try { localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory)); } catch(e){}
             } else {
                 this.recordHistory(0);
             }
@@ -1780,7 +1802,7 @@ class Game {
         if (this.state !== 'EXPLODING') {
             const targetScale = 1.0;
             const stiffness = 0.2; 
-            const damping = 0.8;      
+            const damping = 0.8;       
             const forceX = (targetScale - this.horse.animScaleX) * stiffness;
             this.horse.scaleVx += forceX;
             this.horse.scaleVx *= damping;
@@ -1959,8 +1981,9 @@ class Game {
                 this.horse.x = this.width * 0.3;
                 this.shakeScreen(15);
                 this.createParticles(this.horse.x, this.horse.y+80, 50, '#5c4033', 'spark');
-                this.springs = [];
-                this.springSpawnTimer = 40;
+                // [修改] 移除彈簧重置代碼，保持連貫感
+                // this.springs = [];  <-- Removed
+                // this.springSpawnTimer = 40; <-- Removed
                 this.updateUI();
             }
         }
