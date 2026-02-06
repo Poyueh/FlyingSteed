@@ -78,58 +78,25 @@
         }
 
         /* Toggle Switch Style */
-        .setting-toggle {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-        
-        .setting-toggle input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
+        .setting-toggle { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .setting-toggle input { opacity: 0; width: 0; height: 0; }
         .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #4b5563; /* gray-600 */
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 34px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4b5563; -webkit-transition: .4s; transition: .4s; border-radius: 34px;
         }
-        
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+            background-color: white; -webkit-transition: .4s; transition: .4s; border-radius: 50%;
         }
-        
-        input:checked + .slider {
-            background-color: #22c55e; /* green-500 */
-        }
-        
-        input:focus + .slider {
-            box-shadow: 0 0 1px #22c55e;
-        }
-        
-        input:checked + .slider:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
-        }
+        input:checked + .slider { background-color: #22c55e; }
+        input:focus + .slider { box-shadow: 0 0 1px #22c55e; }
+        input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
+
+        /* History Table Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
 <body>
@@ -163,9 +130,18 @@
                         <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
                         <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
                     </div>
-                    <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-lg">
-                        <span class="text-white font-bold text-2xl ui-font">?</span>
-                    </button>
+                    
+                    <!-- 歷史按鈕 & 說明按鈕 -->
+                    <div class="flex gap-2">
+                         <button onclick="game.toggleHistory(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-blue-600/80 backdrop-blur-md border-2 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-lg">
+                            <span class="text-white font-bold text-2xl ui-font">?</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -202,6 +178,32 @@
                 </div>
             </div>
             <span id="lblBurstFire" class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
+        </div>
+
+        <!-- 歷史報表 Modal -->
+        <div id="historyModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 border-4 border-blue-500/30 rounded-[2rem] p-6 w-[95%] max-w-[700px] h-[80vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="lblHistoryTitle" class="text-white ui-font text-4xl tracking-widest text-blue-400">GAME HISTORY</h2>
+                    <button onclick="game.toggleHistory(false)" class="text-gray-400 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                
+                <!-- Table Header -->
+                <div class="grid grid-cols-5 text-gray-400 font-bold text-sm uppercase tracking-wider border-b border-gray-700 pb-3 mb-2 px-2">
+                    <div id="colId">ROUND ID</div>
+                    <div id="colTime">TIME</div>
+                    <div id="colMul" class="text-center">MUL</div>
+                    <div id="colBet" class="text-right">BET</div>
+                    <div id="colWin" class="text-right">WIN</div>
+                </div>
+
+                <!-- Table Body -->
+                <div id="historyList" class="flex-1 overflow-y-auto custom-scroll space-y-1">
+                    <!-- JS Populated -->
+                </div>
+            </div>
         </div>
 
         <!-- 遊戲說明 Modal -->
@@ -433,7 +435,7 @@ const I18N = {
         noMoney: "NO MONEY!",
         legendary: "LEGENDARY!",
         boost: "BOOST!",
-        misfire: "MISFIRE!",
+        misfire: "JAM!",
         miss: "MISS",
         streakLost: "STREAK LOST",
         clink: "CLINK!",
@@ -448,7 +450,13 @@ const I18N = {
         help3Desc: "Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!",
         helpAutoTitle: "Auto Pilot",
         helpAutoDesc: "Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.",
-        close: "CLOSE"
+        close: "CLOSE",
+        historyReport: "GAME HISTORY",
+        orderNo: "ROUND ID",
+        multiplier: "MUL",
+        bet: "BET",
+        win: "WIN",
+        time: "TIME"
     },
     zh: {
         balance: "余额",
@@ -480,7 +488,7 @@ const I18N = {
         noMoney: "余额不足!",
         legendary: "传奇!",
         boost: "爆发!",
-        misfire: "哑火!",
+        misfire: "炸裂!",
         miss: "未命中",
         streakLost: "连胜中断",
         clink: "叮当!",
@@ -492,10 +500,16 @@ const I18N = {
         help2Title: "空中战斗",
         help2Desc: "在空中快速点击射击<strong>彩马</strong>。每次击中都会掉落金币！",
         help3Title: "大奖",
-        help3Desc: "击碎彩马赢得<strong>倍数奖励</strong>。小心'哑火'！",
+        help3Desc: "击碎彩马赢得<strong>倍数奖励</strong>。小心'炸裂'！",
         helpAutoTitle: "自动托管",
         helpAutoDesc: "使用自动模式，当弹簧满足您的最小倍数条件时自动起飞。",
-        close: "关闭"
+        close: "关闭",
+        historyReport: "历史报表",
+        orderNo: "单号",
+        multiplier: "倍数",
+        bet: "押注",
+        win: "赢分",
+        time: "时间"
     }
 };
 
@@ -740,6 +754,12 @@ class Game {
         // Lang
         this.lang = 'en';
 
+        // History
+        this.gameHistory = [];
+        this.currentRoundId = "";
+        this.currentRoundBet = 0;
+        this.currentRoundMul = 0;
+
         // 自動託管設定
         this.auto = {
             active: false,
@@ -887,6 +907,58 @@ class Game {
         }
     }
 
+    // Toggle History Modal
+    toggleHistory(show) {
+        const modal = document.getElementById('historyModal');
+        if (show) {
+            this.renderHistory();
+            modal.style.pointerEvents = 'auto';
+            modal.style.opacity = '1';
+            modal.firstElementChild.style.transform = 'scale(1)';
+        } else {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            modal.firstElementChild.style.transform = 'scale(0.95)';
+        }
+    }
+
+    recordHistory(winAmount) {
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        
+        this.gameHistory.unshift({
+            id: this.currentRoundId,
+            time: timeStr,
+            mul: this.currentRoundMul,
+            bet: this.currentRoundBet,
+            win: winAmount
+        });
+
+        if (this.gameHistory.length > 50) this.gameHistory.pop();
+    }
+
+    renderHistory() {
+        const list = document.getElementById('historyList');
+        let html = '';
+        this.gameHistory.forEach(h => {
+            let winClass = h.win > 0 ? 'text-green-400' : 'text-gray-500';
+            let winText = h.win > 0 ? `+${h.win.toFixed(2)}` : '-';
+            html += `
+                <div class="grid grid-cols-5 text-sm py-3 px-2 border-b border-gray-800 hover:bg-white/5 transition-colors">
+                    <div class="text-gray-400 font-mono">#${h.id}</div>
+                    <div class="text-gray-500">${h.time}</div>
+                    <div class="text-center font-bold text-blue-400">x${h.mul}</div>
+                    <div class="text-right text-white font-bold">${h.bet}</div>
+                    <div class="text-right font-black ${winClass}">${winText}</div>
+                </div>
+            `;
+        });
+        if (this.gameHistory.length === 0) {
+            html = `<div class="text-center text-gray-600 py-10 italic">No history yet</div>`;
+        }
+        list.innerHTML = html;
+    }
+
     toggleMusic(val) {
         this.audio.musicEnabled = val;
     }
@@ -926,7 +998,7 @@ class Game {
         document.getElementById('bonusLabel').innerText = t.nextTarget;
         document.getElementById('lblPinataTime').innerText = t.pinataTime;
         document.getElementById('lblReloading').innerText = t.reloading;
-        document.getElementById('ammoText').innerText = t.rdy; // dynamic will override
+        document.getElementById('ammoText').innerText = t.rdy; 
         document.getElementById('lblBurstFire').innerText = t.burstFire;
         document.getElementById('lblHowToPlay').innerText = t.howToPlay;
         document.getElementById('help1Title').innerText = t.help1Title;
@@ -953,8 +1025,14 @@ class Game {
         document.getElementById('autoModeLabel').innerText = t.mode;
         document.getElementById('autoStatusText').innerText = t.auto;
         document.getElementById('lblRoundsLeft').innerText = t.roundsLeft;
+        document.getElementById('lblHistoryTitle').innerText = t.historyReport;
+        document.getElementById('colId').innerText = t.orderNo;
+        document.getElementById('colTime').innerText = t.time;
+        document.getElementById('colMul').innerText = t.multiplier;
+        document.getElementById('colBet').innerText = t.bet;
+        document.getElementById('colWin').innerText = t.win;
 
-        this.updateUI(); // refresh dynamic bits
+        this.updateUI(); 
     }
 
     // [新增] 切換說明視窗
@@ -1427,6 +1505,11 @@ class Game {
         this.saveBalance();
         this.updateUI();
 
+        // 產生這一局的 ID (簡單使用 timestamp 後6碼)
+        this.currentRoundId = Date.now().toString().slice(-6);
+        this.currentRoundBet = this.betAmount;
+        this.currentRoundMul = this.currentMultiplier;
+
         const result = this.math.getResult(this.currentMultiplier, this.horse.pinataHits);
         
         this.pendingResult = result;
@@ -1480,15 +1563,18 @@ class Game {
 
                 case 'SMALL_WIN':
                     this.triggerSmallWin();
+                    this.recordHistory(0); // 小獎也算贏，稍後補上正確金額
                     break;
 
                 case 'BAD_EXPLODE':
                     setTimeout(() => { this.explodePinata(false); }, 200);
                     this.spawnText(I18N[this.lang].misfire, this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
+                    this.recordHistory(0);
                     break;
 
                 default: // MISS
                     this.spawnText(I18N[this.lang].miss, this.horse.x, this.horse.y - 80, '#9ca3af', 40);
+                    this.recordHistory(0);
                     if (this.winStreak >= 3) {
                         this.spawnText(I18N[this.lang].streakLost, this.horse.x, this.horse.y + 50, '#ef4444', 40);
                     }
@@ -1503,6 +1589,10 @@ class Game {
         // 使用數學模組計算返水金額
         const win = this.math.getSmallWinAmount(this.betAmount);
         
+        // 更新歷史紀錄中的贏分 (覆蓋剛才的0)
+        // 注意：這裡簡化處理，直接重新記錄一次是不對的，應該修改最近一筆
+        // 但為了代碼簡單，我們在 recordHistory 中處理
+        
         if (win > 0) {
             this.balance += win;
             this.saveBalance();
@@ -1510,8 +1600,21 @@ class Game {
             this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x + (Math.random()-0.5)*40, this.horse.y - 60, '#fff', 70);
             this.createParticles(this.horse.x, this.horse.y, 5, '#fef08a', 'coin');
             this.audio.playTone(880, 'sine', 0.1, 0.1); 
+            
+            // 修正歷史記錄
+            if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
+                this.gameHistory[0].win = win;
+            } else {
+                this.recordHistory(win);
+            }
+
         } else {
             this.spawnText(I18N[this.lang].clink, this.horse.x, this.horse.y - 60, '#fff', 30);
+             if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
+                this.gameHistory[0].win = 0;
+            } else {
+                this.recordHistory(0);
+            }
         }
     }
 
@@ -1535,6 +1638,8 @@ class Game {
             this.balance += totalWin;
             this.saveBalance();
             this.audio.playWin();
+            
+            this.recordHistory(totalWin);
 
             this.winStreak++;
 
@@ -1602,21 +1707,23 @@ class Game {
                 p.life = 20; p.maxLife = 20;
                 p.size = 10;
                 p.growth = 20; 
-            } else if (type === 'confetti') {
-                p.gravity = 0.2;
-                p.vx *= 1.5;
-                p.vy *= 1.5;
-                p.life = 60;
-                const colors = ['#ec4899', '#3b82f6', '#eab308', '#22c55e', '#a855f7'];
-                p.color = colors[Math.floor(Math.random() * colors.length)];
-                p.w = 12; p.h = 6;
             } else if (type === 'line') {
-                p.vx = (Math.random() - 0.5) * 40;
-                p.vy = (Math.random() - 0.5) * 40;
-                p.life = 15;
-                p.w = 30; p.h = 4;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.9; p.vy *= 0.9;
+            } else if (p.type === 'confetti') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rotation += p.rotSpeed;
+                p.vx *= 0.95; 
+            } else {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.9;
+                if (this.state === 'GROUND') p.x -= this.groundSpeed;
             }
-            this.particles.push(p);
+            if (p.life <= 0) this.particles.splice(i, 1);
         }
     }
 
