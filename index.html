@@ -160,12 +160,12 @@
                     <div class="flex flex-col gap-4 mt-2">
                           <button onclick="game.toggleHistory(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-blue-600/80 backdrop-blur-md border-4 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-xl group">
                             <!-- [Icon] Clock -->
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white group-hover:scale-110 transition-transform icon-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white group-hover:scale-110 transition-transform icon-shadow pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
                         <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-36 h-36 rounded-full bg-blue-600/80 backdrop-blur-md border-4 border-blue-400/50 flex items-center justify-center hover:bg-blue-500 active:scale-95 transition-all shadow-xl group">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white group-hover:scale-110 transition-transform icon-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white group-hover:scale-110 transition-transform icon-shadow pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </button>
@@ -228,9 +228,11 @@
                     <div id="lblHistoryTitle" class="text-white text-3xl font-black ui-font tracking-wider">
                         历史报表
                     </div>
-                    <!-- [修改] 增加按鈕內距 p-8，增加點擊範圍 -->
-                    <button onclick="game.toggleHistory(false)" class="text-gray-400 hover:text-white transition-colors p-8">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <!-- [修改] 關閉按鈕：固定寬高(w-20 h-20)、Flex置中、SVG pointer-events-none -->
+                    <button onclick="game.toggleHistory(false)" class="bg-gray-800/80 w-20 h-20 rounded-full flex items-center justify-center text-gray-200 hover:text-white hover:bg-gray-700 active:scale-90 transition-all border-2 border-gray-700 shadow-lg backdrop-blur-sm group pointer-events-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 group-hover:rotate-90 transition-transform duration-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
                 
@@ -267,9 +269,9 @@
                         </div>
                         <h2 class="text-5xl font-black text-white ui-font tracking-wider">GAME GUIDE</h2>
                     </div>
-                     <!-- [修改] 增加內距 p-6，增大按鈕好點擊 -->
-                     <button onclick="game.toggleHelp(false)" class="bg-gray-800 p-6 rounded-full hover:bg-gray-700 transition-colors pointer-events-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                      <!-- [修改] 增加內距 p-6，增大按鈕好點擊 -->
+                      <button onclick="game.toggleHelp(false)" class="bg-gray-800 w-20 h-20 flex items-center justify-center rounded-full hover:bg-gray-700 transition-colors pointer-events-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
@@ -398,7 +400,7 @@
 
                 <!-- [修改] 增加垂直內距 py-6，增大按鈕好點擊 -->
                 <button id="btnCloseSettings" onclick="game.toggleSettings(false)" class="w-full mt-10 bg-gray-200 text-gray-900 font-black py-6 rounded-xl hover:bg-white text-3xl ui-font transition-colors shadow-lg flex justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
@@ -518,7 +520,7 @@
                     </button>
                     
                     <!-- 設定按鈕 (右下角) -->
-                     <button onclick="game.toggleSettings(true)" class="flex-[0.5] bg-gray-900 border-2 border-gray-600 rounded-2xl flex items-center justify-center hover:bg-gray-800 active:scale-95 transition-all shadow-lg group">
+                      <button onclick="game.toggleSettings(true)" class="flex-[0.5] bg-gray-900 border-2 border-gray-600 rounded-2xl flex items-center justify-center hover:bg-gray-800 active:scale-95 transition-all shadow-lg group">
                         <!-- [修正] Settings Icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -537,7 +539,7 @@
                         <span class="ui-font text-lg">10</span>
                     </button>
                     <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-blue-400 active:bg-gray-900 shadow-lg group" data-bet="50">
-                         <div class="w-7 h-7 rounded-full bg-blue-500 mb-1 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
+                          <div class="w-7 h-7 rounded-full bg-blue-500 mb-1 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
                         <span class="ui-font text-xl">50</span>
                     </button>
                     <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-red-400 active:bg-gray-900 shadow-lg group" data-bet="100">
@@ -957,7 +959,7 @@ class Game {
             scale: 2.2,
             targetX: 0, targetY: 0,
             moveTimer: 0,
-            pinataHits: 0,         
+            pinataHits: 0,          
             wobble: 0,
             animScaleX: 1, 
             animScaleY: 1,
@@ -1983,7 +1985,7 @@ class Game {
         if (this.state !== 'EXPLODING') {
             const targetScale = 1.0;
             const stiffness = 0.2; 
-            const damping = 0.8;          
+            const damping = 0.8;           
             const forceX = (targetScale - this.horse.animScaleX) * stiffness;
             this.horse.scaleVx += forceX;
             this.horse.scaleVx *= damping;
