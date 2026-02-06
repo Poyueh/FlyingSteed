@@ -92,6 +92,15 @@
             left: 100%;
         }
 
+        /* 下注按鈕選取樣式 */
+        .neon-btn.selected {
+            background-color: #374151; /* gray-700 */
+            border-color: #fbbf24; /* amber-400 */
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+            transform: scale(1.1);
+            z-index: 20;
+        }
+
         .shake {
             animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
         }
@@ -178,14 +187,24 @@
 
             <!-- HUD -->
             <div class="flex justify-between items-start px-6"> 
+                <!-- 左側：餘額 -->
                 <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left">
                     <div class="text-sm text-yellow-300 font-bold tracking-wider uppercase opacity-80">Balance</div>
                     <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
                 </div>
                 
-                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl transform scale-90 origin-top-right min-w-[120px] text-right">
-                    <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
-                    <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
+                <!-- 右側：倍數顯示 + 說明按鈕 -->
+                <div class="flex flex-col items-end gap-3 transform scale-90 origin-top-right">
+                    <!-- 倍數 -->
+                    <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl min-w-[120px] text-right">
+                        <div class="text-sm text-blue-300 font-bold tracking-wider uppercase opacity-80" id="bonusLabel">NEXT TARGET</div>
+                        <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
+                    </div>
+                    
+                    <!-- 說明按鈕 (唯一保留的說明按鈕) -->
+                    <button onclick="game.toggleHelp(true)" class="pointer-events-auto w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/50 flex items-center justify-center hover:bg-white/40 active:scale-95 transition-all shadow-lg">
+                        <span class="text-white font-bold text-2xl ui-font">?</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -229,9 +248,52 @@
             <span class="mt-3 text-yellow-400 font-bold text-sm bg-black/50 px-3 py-1 rounded-full border border-yellow-400/30">BURST FIRE</span>
         </div>
 
+        <!-- 遊戲說明 Modal -->
+        <div id="helpModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 border-4 border-white/20 rounded-[3rem] p-10 w-[95%] max-w-4xl shadow-2xl transform scale-95 transition-transform duration-300 relative overflow-hidden" id="helpContent">
+                <!-- 裝飾背景 -->
+                <div class="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                
+                <h2 class="text-white ui-font text-6xl text-center mb-10 tracking-widest text-yellow-400 drop-shadow-md">HOW TO PLAY</h2>
+                
+                <div class="space-y-8 text-gray-200">
+                    <div class="flex gap-6 items-center">
+                        <div class="w-16 h-16 shrink-0 rounded-full bg-blue-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-blue-400">1</div>
+                        <div>
+                            <h3 class="font-bold text-blue-300 text-3xl uppercase mb-2 ui-font">Launch</h3>
+                            <p class="text-xl opacity-90 leading-relaxed">Wait for a high multiplier spring to appear on the <strong>Roadmap</strong>, then tap anywhere to launch!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-6 items-center">
+                        <div class="w-16 h-16 shrink-0 rounded-full bg-pink-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-pink-400">2</div>
+                        <div>
+                            <h3 class="font-bold text-pink-300 text-3xl uppercase mb-2 ui-font">Sky Battle</h3>
+                            <p class="text-xl opacity-90 leading-relaxed">In the air, tap rapidly to shoot the <strong>Pinata</strong>. Each hit shakes coins loose!</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6 items-center">
+                        <div class="w-16 h-16 shrink-0 rounded-full bg-yellow-600 flex items-center justify-center font-bold text-3xl shadow-lg border-2 border-yellow-400">3</div>
+                        <div>
+                            <h3 class="font-bold text-yellow-300 text-3xl uppercase mb-2 ui-font">Big Win</h3>
+                            <p class="text-xl opacity-90 leading-relaxed">Destroy the Pinata to win the <strong>Multiplier Prize</strong>. Watch out for 'MISFIRE'!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10 mt-6">
+                        <h3 class="font-bold text-green-300 text-2xl uppercase mb-2 ui-font">Auto Pilot</h3>
+                        <p class="text-lg opacity-80">Use Auto Mode to automatically launch when a spring meets your minimum multiplier criteria.</p>
+                    </div>
+                </div>
+
+                <button onclick="game.toggleHelp(false)" class="w-full mt-10 bg-white text-black font-black py-6 rounded-2xl hover:bg-gray-200 text-4xl ui-font transition-colors shadow-xl">GOT IT!</button>
+            </div>
+        </div>
+
         <!-- 自動託管設定面板 -->
         <div id="autoPanel" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
-            <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-8 w-[90%] max-w-[600px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
+            <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-10 w-[95%] max-w-[800px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
                 <h2 class="text-white ui-font text-5xl text-center mb-8 tracking-widest drop-shadow-[0_4px_0_#000]">AUTO PILOT</h2>
                 
                 <!-- 局數選擇 -->
@@ -248,7 +310,7 @@
                 <!-- 觸發倍率選擇 -->
                 <div class="mb-10">
                     <label class="text-yellow-400 text-lg font-black uppercase tracking-widest mb-3 block text-center">MIN MULTIPLIER</label>
-                    <div class="grid grid-cols-4 gap-3">
+                    <div class="grid grid-cols-5 gap-2">
                         <button onclick="game.setAutoMinMul(2)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="2">x2</button>
                         <button onclick="game.setAutoMinMul(5)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="5">x5</button>
                         <button onclick="game.setAutoMinMul(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="10">x10</button>
@@ -257,6 +319,8 @@
                         <button onclick="game.setAutoMinMul(100)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="100">x100</button>
                         <button onclick="game.setAutoMinMul(200)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="200">x200</button>
                         <button onclick="game.setAutoMinMul(500)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="500">x500</button>
+                        <button onclick="game.setAutoMinMul(1000)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="1000">x1K</button>
+                        <button onclick="game.setAutoMinMul(10000)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="10000">MAX</button>
                     </div>
                 </div>
 
@@ -287,36 +351,56 @@
                         <span id="currentBetDisplay" class="ui-font text-3xl text-yellow-400 drop-shadow-md leading-none">$10.00</span>
                     </div>
 
-                    <!-- AUTO 按鈕 -->
+                    <!-- AUTO 按鈕 [修改] 啟動後顯示全版面資訊 (局數 + 倍數) -->
                     <button id="autoToggleBtn" onclick="game.toggleAutoPanel(true)" class="flex-[1.2] bg-gray-800 border-2 border-blue-500/50 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden hover:bg-gray-700 active:scale-95 transition-all shadow-lg group">
-                        <div class="flex items-center gap-2 mb-0">
-                            <div id="autoStatusDot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_8px_rgba(0,0,0,0.5)] transition-colors duration-300"></div>
-                            <span class="text-gray-400 text-xs font-bold tracking-[0.2em] group-hover:text-white transition-colors">MODE</span>
+                        
+                        <!-- 啟動狀態遮罩 -->
+                        <div id="autoActiveBadge" class="absolute inset-0 flex flex-col items-center justify-center bg-green-900/95 z-20 hidden transition-opacity duration-300 backdrop-blur-sm">
+                            
+                            <!-- 倍數顯示：右上角獨立標籤 -->
+                            <div class="absolute top-0 right-0 bg-yellow-400 text-black font-black ui-font text-xl px-3 py-1 rounded-bl-2xl shadow-lg z-30 border-b-2 border-l-2 border-yellow-200">
+                                <span id="autoActiveMul">x10</span>
+                            </div>
+
+                            <!-- 剩餘局數 (置中大字) -->
+                            <div class="flex flex-col items-center justify-center w-full mt-2">
+                                <span class="text-green-300 text-[10px] font-black tracking-[0.2em] uppercase leading-none mb-1 opacity-80">ROUNDS LEFT</span>
+                                <span id="autoActiveRounds" class="text-white text-6xl font-black ui-font leading-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">10</span>
+                            </div>
                         </div>
-                        <span id="autoStatusText" class="text-white font-black text-4xl tracking-wider leading-none ui-font mt-1">AUTO</span>
+
+                        <!-- 未啟動狀態內容 (預設) -->
+                        <div id="autoDefaultContent" class="flex flex-col items-center justify-center w-full h-full">
+                            <div class="flex items-center gap-2 mb-0 z-10">
+                                <div id="autoStatusDot" class="w-4 h-4 rounded-full bg-gray-500 shadow-[0_0_8px_rgba(0,0,0,0.5)] transition-colors duration-300"></div>
+                                <span id="autoModeLabel" class="text-gray-400 text-xs font-bold tracking-[0.2em] group-hover:text-white transition-colors">MODE</span>
+                            </div>
+                            <span id="autoStatusText" class="text-white font-black text-4xl tracking-wider leading-none ui-font mt-1 z-10">AUTO</span>
+                        </div>
+                        
                         <!-- 裝飾光 -->
                         <div class="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                     </button>
                 </div>
                 
                 <div class="grid grid-cols-5 gap-3 w-full max-w-xl">
-                    <button onclick="game.setBet(1)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-emerald-400 active:bg-gray-900 shadow-lg group">
+                    <button onclick="game.setBet(1)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-emerald-400 active:bg-gray-900 shadow-lg group" data-bet="1">
                         <div class="w-5 h-5 rounded-full bg-emerald-400 mb-1 shadow-[0_0_10px_#34d399] group-hover:scale-110 transition-transform"></div>
                         <span class="ui-font text-lg">1</span>
                     </button>
-                    <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group">
+                    <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group" data-bet="10">
                         <div class="w-6 h-6 rounded-full bg-yellow-500 mb-1 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform"></div>
                         <span class="ui-font text-lg">10</span>
                     </button>
-                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-blue-400 active:bg-gray-900 shadow-lg group">
+                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-blue-400 active:bg-gray-900 shadow-lg group" data-bet="50">
                          <div class="w-7 h-7 rounded-full bg-blue-500 mb-1 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform"></div>
                         <span class="ui-font text-xl">50</span>
                     </button>
-                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-red-400 active:bg-gray-900 shadow-lg group">
+                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-red-400 active:bg-gray-900 shadow-lg group" data-bet="100">
                         <div class="w-8 h-8 rounded-full bg-red-500 mb-1 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform"></div>
                         <span class="ui-font text-2xl">100</span>
                     </button>
-                    <button onclick="game.setBet(1000)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-purple-400 active:bg-gray-900 shadow-lg group">
+                    <button onclick="game.setBet(1000)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-purple-400 active:bg-gray-900 shadow-lg group" data-bet="1000">
                         <div class="w-9 h-9 rounded-full bg-purple-500 mb-1 shadow-[0_0_10px_#a855f7] group-hover:scale-110 transition-transform border border-white"></div>
                         <span class="ui-font text-xl">1K</span>
                     </button>
@@ -631,6 +715,10 @@ class Game {
         this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
         
         this.resize(); 
+        
+        // [新增] 初始化時設定按鈕選取狀態
+        this.setBet(this.betAmount);
+        
         this.updateUI();
         this.updateRoadmapUI(); 
         
@@ -644,6 +732,21 @@ class Game {
             // 確保按鈕預設選中狀態
             this.updateAutoPanelUI();
         }, 100);
+    }
+
+    // [新增] 切換說明視窗
+    toggleHelp(show) {
+        const modal = document.getElementById('helpModal');
+        const content = document.getElementById('helpContent');
+        if (show) {
+            modal.style.pointerEvents = 'auto';
+            modal.style.opacity = '1';
+            content.style.transform = 'scale(1)';
+        } else {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            content.style.transform = 'scale(0.95)';
+        }
     }
 
     // 切換自動設定面板顯隱
@@ -695,26 +798,32 @@ class Game {
         this.updateAutoStatusBtn();
     }
 
-    // 更新主介面 AUTO 按鈕狀態
+    // [修改] 更新主介面 AUTO 按鈕狀態：使用遮罩顯示詳細資訊
     updateAutoStatusBtn() {
-        const dot = document.getElementById('autoStatusDot');
-        const text = document.getElementById('autoStatusText');
         const btn = document.getElementById('autoToggleBtn');
+        const badge = document.getElementById('autoActiveBadge');
+        const defaultContent = document.getElementById('autoDefaultContent');
+        const roundsSpan = document.getElementById('autoActiveRounds');
+        const mulSpan = document.getElementById('autoActiveMul');
         
         if (this.auto.active) {
-            dot.className = "w-4 h-4 rounded-full bg-green-400 shadow-[0_0_10px_#4ade80] animate-pulse";
-            text.innerText = this.auto.rounds >= 9999 ? "∞" : this.auto.rounds;
+            badge.classList.remove('hidden');
+            defaultContent.classList.add('opacity-0'); // 隱藏預設文字
             
+            // 更新數值
+            roundsSpan.innerText = this.auto.rounds >= 9999 ? "∞" : this.auto.rounds;
+            mulSpan.innerText = `x${this.auto.minMul}`;
+            
+            // 變綠色
             btn.classList.remove('border-blue-500/50');
-            btn.classList.add('border-green-500');
-            btn.classList.add('bg-green-900/30');
+            btn.classList.add('border-green-500', 'shadow-[0_0_15px_#22c55e]');
         } else {
-            dot.className = "w-4 h-4 rounded-full bg-gray-500";
-            text.innerText = "AUTO";
-            
+            badge.classList.add('hidden');
+            defaultContent.classList.remove('opacity-0'); // 顯示預設文字
+
+            // 還原藍色
             btn.classList.add('border-blue-500/50');
-            btn.classList.remove('border-green-500');
-            btn.classList.remove('bg-green-900/30');
+            btn.classList.remove('border-green-500', 'shadow-[0_0_15px_#22c55e]');
         }
     }
 
@@ -867,9 +976,18 @@ class Game {
         }
     }
 
+    // [修改] 下注功能：增加選取狀態切換
     setBet(amount) {
         if (this.hitCooldown > 0 || this.isFiring) return; 
         this.betAmount = amount;
+        
+        // 更新按鈕樣式
+        document.querySelectorAll('.neon-btn').forEach(btn => {
+            const btnVal = parseInt(btn.dataset.bet); 
+            if (btnVal === amount) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+
         const display = document.getElementById('currentBetDisplay');
         display.classList.remove('shake');
         void display.offsetWidth;
@@ -1062,7 +1180,7 @@ class Game {
 
             this.shakeScreen(20);
             
-            let label = spring.mul >= 1000 ? 'JACKPOT!' : `x${spring.mul} BOOST!`;
+            let label = spring.mul >= 1000 ? 'LEGENDARY!' : `x${spring.mul} BOOST!`;
             this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
             
             for(let i=0; i<30; i++) {
@@ -1124,7 +1242,10 @@ class Game {
         // 只有最後一發子彈決定該輪結果
         if (b.isLast) {
             this.isFiring = false;
-            this.hitCooldown = this.hitCooldownMax;
+            
+            // [修改] 自動模式下大幅縮短 Reload 時間
+            this.hitCooldown = this.auto.active ? 30 : this.hitCooldownMax;
+            
             this.audio.playReload();
             this.skyTimer = this.skyDurationMax; // 命中重置滯空時間
 
@@ -1140,7 +1261,7 @@ class Game {
 
                 case 'BAD_EXPLODE':
                     setTimeout(() => { this.explodePinata(false); }, 200);
-                    this.spawnText("JAMMED!", this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
+                    this.spawnText("MISFIRE!", this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
                     break;
 
                 default: // MISS
@@ -1178,7 +1299,10 @@ class Game {
         if (isWin) {
             // === 大獎：進入 EXPLODING 狀態 (滯空表演) ===
             this.state = 'EXPLODING';
-            this.explosionTimer = 120; // 延長一點表演時間 (約2秒)
+            
+            // [修改] 自動模式下縮短大獎表演時間 (減少一半)
+            this.explosionTimer = this.auto.active ? 60 : 120;
+            
             this.horse.vy = 0;
             
             this.shakeScreen(100); // 強烈震動
@@ -1191,13 +1315,9 @@ class Game {
 
             this.winStreak++;
 
-            // [修改重點] 贏分顯示優化
-            // 1. 座標鎖定在畫面中心上方，不隨馬匹移動
+            // 贏分顯示
             const centerX = this.width / 2;
             const centerY = this.height * 0.4;
-
-            // 2. 生成專屬的 'BIG_WIN' 類型文字
-            // 參數：文字, X, Y, 顏色, 大小, 類型
             this.spawnText(`+${this.formatCurrency(totalWin)}`, centerX, centerY, '#FFD700', 130, 'BIG_WIN');
 
             // 第一波爆發
