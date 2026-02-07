@@ -13,7 +13,2732 @@
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             position: fixed; overflow: hidden;
+            background-color: #000; <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>飞天神驹</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+SC:wght@500;700;900&family=Noto+Sans+TC:wght@500;900&display=swap');
+
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            position: fixed; overflow: hidden;
             background-color: #000; 
+            touch-action: none; user-select: none; -webkit-user-select: none;
+        }
+
+        #game-wrapper {
+            position: absolute; top: 0; left: 0;
+            width: 900px; height: 1600px;
+            background-color: #1a1a2e;
+            overflow: hidden; opacity: 0; 
+            transition: opacity 0.5s; transform-origin: 0 0;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .ui-font { font-family: 'Black Ops One', 'Noto Sans SC', sans-serif; letter-spacing: 1px; }
+        
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; z-index: 10;
+        }
+        
+        .pointer-events-auto { pointer-events: auto; }
+        
+        .neon-btn {
+            position: relative; overflow: hidden; transition: all 0.1s;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+        }
+        .neon-btn:active { transform: scale(0.92); }
+        .neon-btn::after {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        .neon-btn:hover::after { left: 100%; }
+        .neon-btn.selected {
+            background-color: #374151; border-color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); transform: scale(1.1); z-index: 20;
+        }
+
+        .shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        .control-panel {
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
+            padding-bottom: max(2rem, env(safe-area-inset-bottom)); padding-top: 6rem;
+        }
+        
+        @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .roadmap-item { transition: all 0.3s ease-out; }
+        .processing { filter: brightness(0.5); pointer-events: none; }
+
+        .auto-opt-btn.selected {
+            background-color: #2563eb; border-color: #60a5fa;
+            box-shadow: 0 0 15px rgba(37,99,235,0.6); transform: scale(1.05);
+        }
+
+        /* Toggle Switch Style */
+        .setting-toggle { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .setting-toggle input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4b5563; -webkit-transition: .4s; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+            background-color: white; -webkit-transition: .4s; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #22c55e; }
+        input:focus + .slider { box-shadow: 0 0 1px #22c55e; }
+        input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
+
+        /* History Table Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        .icon-shadow { filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5)); }
+        
+        /* Tap Hand Animation */
+        @keyframes tap {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(0.9); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        .tap-anim { animation: tap 1.5s infinite ease-in-out; }
+
+        /* Menu Animation */
+        #sideMenu { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .menu-btn { transition: all 0.2s; }
+        .menu-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="ui-layer safe-area-inset">
+        <!-- 頂部區域 -->
+        <div class="flex flex-col w-full relative z-20 pt-8 pointer-events-none">
+            <!-- 路途 -->
+            <div class="w-full flex justify-center items-center mb-2 overflow-hidden px-4">
+                <div class="bg-black/60 backdrop-blur-sm rounded-full px-5 py-3 border border-white/10 flex items-center gap-3 shadow-lg max-w-[98%]">
+                    <!-- History Icon -->
+                    <div class="text-gray-400 mr-1" title="History">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div id="roadmapPast" class="flex gap-2 opacity-60 scale-90 origin-right"></div>
+                    <div class="w-[1px] h-8 bg-white/30 mx-1"></div>
+                    <div id="roadmapFuture" class="flex gap-2 items-center"></div>
+                    <!-- Upcoming Icon -->
+                    <div class="text-blue-400 ml-1" title="Upcoming">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD -->
+            <div class="flex justify-between items-start px-6"> 
+                <!-- 餘額顯示 -->
+                <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-l-8 border-yellow-500 shadow-xl transform scale-90 origin-top-left min-w-[200px]">
+                    <div id="lblBalanceTitle" class="text-yellow-400 text-lg font-bold mb-1 ui-font tracking-wider">BALANCE</div>
+                    <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
+                </div>
+              
+                <!-- [修改] 移除右上角的按鈕區塊，只保留倍率顯示 -->
+                <div class="flex flex-col items-end gap-3 transform scale-90 origin-top-right">
+                    <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl min-w-[120px] text-right flex flex-col items-end">
+                        <div class="text-blue-300 opacity-80 mb-1" id="bonusLabelIcon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div class="text-5xl text-blue-400 ui-font" id="multiplierDisplay">x1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 天空計時條 -->
+        <div id="skyHUD" class="absolute top-[200px] left-1/2 transform -translate-x-1/2 w-[80%] max-w-[600px] pointer-events-none opacity-0 transition-opacity duration-500 z-10">
+            <div class="relative">
+                <div class="absolute inset-0 bg-pink-500 blur-md opacity-30 rounded-full"></div>
+                <div class="w-full h-8 bg-gray-900/90 rounded-full overflow-hidden border-2 border-pink-400/50 shadow-[0_0_20px_rgba(0,0,0,0.8)] flex items-center p-1">
+                    <div id="skyTimerBar" class="h-full rounded-full bg-gradient-to-r from-pink-500 via-purple-400 to-white w-full shadow-[0_0_15px_rgba(236,72,153,0.8)] transition-all duration-[16ms] ease-linear relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHBhdGggZD0iTTEwIDAgTDAgMjAgTDEwIDIwIEwyMCAwIFoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4yKSIvPjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
+                    </div>
+                </div>
+                <div class="absolute -top-7 left-1/2 -translate-x-1/2 w-full text-center">
+                    <!-- Timer Icon -->
+                    <div class="text-pink-200 drop-shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reload UI -->
+        <div id="hitCooldownUI" class="absolute bottom-40 right-6 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col items-center scale-110">
+            <div id="reloadHintBar" class="mb-4 opacity-0 transition-all duration-200 transform translate-y-4">
+                <div id="lblReloading" class="bg-yellow-500 text-black font-black px-4 py-1 rounded-md text-xl ui-font tracking-widest border-2 border-yellow-300 shadow-[0_0_15px_#eab308] animate-pulse">
+                    RELOADING
+                </div>
+            </div>
+            <div class="relative w-32 h-32">
+                <div class="absolute inset-0 rounded-full bg-gray-900 border-[6px] border-gray-600 shadow-2xl overflow-hidden">
+                    <div class="absolute inset-0 rounded-full border-[20px] border-gray-800 opacity-50"></div>
+                    <div id="revolverContainer" class="absolute inset-0 w-full h-full transition-transform duration-100 ease-out origin-center"></div>
+                    <div class="absolute top-1/2 left-1/2 w-14 h-14 bg-gray-800 rounded-full -translate-x-1/2 -translate-y-1/2 border-4 border-gray-600 z-20 grid place-items-center shadow-inner">
+                        <div id="ammoIcon">
+                            <!-- JS will inject SVG here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 text-yellow-400 bg-black/50 px-3 py-2 rounded-full border border-yellow-400/30">
+                <!-- Burst Fire Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- 歷史報表 Modal -->
+        <div id="historyModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 w-full h-full flex flex-col shadow-2xl transform scale-100 transition-transform duration-300 relative">
+                <!-- Header (含關閉按鈕，避免遮擋) -->
+                <div class="flex justify-center items-center p-6 border-b border-gray-800 bg-gray-900/50 relative z-10 shrink-0">
+                    <div id="lblHistoryTitle" class="text-white text-4xl font-black ui-font tracking-wider">
+                        历史报表
+                    </div>
+                    
+                    <!-- 關閉按鈕 (Absolute right) -->
+                    <!-- [修正] 增加 pointer-events-none 於 icon，確保按鈕本體接收點擊 -->
+                    <button onclick="game.toggleHistory(false)" class="absolute right-6 bg-gray-800 w-20 h-20 rounded-full flex items-center justify-center border-4 border-gray-600 shadow-2xl hover:bg-gray-700 active:scale-95 transition-transform cursor-pointer pointer-events-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+               
+                <!-- Table Header (Text) -->
+                <div class="grid grid-cols-6 text-gray-400 font-bold text-xl border-b border-gray-700 py-6 px-8 bg-gray-800/30 items-center justify-items-center text-center shrink-0">
+                    <div id="colSerial">#</div>
+                    <div id="colTime">Time</div>
+                    <div id="colMul">Mul</div>
+                    <div id="colBet">Bet</div>
+                    <div id="colWin">Win</div>
+                    <div class="text-yellow-500" id="colBal">Balance</div>
+                </div>
+
+                <!-- Table Body -->
+                <div id="historyList" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-2 relative z-0">
+                    <!-- JS Populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 遊戲說明 Modal -->
+        <div id="helpModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 w-full h-full flex flex-col relative overflow-hidden" id="helpContent">
+               
+                <!-- Header -->
+                <div class="flex justify-between items-center px-8 py-6 border-b border-gray-800 bg-gray-900/95 z-20 shrink-0">
+                    <div class="flex items-center gap-4">
+                        <div class="text-yellow-400">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-5xl font-black text-white ui-font tracking-wider pointer-events-none">GAME GUIDE</h2>
+                    </div>
+                      <button onclick="game.toggleHelp(false)" class="bg-gray-800 w-20 h-20 flex items-center justify-center rounded-full hover:bg-gray-700 transition-colors pointer-events-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Content Scroll -->
+                <div class="flex-1 overflow-y-auto custom-scroll p-8 pb-40 space-y-12 relative z-10 w-full overflow-x-hidden">
+                    <div class="fixed top-20 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+                    <div class="max-w-5xl mx-auto space-y-12">
+                        <!-- Game Goal -->
+                        <div class="bg-white/5 rounded-[2rem] p-10 border border-white/10 shadow-lg">
+                            <h3 id="helpGoalTitle" class="text-4xl font-bold text-yellow-400 mb-6 ui-font flex items-center gap-4">
+                                <span class="text-5xl">🎯</span> Game Goal
+                            </h3>
+                            <p id="helpGoalDesc" class="text-3xl text-gray-200 leading-relaxed font-medium"></p>
+                        </div>
+                        <!-- Controls -->
+                        <div class="bg-white/5 rounded-[2rem] p-10 border border-white/10 shadow-lg">
+                            <h3 id="helpControlsTitle" class="text-4xl font-bold text-blue-400 mb-8 ui-font flex items-center gap-4">
+                                <span class="text-5xl">🎮</span> Controls
+                            </h3>
+                            <div class="space-y-10">
+                                <div class="flex items-start gap-8">
+                                    <div class="w-16 h-16 rounded-2xl bg-blue-600 shrink-0 flex items-center justify-center text-4xl font-black text-white shadow-lg shadow-blue-500/30">1</div>
+                                    <div class="text-2xl text-gray-300 leading-relaxed pt-2" id="helpControlsLaunch"></div>
+                                </div>
+                                <div class="flex items-start gap-8">
+                                    <div class="w-16 h-16 rounded-2xl bg-pink-600 shrink-0 flex items-center justify-center text-4xl font-black text-white shadow-lg shadow-pink-500/30">2</div>
+                                    <div class="text-2xl text-gray-300 leading-relaxed pt-2" id="helpControlsShoot"></div>
+                                </div>
+                                <div class="flex items-start gap-8">
+                                    <div class="w-16 h-16 rounded-2xl bg-yellow-600 shrink-0 flex items-center justify-center text-4xl font-black text-white shadow-lg shadow-yellow-500/30">3</div>
+                                    <div class="text-2xl text-gray-300 leading-relaxed pt-2" id="helpControlsJackpot"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- UI Functions -->
+                        <div class="bg-white/5 rounded-[2rem] p-10 border border-white/10 shadow-lg">
+                            <h3 id="helpUiTitle" class="text-4xl font-bold text-green-400 mb-8 ui-font flex items-center gap-4">
+                                <span class="text-5xl">⚙️</span> Interface
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">💰</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiBet"></span>
+                                </div>
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">🗺️</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiRoadmap"></span>
+                                </div>
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl">▶️</span>
+                                    <span class="text-2xl text-gray-200" id="helpUiAuto"></span>
+                                </div>
+                                <!-- [修改] 第四個說明項目改為選單 (Menu) -->
+                                <div class="flex items-center gap-6 bg-black/30 p-6 rounded-2xl border border-white/5">
+                                    <span class="bg-gray-700 p-4 rounded-xl text-4xl flex items-center justify-center w-16 h-16">
+                                        <!-- Hamburger Icon -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                        </svg>
+                                    </span>
+                                    <span class="text-2xl text-gray-200" id="helpUiMenu"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+               
+                <!-- Fixed Bottom Button -->
+                <div class="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-gray-950 via-gray-900 to-transparent pointer-events-none flex justify-center z-30">
+                      <button id="btnGotIt" onclick="game.toggleHelp(false)" class="pointer-events-auto w-full max-w-lg bg-white text-black font-black py-6 rounded-3xl hover:bg-gray-200 text-4xl ui-font transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] active:scale-95 border-b-8 border-gray-400 active:border-b-0 active:translate-y-2">
+                        OK, I GOT IT!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 設定 Modal -->
+        <div id="settingsModal" class="absolute inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 border-4 border-gray-600 rounded-[2rem] p-8 w-[90%] max-w-[500px] shadow-2xl transform scale-95 transition-transform duration-300 relative">
+                <div class="text-center mb-10 text-gray-200">
+                    <!-- Settings Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+               
+                <div class="space-y-6">
+                    <!-- Music -->
+                    <div class="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/10">
+                        <span id="lblMusic" class="text-white text-2xl font-bold ui-font tracking-wide">
+                            Music
+                        </span>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="toggleMusic" onclick="game.toggleMusic(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Sound -->
+                    <div class="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/10">
+                        <span id="lblSound" class="text-white text-2xl font-bold ui-font tracking-wide">
+                            Sound
+                        </span>
+                        <label class="setting-toggle">
+                            <input type="checkbox" id="toggleSound" onclick="game.toggleSound(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Language -->
+                    <div class="flex flex-col gap-3 bg-black/40 p-5 rounded-2xl border border-white/10">
+                        <span id="lblLang" class="text-white text-xl font-bold ui-font tracking-wide mb-2">
+                            Language
+                        </span>
+                        <div class="flex gap-2">
+                            <button onclick="game.setLanguage('en')" id="btnLangEn" class="flex-1 py-3 rounded-lg bg-blue-600 text-white font-bold border-2 border-blue-400 hover:bg-blue-500 transition-colors">EN</button>
+                            <button onclick="game.setLanguage('zh')" id="btnLangZh" class="flex-1 py-3 rounded-lg bg-gray-700 text-gray-400 font-bold border-2 border-gray-600 hover:bg-gray-600 transition-colors">中文</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnCloseSettings" onclick="game.toggleSettings(false)" class="w-full mt-10 bg-gray-200 text-gray-900 font-black py-6 rounded-xl hover:bg-white text-3xl ui-font transition-colors shadow-lg flex justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 自動託管設定面板 -->
+        <div id="autoPanel" class="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="bg-gray-900 border-4 border-blue-500 rounded-[2rem] p-10 w-[95%] max-w-[800px] shadow-[0_0_60px_rgba(59,130,246,0.4)] transform scale-90 transition-transform duration-300" id="autoPanelContent">
+                <!-- (自動設定內容保持不變) -->
+                <div class="text-center mb-8 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="mb-8">
+                    <div class="text-blue-400 mb-3 flex justify-center">
+                        <span id="lblAutoRounds" class="text-2xl font-bold ui-font">Rounds</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-3">
+                        <button onclick="game.setAutoRounds(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="10">10</button>
+                        <button onclick="game.setAutoRounds(20)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="20">20</button>
+                        <button onclick="game.setAutoRounds(50)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-2xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="50">50</button>
+                        <button onclick="game.setAutoRounds(9999)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-3xl py-5 hover:bg-blue-600 hover:border-blue-400 transition-all active:scale-95" data-type="rounds" data-val="9999">∞</button>
+                    </div>
+                </div>
+                <div class="mb-10">
+                    <div class="text-yellow-400 mb-3 flex justify-center">
+                        <span id="lblAutoMinMul" class="text-2xl font-bold ui-font">Min Multiplier</span>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2">
+                        <button onclick="game.setAutoMinMul(2)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="2">x2</button>
+                        <button onclick="game.setAutoMinMul(5)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="5">x5</button>
+                        <button onclick="game.setAutoMinMul(10)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="10">x10</button>
+                        <button onclick="game.setAutoMinMul(25)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="25">x25</button>
+                        <button onclick="game.setAutoMinMul(50)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="50">x50</button>
+                        <button onclick="game.setAutoMinMul(100)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="100">x100</button>
+                        <button onclick="game.setAutoMinMul(200)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="200">x200</button>
+                        <button onclick="game.setAutoMinMul(500)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="500">x500</button>
+                        <button onclick="game.setAutoMinMul(1000)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="1000">x1K</button>
+                        <button onclick="game.setAutoMinMul(10000)" class="auto-opt-btn rounded-xl bg-gray-800 border-2 border-gray-600 text-white font-black text-xl py-4 hover:bg-yellow-600 hover:border-yellow-400 transition-all active:scale-95" data-type="mul" data-val="10000">MAX</button>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button id="btnCancel" onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all flex justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <button id="btnStartRun" onclick="game.startAuto()" class="flex-[1.5] bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black py-6 rounded-2xl shadow-lg hover:brightness-110 ui-font tracking-wide text-3xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all flex justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5 3l14 9-14 9V3z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 獨立的漢堡選單容器 (Absolute Bottom-Right) -->
+        <!-- [修改] 移出 betPanel，放置於 ui-layer 的最上層，絕對定位於右下角 -->
+        <div class="absolute bottom-8 right-8 z-[60] flex flex-col items-end pointer-events-auto">
+            <!-- 展開的選單內容 (由下往上) -->
+            <!-- mb-4 確保選單按鈕與觸發器之間有間距 -->
+            <div id="sideMenu" class="flex flex-col gap-4 mb-4 transition-all duration-300 origin-bottom transform scale-0 opacity-0 pointer-events-none">
+                <!-- Settings -->
+                <button onclick="game.toggleSettings(true); game.toggleMenu()" class="w-28 h-28 bg-gray-800 rounded-3xl border-4 border-gray-600 flex flex-col items-center justify-center shadow-2xl hover:bg-gray-700 pointer-events-auto active:scale-95 transition-transform gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-gray-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </button>
+                <!-- Help -->
+                <button onclick="game.toggleHelp(true); game.toggleMenu()" class="w-28 h-28 bg-gray-800 rounded-3xl border-4 border-gray-600 flex flex-col items-center justify-center shadow-2xl hover:bg-gray-700 pointer-events-auto active:scale-95 transition-transform gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-gray-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+                <!-- History -->
+                <button onclick="game.toggleHistory(true); game.toggleMenu()" class="w-28 h-28 bg-gray-800 rounded-3xl border-4 border-gray-600 flex flex-col items-center justify-center shadow-2xl hover:bg-gray-700 pointer-events-auto active:scale-95 transition-transform gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 text-gray-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 漢堡按鈕觸發器 (Always Visible) -->
+            <button onclick="game.toggleMenu()" class="w-20 h-20 bg-gray-900 border-2 border-gray-600 rounded-2xl flex items-center justify-center hover:bg-gray-800 active:scale-95 transition-all shadow-lg group pointer-events-auto z-20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 group-hover:text-white transition-colors pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- 底部控制區 -->
+        <div class="control-panel flex flex-col items-center justify-end w-full">
+           
+            <div id="groundControls" class="mb-4 pointer-events-none transition-opacity duration-300">
+                <!-- Start Hint -->
+                <div id="startHint" class="text-white text-2xl font-black bg-gradient-to-r from-green-600 to-teal-600 px-8 py-3 rounded-full animate-bounce shadow-lg border-2 border-white/20 tracking-wider">
+                    TAP ANYWHERE TO START
+                </div>
+            </div>
+
+            <!-- 下注操作區 -->
+            <div id="betPanel" class="pointer-events-auto flex flex-col items-center w-full max-w-[900px] px-4 pb-6 transition-opacity duration-200 relative z-30">
+               
+                <!-- 上層功能列 (押注調整 & Auto) -->
+                <div class="flex items-stretch justify-between w-full max-w-xl mb-5 gap-3 min-h-[80px]">
+                    <!-- 顯示押注額 (Flex 2) -->
+                    <div class="flex-[2] flex items-center bg-black/60 px-2 py-2 rounded-2xl border border-white/10 gap-2 relative z-30">
+                       
+                        <!-- 減號按鈕 (還原長按) -->
+                        <button onpointerdown="game.startAdjustBet(-0.01)" onpointerup="game.stopAdjustBet()" onpointerleave="game.stopAdjustBet()" class="w-16 h-full bg-gray-800 rounded-xl border border-gray-600 hover:bg-gray-700 hover:border-red-400 active:bg-gray-900 active:scale-95 transition-all flex items-center justify-center group cursor-pointer pointer-events-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 group-hover:text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4" />
+                            </svg>
+                        </button>
+
+                        <div class="flex-1 flex flex-col items-center justify-center">
+                            <div id="lblBetAmount" class="text-gray-400 text-xs font-bold mb-0 ui-font whitespace-nowrap">
+                                Bet Amount
+                            </div>
+                            <span id="currentBetDisplay" class="ui-font text-2xl text-yellow-400 drop-shadow-md leading-none">$10.00</span>
+                        </div>
+
+                        <!-- 加號按鈕 (還原長按) -->
+                        <button onpointerdown="game.startAdjustBet(0.01)" onpointerup="game.stopAdjustBet()" onpointerleave="game.stopAdjustBet()" class="w-16 h-full bg-gray-800 rounded-xl border border-gray-600 hover:bg-gray-700 hover:border-green-400 active:bg-gray-900 active:scale-95 transition-all flex items-center justify-center group cursor-pointer pointer-events-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 group-hover:text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- AUTO 按鈕 (Flex 1) -->
+                    <button id="autoToggleBtn" onclick="game.toggleAutoPanel(true)" class="flex-[1] bg-gray-800 border-2 border-blue-500/50 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden hover:bg-gray-700 active:scale-95 transition-all shadow-lg group pointer-events-auto">
+                        <!-- 啟動狀態 -->
+                        <div id="autoActiveBadge" class="absolute inset-0 flex flex-col items-center justify-center bg-green-900/95 z-20 hidden transition-opacity duration-300 backdrop-blur-sm pointer-events-none">
+                            <div class="absolute top-0 right-0 bg-yellow-400 text-black font-black ui-font text-xl px-3 py-1 rounded-bl-2xl shadow-lg z-30 border-b-2 border-l-2 border-yellow-200">
+                                <span id="autoActiveMul">x10</span>
+                            </div>
+                            <div class="flex flex-col items-center justify-center w-full mt-2">
+                                <div class="text-green-300 text-[10px] font-black uppercase leading-none mb-1 opacity-80">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                </div>
+                                <span id="autoActiveRounds" class="text-white text-6xl font-black ui-font leading-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">10</span>
+                            </div>
+                        </div>
+                        <!-- 未啟動狀態 -->
+                        <div id="autoDefaultContent" class="flex flex-col items-center justify-center w-full h-full pointer-events-none">
+                            <div class="text-white font-black text-4xl tracking-wider leading-none ui-font z-10 group-hover:scale-110 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+               
+                <!-- 下層: 籌碼 (Grid 5) -->
+                <!-- [修改] 恢復為 5 欄佈局，移除第 6 個選單按鈕 -->
+                <div class="grid grid-cols-5 gap-3 w-full max-w-xl">
+                    <button onclick="game.setBet(1)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-emerald-400 active:bg-gray-900 shadow-lg group pointer-events-auto" data-bet="1">
+                        <div class="w-5 h-5 rounded-full bg-emerald-400 mb-1 shadow-[0_0_10px_#34d399] group-hover:scale-110 transition-transform pointer-events-none"></div>
+                        <span class="ui-font text-lg pointer-events-none">1</span>
+                    </button>
+                    <button onclick="game.setBet(10)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-yellow-400 active:bg-gray-900 shadow-lg group pointer-events-auto" data-bet="10">
+                        <div class="w-6 h-6 rounded-full bg-yellow-500 mb-1 shadow-[0_0_10px_#eab308] group-hover:scale-110 transition-transform pointer-events-none"></div>
+                        <span class="ui-font text-lg pointer-events-none">10</span>
+                    </button>
+                    <button onclick="game.setBet(50)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-blue-400 active:bg-gray-900 shadow-lg group pointer-events-auto" data-bet="50">
+                          <div class="w-7 h-7 rounded-full bg-blue-500 mb-1 shadow-[0_0_10px_#3b82f6] group-hover:scale-110 transition-transform pointer-events-none"></div>
+                        <span class="ui-font text-xl pointer-events-none">50</span>
+                    </button>
+                    <button onclick="game.setBet(100)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-red-400 active:bg-gray-900 shadow-lg group pointer-events-auto" data-bet="100">
+                        <div class="w-8 h-8 rounded-full bg-red-500 mb-1 shadow-[0_0_10px_#ef4444] group-hover:scale-110 transition-transform pointer-events-none"></div>
+                        <span class="ui-font text-2xl pointer-events-none">100</span>
+                    </button>
+                    <button onclick="game.setBet(1000)" class="neon-btn aspect-square rounded-2xl bg-gray-800 border-2 border-gray-600 text-white font-bold flex flex-col items-center justify-center hover:bg-gray-700 hover:border-purple-400 active:bg-gray-900 shadow-lg group pointer-events-auto" data-bet="1000">
+                        <div class="w-9 h-9 rounded-full bg-purple-500 mb-1 shadow-[0_0_10px_#a855f7] group-hover:scale-110 transition-transform border border-white pointer-events-none"></div>
+                        <span class="ui-font text-xl pointer-events-none">1K</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ... (I18N object and AudioController class remain unchanged) ...
+const I18N = {
+    // ... existing I18N ...
+    en: {
+        helpGoalTitle: "🎯 Game Goal",
+        helpGoalDesc: "Your mission is to ride the Flying Horse to the skies! Observe the roadmap, time your launch perfectly on high multipliers, and destroy the Pinata in mid-air to claim massive rewards. It's a thrill ride of timing and luck!",
+        
+        helpControlsTitle: "🎮 Controls",
+        helpControlsLaunch: "<strong class='text-white'>Launch:</strong> Watch the bottom 'Roadmap' carefully. It shows upcoming spring multipliers. When a high multiplier (like x10, x50) slides into the activation zone (under the horse), <strong>TAP ANYWHERE</strong> immediately to launch!",
+        helpControlsShoot: "<strong class='text-white'>Shoot:</strong> Once airborne, your horse will fly towards the Pinata. <strong>TAP RAPIDLY</strong> anywhere on the screen to fire bullets. You have limited ammo (6 shots per reload), so make them count! Hitting the Pinata drops coins.",
+        helpControlsJackpot: "<strong class='text-white'>Jackpot:</strong> Deplete the Pinata's health or land the final blow to trigger the <strong>JACKPOT</strong>! You win the multiplier x your bet. If time runs out or you miss too much, you fall back to the ground.",
+        
+        helpUiTitle: "⚙️ Interface",
+        helpUiBet: "<strong>Bet Controls:</strong> Adjust bet via +/- or Chips.",
+        helpUiRoadmap: "<strong>Roadmap:</strong> Preview upcoming springs.",
+        helpUiAuto: "<strong>Auto Play:</strong> Toggle automatic launching.",
+        helpUiMenu: "<strong>Menu:</strong> Access History, Rules & Settings.",
+        helpBtnGotIt: "OK, I GOT IT!",
+
+        reloading: "RELOADING",
+        tapToStart: "TAP ANYWHERE TO START",
+        noMoney: "NO MONEY!",
+        legendary: "LEGENDARY!",
+        boost: "BOOST!",
+        misfire: "JAM!",
+        miss: "MISS",
+        streakLost: "STREAK LOST",
+        clink: "CLINK!",
+        broken: "BROKEN!",
+        streak: "STREAK",
+        bigWin: "BIG WIN",
+        rounds: "Rounds",
+        minMul: "Min Multiplier",
+        music: "Music",
+        sound: "Sound",
+        language: "Language",
+        betAmount: "Bet Amount",
+        historyReport: "History Report",
+        
+        // [新增] 餘額標題
+        balanceTitle: "BALANCE",
+
+        // History Column Headers
+        colSerial: "Serial",
+        colTime: "Time",
+        colMul: "Mul",
+        colBet: "Bet",
+        colWin: "Win",
+        colBal: "Balance"
+    },
+    zh: {
+        helpGoalTitle: "🎯 游戏目标",
+        helpGoalDesc: "您的任務是駕駛飛天神駒直衝雲霄！觀察路途預測，在最佳時機彈射起飛，並在空中擊碎彩馬 (Pinata) 贏取巨額倍數獎金。這是一場考驗眼力與手速的刺激冒險！",
+        
+        helpControlsTitle: "🎮 操作指南",
+        helpControlsLaunch: "<strong class='text-white'>觀察路途 (Roadmap)：</strong> 緊盯螢幕上方的路途預測。當您心儀的高倍數彈簧（如 x10, x50, MAX）移動到神駒腳下時，<strong>點擊螢幕任意處</strong>立即起飛！",
+        helpControlsShoot: "<strong class='text-white'>空中射擊 (Shoot)：</strong> 飛入空中後，<strong>快速點擊螢幕</strong>發射子彈攻擊彩馬。彈巢有 6 發子彈，射完需等待裝填。每次命中都有機會掉落額外金幣獎勵。",
+        helpControlsJackpot: "<strong class='text-white'>贏取大獎 (Jackpot)：</strong> 在滯空時間結束前擊碎彩馬，即可獲得該次起飛倍數的超級大獎！若未能在時間內擊碎，神駒將會墜落地面，連勝紀錄也會中斷。",
+        
+        helpUiTitle: "⚙️ 界面功能",
+        helpUiBet: "<strong>押注控制:</strong> 使用 +/- 或筹码调整金额。",
+        helpUiRoadmap: "<strong>路途 (顶部):</strong> 预告即将出现的弹簧。",
+        helpUiAuto: "<strong>自动游玩:</strong> 设定自动起飞与射击。",
+        helpUiMenu: "<strong>功能选单:</strong> 打开历史、说明与设定。",
+        helpBtnGotIt: "好的，我知道了！",
+
+        reloading: "装填中",
+        tapToStart: "点击任意处开始",
+        noMoney: "余额不足!",
+        legendary: "传奇!",
+        boost: "爆发!",
+        misfire: "炸裂!",
+        miss: "未命中",
+        streakLost: "连胜中断",
+        clink: "叮当!",
+        broken: "击碎!",
+        streak: "连胜",
+        bigWin: "大奖",
+        rounds: "局数",
+        minMul: "最小倍数",
+        music: "音乐",
+        sound: "音效",
+        language: "语言",
+        betAmount: "押注额",
+        historyReport: "历史报表",
+
+        // [新增] 餘額標題
+        balanceTitle: "余额",
+
+        // History Column Headers
+        colSerial: "序号",
+        colTime: "时间",
+        colMul: "倍数",
+        colBet: "押注",
+        colWin: "赢分",
+        colBal: "余额"
+    }
+};
+
+class AudioController {
+    constructor() {
+        this.ctx = null;
+        this.enabled = false;
+        this.musicEnabled = true; // Default On
+        this.sfxEnabled = true;   // Default On
+        this.bgmTimer = null;
+        this.currentBPM = 120; // 稍微加快基礎節奏
+        this.targetBPM = 120;
+        this.nextNoteTime = 0;
+        // 修改為更輕快活潑的 Bassline (Funky/Upbeat)
+        this.bassLine = [
+            110, 0, 110, 146, 
+            0, 130, 0, 110, 
+            98, 0, 98, 110,
+            130, 0, 146, 165
+        ]; 
+        // 活潑的主旋律
+        this.melodyLine = [
+            330, 392, 440, 0,
+            392, 330, 293, 0,
+            261, 293, 330, 392,
+            440, 0, 523, 587
+        ]; 
+        this.noteIdx = 0;
+        this.isSkyMode = false;
+    }
+
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.enabled = true;
+            this.startLoop();
+        } else if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    playTone(freq, type, duration, vol = 0.1, slideFreq = null) {
+        if (!this.enabled || !freq) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        if (slideFreq) {
+            osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+        }
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    playNoise(duration, vol = 0.1) {
+        if (!this.enabled) return;
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        noise.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+    }
+
+    // [新增] 小獎音效Wrapper，確保可靜音
+    playSmallWin() {
+        if (!this.sfxEnabled) return;
+        this.playTone(880, 'sine', 0.1, 0.1); 
+    }
+
+    playJump() {
+        if (!this.sfxEnabled) return;
+        this.playTone(150, 'square', 0.1, 0.1, 600); 
+    }
+
+    playHit() {
+        if (!this.sfxEnabled) return;
+        this.playNoise(0.1, 0.3); 
+        this.playTone(100, 'sawtooth', 0.1, 0.2, 50);
+    }
+
+    playShoot() {
+        if (!this.sfxEnabled) return;
+        this.playNoise(0.05, 0.2);
+        this.playTone(200, 'sawtooth', 0.05, 0.2, 50);
+    }
+
+    playReload() {
+        if (!this.sfxEnabled) return;
+        this.playTone(400, 'sine', 0.1, 0.1, 600);
+        setTimeout(() => this.playTone(600, 'sine', 0.1, 0.1, 800), 150);
+    }
+
+    playWin() {
+        if (!this.sfxEnabled) return;
+        this.playTone(1200, 'sine', 0.1, 0.1);
+        setTimeout(() => this.playTone(1800, 'sine', 0.2, 0.1), 50);
+    }
+
+    playExplode() {
+        if (!this.sfxEnabled) return;
+        this.playNoise(0.8, 0.8); 
+        this.playTone(100, 'sawtooth', 0.5, 0.5, 10); 
+    }
+
+    setSkyMode(isSky) {
+        this.isSkyMode = isSky;
+        // 調整 Sky Mode 節奏
+        this.targetBPM = isSky ? 170 : 120; 
+    }
+
+    startLoop() {
+        if (this.nextNoteTime === 0) this.nextNoteTime = this.ctx.currentTime + 0.1;
+        const scheduler = () => {
+            if (!this.enabled || this.ctx.state === 'suspended') {
+                requestAnimationFrame(scheduler);
+                return;
+            }
+            while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                if (this.musicEnabled) {
+                    this.scheduleNote(this.noteIdx, this.nextNoteTime);
+                }
+                this.noteIdx++;
+                this.currentBPM += (this.targetBPM - this.currentBPM) * 0.1;
+                const secondsPerBeat = 60.0 / this.currentBPM;
+                // 加快 16 分音符的感覺
+                this.nextNoteTime += secondsPerBeat * 0.25; 
+            }
+            requestAnimationFrame(scheduler);
+        };
+        scheduler();
+    }
+
+    scheduleNote(idx, time) {
+        // 使用取餘數讓長度對齊
+        const bassNote = this.bassLine[idx % this.bassLine.length];
+        
+        // 增加切分音 (Syncopation) 感覺：不是每個拍子都強
+        const isStrongBeat = idx % 4 === 0;
+
+        if (bassNote > 0) {
+            const bassType = this.isSkyMode ? 'square' : 'triangle';
+            // 讓 Sky Mode 音量稍微大一點
+            let bassVol = this.isSkyMode ? 0.1 : 0.06;
+            if (isStrongBeat) bassVol *= 1.2;
+
+            this.playToneScheduled(bassNote, bassType, 0.15, bassVol, time);
+        }
+
+        // Sky Mode 加入更多旋律層次
+        if (this.isSkyMode) {
+            const melNote = this.melodyLine[idx % this.melodyLine.length];
+            if (melNote > 0) {
+                // 交替使用不同波形增加豐富度
+                const melType = (idx % 8 < 4) ? 'sawtooth' : 'square';
+                this.playToneScheduled(melNote, melType, 0.1, 0.04, time);
+               
+                // 偶爾加一點高八度裝飾
+                if (Math.random() < 0.3) {
+                    this.playToneScheduled(melNote * 2, 'sine', 0.05, 0.03, time + 0.05);
+                }
+            }
+        }
+    }
+
+    playToneScheduled(freq, type, duration, vol, time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, time);
+        
+        // 調整 Attack/Release 讓聲音更短促有力 (Staccato)
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(vol, time + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(time);
+        osc.stop(time + duration);
+    }
+}
+
+// ... existing MathModel code ...
+class MathModel {
+    constructor(targetRTP = 0.96) {
+        this.targetRTP = targetRTP;
+        this.cyclePhase = Math.random() * Math.PI * 2; 
+        this.spinCount = 0;
+    }
+
+    getResult(multiplier, hits) {
+        this.spinCount++;
+        this.cyclePhase += 0.2; 
+        const luckFactor = 1.0 + Math.sin(this.cyclePhase) * 0.2;
+        let smallWinChance = 0.40 * luckFactor; 
+        const jackpotRTPContribution = this.targetRTP - (smallWinChance * 0.5); 
+        let jackpotChance = jackpotRTPContribution / multiplier;
+        jackpotChance = Math.max(0.000001, Math.min(0.5, jackpotChance));
+        jackpotChance *= luckFactor;
+        let baseRisk = 0.02; 
+        if (multiplier >= 50) baseRisk = 0.04;
+        let explodeRisk = baseRisk + (hits * 0.015);
+
+        const roll = Math.random();
+        if (roll < jackpotChance) {
+            return 'JACKPOT';
+        }
+        const subRoll = Math.random();
+        if (subRoll < (explodeRisk / luckFactor)) {
+            return 'BAD_EXPLODE';
+        }
+        if (subRoll < smallWinChance) {
+            return 'SMALL_WIN';
+        }
+        return 'MISS';
+    }
+
+    getSmallWinAmount(bet) {
+        if (Math.random() < 0.1) return Math.floor(bet * 1.5);
+        return Math.floor(bet * (0.2 + Math.random() * 0.6));
+    }
+}
+
+class Game {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.wrapper = document.getElementById('game-wrapper');
+        this.audio = new AudioController(); 
+        
+        // 初始化數學模組
+        this.math = new MathModel(0.96);
+
+        // Lang
+        this.lang = 'en';
+
+        // History [修改：讀取 LocalStorage]
+        this.gameHistory = [];
+        try {
+            const savedHist = localStorage.getItem('cp_history_v2');
+            if (savedHist) {
+                this.gameHistory = JSON.parse(savedHist);
+            }
+        } catch (e) { console.error(e); }
+
+        this.currentRoundId = "";
+        this.currentRoundBet = 0;
+        this.currentRoundMul = 0;
+
+        // 自動託管設定
+        this.auto = {
+            active: false,
+            rounds: 10,
+            maxRounds: 10,
+            minMul: 2
+        };
+
+        // [新增] 押注微調的計時器
+        this.betAdjustTimeout = null;
+        this.betAdjustInterval = null;
+        this.isMenuOpen = false; // Menu state
+
+        this.width = 900; 
+        this.height = 1600; 
+        
+        this.state = 'GROUND'; 
+        
+        let savedBalance = localStorage.getItem('cp_balance');
+        this.balance = savedBalance ? parseFloat(savedBalance) : 5000;
+        if (this.balance <= 0) {
+            this.balance = 5000;
+            this.saveBalance();
+        }
+        
+        this.betAmount = 10;
+        this.currentMultiplier = 1;
+        
+        this.isFiring = false;
+        this.fireQueue = 0; 
+        this.fireTimer = 0; 
+        this.pendingResult = null; 
+
+        this.winStreak = 0;
+        this.isFury = false;
+
+        this.camera = { y: 0, shake: 0 };
+        this.flashAlpha = 0; 
+        this.gameTick = 0;
+        this.bgScroll = 0;
+        this.groundSpeed = 12; 
+        
+        this.groundLevel = 0; 
+        this.horseBaseY = 0; 
+
+        this.horse = {
+            x: 0, y: 0, vy: 0, angle: 0,
+            state: 'RUN', 
+            spinTimer: 0,
+            scale: 2.2,
+            targetX: 0, targetY: 0,
+            moveTimer: 0,
+            pinataHits: 0,            
+            wobble: 0,
+            animScaleX: 1, 
+            animScaleY: 1,
+            scaleVx: 0, 
+            scaleVy: 0,
+            faceTimer: 0,
+            tongueOut: 0, 
+            buttWiggle: 0 
+        };
+
+        this.springs = []; 
+        this.springSpawnTimer = 0;
+        this.bullets = []; 
+        this.particles = [];
+        this.texts = [];
+        this.clouds = [];
+
+        this.skyDurationMax = 300;
+        this.skyTimer = 0;
+
+        this.hitCooldownMax = 60; // 1秒 CD
+        this.hitCooldown = 0;
+
+        this.roadmapFuture = [];
+        this.roadmapPast = [];
+        for(let i=0; i<20; i++) {
+            this.roadmapFuture.push(this.generateWeightedMultiplier());
+        }
+
+        for(let i=0; i<8; i++) {
+            this.clouds.push({
+                x: Math.random() * 900,
+                y: Math.random() * 800,
+                speed: 1 + Math.random() * 2,
+                size: 50 + Math.random() * 80,
+                alpha: 0.2 + Math.random() * 0.3
+            });
+        }
+
+        this.initRevolverUI();
+
+        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 100));
+        
+        try {
+            this.audio.init();
+        } catch(e) { console.log(e); }
+        
+        const resumeAudio = () => {
+            if (this.audio.ctx && this.audio.ctx.state === 'suspended') {
+                this.audio.ctx.resume();
+            }
+            window.removeEventListener('click', resumeAudio);
+            window.removeEventListener('touchstart', resumeAudio);
+        };
+        window.addEventListener('click', resumeAudio);
+        window.addEventListener('touchstart', resumeAudio);
+
+        this.canvas.addEventListener('pointerdown', (e) => this.handleInput(e));
+        
+        this.resize(); 
+        
+        // [新增] 初始化時設定按鈕選取狀態
+        this.setBet(this.betAmount);
+        
+        // 初始化設定 UI 狀態
+        document.getElementById('toggleMusic').checked = this.audio.musicEnabled;
+        document.getElementById('toggleSound').checked = this.audio.sfxEnabled;
+        this.setLanguage('en'); // Default
+
+        this.updateUI();
+        this.updateRoadmapUI(); 
+        
+        this.fps = 60;
+        this.frameInterval = 1000 / this.fps;
+        this.lastFrameTime = 0;
+        this.loop(0); 
+        
+        setTimeout(() => {
+            this.wrapper.style.opacity = 1;
+            // 確保按鈕預設選中狀態
+            this.updateAutoPanelUI();
+        }, 100);
+    }
+
+    // Toggle Settings Modal
+    toggleSettings(show) {
+        const modal = document.getElementById('settingsModal');
+        if (show) {
+            modal.style.pointerEvents = 'auto';
+            modal.style.opacity = '1';
+            modal.firstElementChild.style.transform = 'scale(1)';
+        } else {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            modal.firstElementChild.style.transform = 'scale(0.95)';
+        }
+    }
+
+    // Toggle History Modal
+    toggleHistory(show) {
+        const modal = document.getElementById('historyModal');
+        if (show) {
+            this.renderHistory();
+            modal.style.pointerEvents = 'auto';
+            modal.style.opacity = '1';
+            modal.firstElementChild.style.transform = 'scale(1)';
+        } else {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            modal.firstElementChild.style.transform = 'scale(0.95)';
+        }
+    }
+
+    // [新增] 漢堡選單切換
+    toggleMenu() {
+        this.isMenuOpen = !this.isMenuOpen;
+        const menu = document.getElementById('sideMenu');
+        if (this.isMenuOpen) {
+            menu.style.transform = 'scale(1)';
+            menu.style.opacity = '1';
+            menu.style.pointerEvents = 'auto';
+        } else {
+            menu.style.transform = 'scale(0)';
+            menu.style.opacity = '0';
+            menu.style.pointerEvents = 'none';
+        }
+    }
+
+    // [修改] 歷史記錄：增加儲存與上限控制
+    recordHistory(winAmount) {
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        
+        // [新增] 將結算後的餘額寫入歷史紀錄
+        this.gameHistory.unshift({
+            id: this.currentRoundId,
+            time: timeStr,
+            mul: this.currentRoundMul,
+            bet: this.currentRoundBet,
+            win: winAmount,
+            bal: this.balance // Snapshot current balance
+        });
+
+        // 最多 3000 筆
+        if (this.gameHistory.length > 3000) this.gameHistory.pop();
+        
+        // 存入 localStorage
+        try {
+            localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory));
+        } catch (e) { console.error("Storage full", e); }
+    }
+
+    // [修改] 渲染歷史記錄：全螢幕樣式與顏色邏輯
+    renderHistory() {
+        const list = document.getElementById('historyList');
+        let html = '';
+        this.gameHistory.forEach(h => {
+            // 贏分大於押注才算綠色，否則紅色
+            let isWin = h.win > h.bet;
+            let winClass = isWin ? 'text-green-400' : 'text-red-500';
+            // 移除 "+" 號
+            let winText = h.win.toFixed(2);
+            // [新增] 餘額格式化
+            let balText = this.formatCurrency(h.bal || 0);
+            
+            // [修改] 增加第 6 欄顯示餘額，並調整為均分置中
+            html += `
+                <div class="grid grid-cols-6 text-lg py-4 px-4 border-b border-gray-800 hover:bg-white/5 transition-colors items-center justify-items-center text-center">
+                    <div class="text-gray-400 font-mono text-sm">#${h.id.slice(-4)}</div>
+                    <div class="text-gray-500 text-sm">${h.time}</div>
+                    <div class="font-black text-blue-400 text-xl">x${h.mul}</div>
+                    <div class="text-white font-bold text-xl">${h.bet}</div>
+                    <div class="font-black ${winClass} text-2xl">${winText}</div>
+                    <div class="text-yellow-500 font-bold text-xl">${balText}</div>
+                </div>
+            `;
+        });
+        if (this.gameHistory.length === 0) {
+            html = `<div class="text-center text-gray-600 py-10 italic text-2xl">No history yet</div>`;
+        }
+        list.innerHTML = html;
+    }
+
+    // ... (toggleMusic, toggleSound, setLanguage, toggleHelp, toggleAutoPanel, setAutoRounds, setAutoMinMul, updateAutoPanelUI, startAuto, stopAuto, updateAutoStatusBtn, initRevolverUI, formatCurrency, saveBalance, generateWeightedMultiplier, getSpringColor, getTargetSpring, updateRoadmapUI, resize methods remain unchanged) ...
+    toggleMusic(val) {
+        this.audio.musicEnabled = val;
+    }
+
+    toggleSound(val) {
+        this.audio.sfxEnabled = val;
+    }
+
+    setLanguage(lang) {
+        this.lang = lang;
+        const btnEn = document.getElementById('btnLangEn');
+        const btnZh = document.getElementById('btnLangZh');
+        
+        if (lang === 'en') {
+            btnEn.classList.replace('bg-gray-700', 'bg-blue-600');
+            btnEn.classList.replace('text-gray-400', 'text-white');
+            btnEn.classList.replace('border-gray-600', 'border-blue-400');
+            
+            btnZh.classList.replace('bg-blue-600', 'bg-gray-700');
+            btnZh.classList.replace('text-white', 'text-gray-400');
+            btnZh.classList.replace('border-blue-400', 'border-gray-600');
+        } else {
+            btnZh.classList.replace('bg-gray-700', 'bg-blue-600');
+            btnZh.classList.replace('text-gray-400', 'text-white');
+            btnZh.classList.replace('border-gray-600', 'border-blue-400');
+            
+            btnEn.classList.replace('bg-blue-600', 'bg-gray-700');
+            btnEn.classList.replace('text-white', 'text-gray-400');
+            btnEn.classList.replace('border-blue-400', 'border-gray-600');
+        }
+
+        // Update help text elements (Icons are language neutral)
+        const t = I18N[this.lang];
+        // [修正] 更新新版說明介面的所有文字 ID
+        document.getElementById('helpGoalTitle').innerHTML = t.helpGoalTitle;
+        document.getElementById('helpGoalDesc').innerHTML = t.helpGoalDesc;
+        document.getElementById('helpControlsTitle').innerHTML = t.helpControlsTitle;
+        document.getElementById('helpControlsLaunch').innerHTML = t.helpControlsLaunch;
+        document.getElementById('helpControlsShoot').innerHTML = t.helpControlsShoot;
+        document.getElementById('helpControlsJackpot').innerHTML = t.helpControlsJackpot;
+        document.getElementById('helpUiTitle').innerHTML = t.helpUiTitle;
+        document.getElementById('helpUiBet').innerHTML = t.helpUiBet;
+        document.getElementById('helpUiRoadmap').innerHTML = t.helpUiRoadmap;
+        document.getElementById('helpUiAuto').innerHTML = t.helpUiAuto;
+        document.getElementById('helpUiMenu').innerHTML = t.helpUiMenu;
+        document.getElementById('btnGotIt').innerText = t.helpBtnGotIt;
+        
+        // [修改] 全介面文字更新
+        document.getElementById('lblReloading').innerText = t.reloading;
+        document.getElementById('startHint').innerText = t.tapToStart;
+        
+        document.getElementById('lblMusic').innerText = t.music;
+        document.getElementById('lblSound').innerText = t.sound;
+        document.getElementById('lblLang').innerText = t.language;
+        document.getElementById('lblHistoryTitle').innerText = t.historyReport;
+        
+        document.getElementById('lblAutoRounds').innerText = t.rounds;
+        document.getElementById('lblAutoMinMul').innerText = t.minMul;
+        document.getElementById('lblBetAmount').innerText = t.betAmount;
+
+        // [新增] 歷史報表欄位翻譯
+        document.getElementById('colSerial').innerText = t.colSerial;
+        document.getElementById('colTime').innerText = t.colTime;
+        document.getElementById('colMul').innerText = t.colMul;
+        document.getElementById('colBet').innerText = t.colBet;
+        document.getElementById('colWin').innerText = t.colWin;
+        document.getElementById('colBal').innerText = t.colBal;
+
+        // [新增] 餘額標題翻譯
+        document.getElementById('lblBalanceTitle').innerText = t.balanceTitle;
+
+        this.updateUI(); 
+    }
+
+    // [新增] 切換說明視窗
+    toggleHelp(show) {
+        const modal = document.getElementById('helpModal');
+        const content = document.getElementById('helpContent');
+        if (show) {
+            modal.style.pointerEvents = 'auto';
+            modal.style.opacity = '1';
+            // Remove scale effect for fullscreen modal, just opacity
+        } else {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+        }
+    }
+
+    // 切換自動設定面板顯隱
+    toggleAutoPanel(show) {
+        const panel = document.getElementById('autoPanel');
+        const content = document.getElementById('autoPanelContent');
+        if (show) {
+            if (this.auto.active) {
+                this.stopAuto(); // 如果正在跑，點擊按鈕則停止
+            } else {
+                panel.style.pointerEvents = 'auto';
+                panel.style.opacity = '1';
+                content.style.transform = 'scale(1)';
+                this.updateAutoPanelUI();
+            }
+        } else {
+            panel.style.opacity = '0';
+            panel.style.pointerEvents = 'none';
+            content.style.transform = 'scale(0.9)';
+        }
+    }
+
+    // 設定自動參數
+    setAutoRounds(val) { this.auto.maxRounds = val; this.updateAutoPanelUI(); }
+    setAutoMinMul(val) { this.auto.minMul = val; this.updateAutoPanelUI(); }
+
+    // 更新面板按鈕樣式
+    updateAutoPanelUI() {
+        document.querySelectorAll('.auto-opt-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            const type = btn.dataset.type;
+            const val = parseInt(btn.dataset.val);
+            if (type === 'rounds' && val === this.auto.maxRounds) btn.classList.add('selected');
+            if (type === 'mul' && val === this.auto.minMul) btn.classList.add('selected');
+        });
+    }
+
+    // 開始自動
+    startAuto() {
+        this.auto.active = true;
+        this.auto.rounds = this.auto.maxRounds;
+        this.toggleAutoPanel(false);
+        this.updateAutoStatusBtn();
+    }
+
+    // 停止自動
+    stopAuto() {
+        this.auto.active = false;
+        this.updateAutoStatusBtn();
+    }
+
+    // [修改] 更新主介面 AUTO 按鈕狀態：使用遮罩顯示詳細資訊
+    updateAutoStatusBtn() {
+        const btn = document.getElementById('autoToggleBtn');
+        const badge = document.getElementById('autoActiveBadge');
+        const defaultContent = document.getElementById('autoDefaultContent');
+        const roundsSpan = document.getElementById('autoActiveRounds');
+        const mulSpan = document.getElementById('autoActiveMul');
+        
+        if (this.auto.active) {
+            badge.classList.remove('hidden');
+            defaultContent.classList.add('opacity-0'); // 隱藏預設文字
+            
+            // 更新數值
+            roundsSpan.innerText = this.auto.rounds >= 9999 ? "∞" : this.auto.rounds;
+            mulSpan.innerText = `x${this.auto.minMul}`;
+            
+            // 變綠色
+            btn.classList.remove('border-blue-500/50');
+            btn.classList.add('border-green-500', 'shadow-[0_0_15px_#22c55e]');
+        } else {
+            badge.classList.add('hidden');
+            defaultContent.classList.remove('opacity-0'); // 顯示預設文字
+
+            // 還原藍色
+            btn.classList.add('border-blue-500/50');
+            btn.classList.remove('border-green-500', 'shadow-[0_0_15px_#22c55e]');
+        }
+    }
+
+    initRevolverUI() {
+        const container = document.getElementById('revolverContainer');
+        container.innerHTML = '';
+        
+        for(let i=0; i<6; i++) {
+            const angle = i * 60;
+            const slot = document.createElement('div');
+            slot.className = 'absolute top-0 left-0 w-full h-full pointer-events-none';
+            slot.style.transform = `rotate(${angle}deg)`;
+            
+            slot.innerHTML = `
+                <div class="absolute left-1/2 -translate-x-1/2 top-2 w-8 h-8 rounded-full bg-gray-950 border border-gray-700 flex items-center justify-center shadow-inner overflow-hidden">
+                    <div id="bullet-slot-${i}" class="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 shadow-[0_0_5px_rgba(234,179,8,0.8)] scale-100 transition-transform duration-150"></div>
+                </div>
+            `;
+            container.appendChild(slot);
+        }
+    }
+
+    formatCurrency(value) {
+        return '$' + value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    saveBalance() {
+        localStorage.setItem('cp_balance', this.balance);
+    }
+
+    generateWeightedMultiplier() {
+        const types = [
+            { mul: 2, color: '#22c55e', label: 'x2', weight: 400, textColor: '#fff' },
+            { mul: 5, color: '#fbbf24', label: 'x5', weight: 300, textColor: '#000' },
+            { mul: 10, color: '#f97316', label: 'x10', weight: 150, textColor: '#fff' },
+            { mul: 25, color: '#ef4444', label: 'x25', weight: 80, textColor: '#fff' },
+            { mul: 50, color: '#db2777', label: 'x50', weight: 40, textColor: '#fff' },
+            { mul: 100, color: '#9333ea', label: 'x100', weight: 20, textColor: '#fff', glow: true },
+            { mul: 500, color: '#2563eb', label: 'x500', weight: 8, textColor: '#fff', glow: true },
+            { mul: 1000, color: '#ffffff', label: 'x1K', weight: 6.0, textColor: '#000', glow: true },
+            { mul: 10000, color: '#00ffff', label: 'MAX', weight: 2.0, textColor: '#000', glow: true }
+        ];
+        
+        const totalWeight = types.reduce((sum, t) => sum + t.weight, 0);
+        let rand = Math.random() * totalWeight;
+        let selected = types[0];
+        
+        for(let t of types) {
+            if(rand < t.weight) {
+                selected = t;
+                break;
+            }
+            rand -= t.weight;
+        }
+        return selected;
+    }
+
+    getSpringColor(mul) {
+        if(mul >= 10000) return '#00ffff';
+        if(mul >= 1000) return '#ffffff';
+        if(mul >= 500) return '#2563eb';
+        if(mul >= 100) return '#9333ea';
+        if(mul >= 50) return '#db2777';
+        if(mul >= 25) return '#ef4444';
+        if(mul >= 10) return '#f97316';
+        if(mul >= 5) return '#fbbf24';
+        return '#22c55e'; // x2 default
+    }
+
+    getTargetSpring() {
+        const threshold = 180;
+        return this.springs.find(s => s.x > threshold);
+    }
+
+    updateRoadmapUI() {
+        const pastContainer = document.getElementById('roadmapPast');
+        const futureContainer = document.getElementById('roadmapFuture');
+        
+        // [修正] 路途 UI 顯示邏輯
+        // 移除 s.active 的判斷，只根據位置來顯示
+        // 這解決了點擊起飛瞬間 (active=false) 導致路途 UI 誤判為空而跳轉到下一個的問題
+        const activeSprings = this.springs.filter(s => s.x > 180);
+        
+        const showPast = this.roadmapPast.slice(-5);
+        let pastHTML = '';
+        showPast.forEach(item => {
+            pastHTML += `
+                <div class="roadmap-item w-9 h-9 rounded flex items-center justify-center text-xs font-bold border border-white/20" style="background-color: ${item.color}; color: ${item.textColor}">
+                    ${item.mul >= 1000 ? 'K' : item.mul}
+                </div>
+            `;
+        });
+        pastContainer.innerHTML = pastHTML;
+
+        const combinedFuture = [...activeSprings, ...this.roadmapFuture];
+        const showFuture = combinedFuture.slice(0, 10);
+        
+        let futureHTML = '';
+        showFuture.forEach((item, index) => {
+            const sizeClass = index === 0 ? 'w-12 h-12 text-xl border-2 border-white animate-pulse' : 'w-9 h-9 text-xs opacity-80';
+            const label = item.mul >= 1000 ? (item.mul===10000 ? 'MAX' : '1K') : item.mul;
+            
+            futureHTML += `
+                <div class="roadmap-item rounded-lg flex items-center justify-center font-black shadow-md ${sizeClass}" style="background-color: ${item.color}; color: ${item.textColor}">
+                    ${label}
+                </div>
+            `;
+        });
+        futureContainer.innerHTML = futureHTML;
+    }
+
+    resize() {
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const isMobile = winH > winW;
+        
+        this.width = 900; 
+
+        if (isMobile) {
+            const scale = winW / this.width;
+            this.height = Math.ceil(winH / scale);
+            this.wrapper.style.width = `${this.width}px`;
+            this.wrapper.style.height = `${this.height}px`;
+            this.wrapper.style.transformOrigin = '0 0';
+            this.wrapper.style.transform = `scale(${scale})`;
+            this.wrapper.style.left = '0px';
+            this.wrapper.style.top = '0px';
+            this.wrapper.style.borderRadius = '0px';
+        } else {
+            this.height = 1600;
+            const scale = Math.min(winW / this.width, winH / this.height);
+            this.wrapper.style.width = `${this.width}px`;
+            this.wrapper.style.height = `${this.height}px`;
+            this.wrapper.style.transformOrigin = 'center center';
+            this.wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
+            this.wrapper.style.left = '50%';
+            this.wrapper.style.top = '50%';
+            this.wrapper.style.borderRadius = '20px';
+        }
+
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+
+        this.groundLevel = this.height - 680; 
+        this.horseBaseY = this.groundLevel - 70;
+        
+        if (this.state === 'GROUND') {
+            this.horse.y = this.horseBaseY;
+            this.horse.x = this.width * 0.3;
+        }
+    }
+
+    // [新增] 押注微調邏輯 (支援長按)
+    startAdjustBet(delta) {
+        if (this.hitCooldown > 0 || this.isFiring) return;
+        
+        // 立即執行一次
+        this.adjustBet(delta);
+        
+        // 清除舊的計時器
+        this.stopAdjustBet();
+
+        // 設置延遲後開始快速連發
+        this.betAdjustTimeout = setTimeout(() => {
+            this.betAdjustInterval = setInterval(() => {
+                this.adjustBet(delta);
+            }, 50); // 50ms 快速連發
+        }, 400); // 400ms 長按判定
+    }
+
+    stopAdjustBet() {
+        if (this.betAdjustTimeout) clearTimeout(this.betAdjustTimeout);
+        if (this.betAdjustInterval) clearInterval(this.betAdjustInterval);
+        this.betAdjustTimeout = null;
+        this.betAdjustInterval = null;
+    }
+
+    adjustBet(delta) {
+        let newBet = this.betAmount + delta;
+        if (newBet < 0.1) newBet = 0.1; // 最小押注
+        // 修正浮點數誤差
+        newBet = Math.round(newBet * 100) / 100;
+        this.setBet(newBet);
+    }
+
+    // [修改] 下注功能：增加選取狀態切換
+    setBet(amount) {
+        if (this.hitCooldown > 0 || this.isFiring) return; 
+        this.betAmount = amount;
+        
+        // 更新按鈕樣式 (僅當數值完全匹配時才亮起預設按鈕)
+        document.querySelectorAll('.neon-btn').forEach(btn => {
+            const btnVal = parseFloat(btn.dataset.bet); 
+            // 浮點數比較容許微小誤差
+            if (Math.abs(btnVal - amount) < 0.001) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+
+        const display = document.getElementById('currentBetDisplay');
+        // 只有大幅變動時才搖晃，避免微調時過度閃爍 (可選)
+        // 這裡保持搖晃以提供反饋
+        display.classList.remove('shake');
+        void display.offsetWidth;
+        display.classList.add('shake');
+        this.updateUI();
+    }
+
+    updateUI() {
+        document.getElementById('balanceDisplay').innerText = this.formatCurrency(this.balance);
+        
+        let displayMul = this.currentMultiplier;
+        let displayColor = '#60a5fa'; 
+        // Label logic simplified as text is removed
+
+        if (this.state === 'GROUND') {
+            const target = this.getTargetSpring();
+            if (target) {
+                displayMul = target.mul;
+                displayColor = target.color;
+            } else if (this.roadmapFuture.length > 0) {
+                displayMul = this.roadmapFuture[0].mul;
+                displayColor = this.roadmapFuture[0].color;
+            }
+        } else {
+            displayColor = this.getSpringColor(this.currentMultiplier);
+        }
+
+        const mulDisplay = document.getElementById('multiplierDisplay');
+        mulDisplay.innerText = 'x' + displayMul;
+        mulDisplay.style.color = displayColor;
+        
+        // Color the icon to match target
+        document.getElementById('bonusLabelIcon').className = `mb-1 ${this.auto.active ? 'text-green-400' : 'text-blue-300'} opacity-80`;
+        
+        document.getElementById('currentBetDisplay').innerText = this.formatCurrency(this.betAmount);
+
+        // UI 元素引用
+        const skyHUD = document.getElementById('skyHUD');
+        const groundControls = document.getElementById('groundControls');
+        const hitUI = document.getElementById('hitCooldownUI');
+        const betPanel = document.getElementById('betPanel');
+        const reloadHintBar = document.getElementById('reloadHintBar');
+        
+        if (this.state === 'SKY' || this.state === 'LAUNCHING') {
+            skyHUD.style.opacity = 1;
+            groundControls.style.opacity = 0;
+            hitUI.style.opacity = 1;
+            const pct = (this.skyTimer / this.skyDurationMax) * 100;
+            document.getElementById('skyTimerBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+            
+            const revolverContainer = document.getElementById('revolverContainer');
+            const ammoIconDiv = document.getElementById('ammoIcon');
+            
+            let bulletsLoaded = 6;
+            let rotation = 0;
+
+            if (this.hitCooldown > 0) {
+                const progress = 1 - (this.hitCooldown / this.hitCooldownMax);
+                bulletsLoaded = Math.floor(progress * 6); 
+                rotation = bulletsLoaded * 60;
+               
+                ammoIconDiv.innerHTML = ''; // Empty during reload
+                betPanel.classList.add('processing');
+
+                // 顯示 Reload 條
+                reloadHintBar.style.opacity = 1;
+                reloadHintBar.style.transform = "translateY(0)";
+
+            } else if (this.isFiring) {
+                // 射擊中
+                bulletsLoaded = 0;
+                rotation = this.gameTick * 30; 
+                ammoIconDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>';
+                betPanel.classList.add('processing');
+               
+                // 隱藏 Reload 條
+                reloadHintBar.style.opacity = 0;
+                reloadHintBar.style.transform = "translateY(1rem)";
+            } else {
+                // 就緒
+                bulletsLoaded = 6;
+                rotation = 0;
+                ammoIconDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>';
+                betPanel.classList.remove('processing');
+
+                // 隱藏 Reload 條
+                reloadHintBar.style.opacity = 0;
+                reloadHintBar.style.transform = "translateY(1rem)";
+            }
+
+            revolverContainer.style.transform = `rotate(${rotation}deg)`;
+
+            for (let i = 0; i < 6; i++) {
+                const bullet = document.getElementById(`bullet-slot-${i}`);
+                if (bullet) {
+                    if (i < bulletsLoaded) {
+                        bullet.classList.remove('scale-0');
+                        bullet.classList.add('scale-100');
+                    } else {
+                        bullet.classList.remove('scale-100');
+                        bullet.classList.add('scale-0');
+                    }
+                }
+            }
+
+        } else {
+            skyHUD.style.opacity = 0;
+            groundControls.style.opacity = 1;
+            hitUI.style.opacity = 0;
+            betPanel.classList.remove('processing');
+        }
+    }
+
+    handleInput(e) {
+        e.preventDefault();
+        this.audio.init();
+
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        const scaleY = this.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        if (x < 0 || x > this.width || y < 0 || y > this.height) return;
+
+        if (this.state === 'GROUND') {
+            // 點擊任意處起飛，鎖定「當前顯示」的彈簧
+            const target = this.getTargetSpring();
+            if (target) {
+                this.attemptLaunch(target);
+            }
+        } 
+        else if (this.state === 'SKY') {
+            if (this.hitCooldown > 0 || this.isFiring) return; 
+
+            if (this.balance >= this.betAmount) {
+                this.startShootingRound(x, y);
+            } else {
+                this.spawnText(I18N[this.lang].noMoney, this.horse.x, this.horse.y, '#ef4444', 50);
+            }
+        }
+    }
+
+    // ... rest of the file ...
+    spawnSpring() {
+        const selected = this.roadmapFuture.shift();
+        
+        this.springs.push({
+            x: this.width + 150, 
+            y: this.groundLevel + 20, 
+            w: 120,
+            h: 70,
+            mul: selected.mul,
+            color: selected.color,
+            textColor: selected.textColor,
+            label: selected.label,
+            glow: selected.glow || false,
+            active: true,
+            pulse: 0,
+            compress: 0 
+        });
+
+        this.roadmapPast.push(selected); 
+        this.roadmapFuture.push(this.generateWeightedMultiplier()); 
+        this.updateRoadmapUI(); 
+    }
+
+    attemptLaunch(spring) {
+        this.updateUI();
+        this.audio.playJump();
+
+        this.createParticles(spring.x, spring.y + 10, 1, 'rgba(255,255,255,0.8)', 'shockwave');
+        this.createParticles(spring.x, spring.y, 20, spring.color, 'spark');
+        spring.compress = 20;
+        spring.active = false; 
+
+        // [修正] 起飛時，保留當前彈簧，清除其他彈簧，讓畫面聚焦
+        // [關鍵邏輯]：找出畫面上位於當前目標右側的所有彈簧
+        const pendingSprings = this.springs.filter(s => s.x > spring.x);
+        
+        // 將這些彈簧「逆向」塞回 roadmapFuture 的最前端
+        // 這樣下次降落時，它們會依序重新生成
+        for (let i = pendingSprings.length - 1; i >= 0; i--) {
+            const s = pendingSprings[i];
+            // 重建資料結構塞回隊列
+            this.roadmapFuture.unshift({
+                mul: s.mul, 
+                color: s.color, 
+                textColor: s.textColor,
+                label: s.label, 
+                glow: s.glow
+            });
+            // 因為這些彈簧還沒真正「經過」，從 Past 移除比較合理 (雖然 Past 僅供參考)
+            this.roadmapPast.pop(); 
+        }
+
+        // 只保留當前這個起飛的彈簧
+        this.springs = [spring];
+        this.updateRoadmapUI(); // 立即更新 UI 顯示正確的預覽
+
+        setTimeout(() => {
+            this.state = 'LAUNCHING';
+            this.currentMultiplier = spring.mul;
+            this.horse.vy = -22; 
+            this.horse.state = 'FLY';
+            this.skyTimer = this.skyDurationMax; 
+            
+            this.horse.targetX = this.width * 0.3;
+            this.horse.moveTimer = 0;
+            this.horse.pinataHits = 0; 
+            this.horse.animScaleX = 1;
+            this.horse.animScaleY = 1;
+            this.horse.scaleVx = 0;
+            this.horse.scaleVy = 0;
+
+            this.shakeScreen(20);
+            
+            // 重置彈簧生成計時器，讓降落後稍微延遲才出現新彈簧
+            this.springSpawnTimer = -30;
+
+            let label = spring.mul >= 1000 ? I18N[this.lang].legendary : `x${spring.mul} ${I18N[this.lang].boost}`;
+            this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
+            
+            for(let i=0; i<30; i++) {
+                this.particles.push({
+                    type: 'line',
+                    x: this.width + Math.random()*200,
+                    y: this.horse.y + (Math.random()-0.5)*300,
+                    vx: -30 - Math.random()*30,
+                    vy: 0,
+                    life: 45,
+                    color: 'white',
+                    w: 100, h: 4
+                });
+            }
+
+        }, 50);
+    }
+
+    startShootingRound(inputX, inputY) {
+        this.balance -= this.betAmount;
+        this.saveBalance();
+        this.updateUI();
+
+        // 產生這一局的 ID (簡單使用 timestamp 後6碼)
+        this.currentRoundId = Date.now().toString().slice(-6);
+        this.currentRoundBet = this.betAmount;
+        this.currentRoundMul = this.currentMultiplier;
+
+        const result = this.math.getResult(this.currentMultiplier, this.horse.pinataHits);
+        
+        this.pendingResult = result;
+        this.isFiring = true;
+        this.fireQueue = 6; 
+        this.fireTimer = 0; 
+    }
+
+    spawnBullet() {
+        this.audio.playShoot();
+        this.bullets.push({
+            x: this.width / 2 + (Math.random() - 0.5) * 100,
+            y: this.height + 20,
+            targetX: this.horse.x, 
+            targetY: this.horse.y,
+            speed: 45, 
+            isLast: this.fireQueue === 1,
+            betAmount: this.betAmount 
+        });
+        this.fireQueue--;
+    }
+
+    bulletHit(b) {
+        this.horse.pinataHits++;
+        
+        this.horse.animScaleX = 1.3; 
+        this.horse.animScaleY = 0.7; 
+        this.horse.scaleVx = (Math.random() - 0.5) * 0.3;
+        this.horse.scaleVy = 0.2; 
+        this.horse.faceTimer = 20; 
+        this.shakeScreen(15);
+        this.audio.playHit();
+        
+        this.createParticles(this.horse.x, this.horse.y, 20, '#fff', 'spark');
+
+        // 只有最後一發子彈決定該輪結果
+        if (b.isLast) {
+            this.isFiring = false;
+            
+            // [修改] 自動模式下大幅縮短 Reload 時間
+            this.hitCooldown = this.auto.active ? 30 : this.hitCooldownMax;
+            
+            this.audio.playReload();
+            this.skyTimer = this.skyDurationMax; // 命中重置滯空時間
+
+            // 根據預存結果執行邏輯
+            switch(this.pendingResult) {
+                case 'JACKPOT':
+                    setTimeout(() => { this.explodePinata(true); }, 200);
+                    break;
+
+                case 'SMALL_WIN':
+                    this.triggerSmallWin();
+                    this.recordHistory(0); // 小獎也算贏，稍後補上正確金額
+                    break;
+
+                case 'BAD_EXPLODE':
+                    setTimeout(() => { this.explodePinata(false); }, 200);
+                    this.spawnText(I18N[this.lang].misfire, this.horse.x, this.horse.y - 80, '#7f1d1d', 50);
+                    this.recordHistory(0);
+                    break;
+
+                default: // MISS
+                    this.spawnText(I18N[this.lang].miss, this.horse.x, this.horse.y - 80, '#9ca3af', 40);
+                    this.recordHistory(0);
+                    if (this.winStreak >= 3) {
+                        this.spawnText(I18N[this.lang].streakLost, this.horse.x, this.horse.y + 50, '#ef4444', 40);
+                    }
+                    this.winStreak = 0;
+                    break;
+            }
+            this.updateUI();
+        }
+    }
+
+    triggerSmallWin() {
+        // 使用數學模組計算返水金額
+        const win = this.math.getSmallWinAmount(this.betAmount);
+        
+        // 更新歷史紀錄中的贏分 (覆蓋剛才的0)
+        // 注意：這裡簡化處理，直接重新記錄一次是不對的，應該修改最近一筆
+        // 但為了代碼簡單，我們在 recordHistory 中處理
+        
+        if (win > 0) {
+            this.balance += win;
+            this.saveBalance();
+            // 返水文字 (大且亮)
+            this.spawnText(`+${this.formatCurrency(win)}`, this.horse.x + (Math.random()-0.5)*40, this.horse.y - 60, '#fff', 70);
+            this.createParticles(this.horse.x, this.horse.y, 5, '#fef08a', 'coin');
+            // [修正] 使用 Wrapper 確保靜音
+            this.audio.playSmallWin();
+            
+            // 修正歷史記錄
+            if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
+                this.gameHistory[0].win = win;
+                this.gameHistory[0].bal = this.balance; // [修正] 更新最新餘額
+                // 更新 localStorage
+                try { localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory)); } catch(e){}
+            } else {
+                this.recordHistory(win);
+            }
+
+        } else {
+            this.spawnText(I18N[this.lang].clink, this.horse.x, this.horse.y - 60, '#fff', 30);
+            if(this.gameHistory.length > 0 && this.gameHistory[0].id === this.currentRoundId) {
+                this.gameHistory[0].win = 0;
+                this.gameHistory[0].bal = this.balance; // [修正] 更新最新餘額
+                try { localStorage.setItem('cp_history_v2', JSON.stringify(this.gameHistory)); } catch(e){}
+            } else {
+                this.recordHistory(0);
+            }
+        }
+    }
+
+    // [修改] 爆炸邏輯：優化贏分顯示
+    explodePinata(isWin = false) {
+        this.audio.playExplode(); 
+        
+        if (isWin) {
+            // === 大獎：進入 EXPLODING 狀態 (滯空表演) ===
+            this.state = 'EXPLODING';
+            
+            // [修改] 自動模式下縮短大獎表演時間 (減少一半)
+            this.explosionTimer = this.auto.active ? 60 : 120;
+            
+            this.horse.vy = 0;
+            
+            this.shakeScreen(100); // 強烈震動
+            this.flashAlpha = 1.0; // 強烈閃光
+
+            const totalWin = this.betAmount * this.currentMultiplier;
+            this.balance += totalWin;
+            this.saveBalance();
+            this.audio.playWin();
+            
+            this.recordHistory(totalWin);
+
+            this.winStreak++;
+
+            // 贏分顯示
+            const centerX = this.width / 2;
+            const centerY = this.height * 0.4;
+            this.spawnText(I18N[this.lang].bigWin, centerX, centerY - 80, '#FFD700', 100);
+            this.spawnText(`+${this.formatCurrency(totalWin)}`, centerX, centerY, '#FFD700', 130, 'BIG_WIN');
+
+            // 第一波爆發
+            this.createParticles(this.horse.x, this.horse.y, 150, '#ec4899', 'confetti');
+            this.createParticles(this.horse.x, this.horse.y, 80, '#FACC15', 'coin');
+            
+        } else {
+            // === 失敗：直接墜落 ===
+            this.state = 'FALLING';
+            this.horse.vy = 0;
+            this.shakeScreen(40);
+            this.flashAlpha = 0.3;
+
+            this.winStreak = 0;
+            this.spawnText(I18N[this.lang].broken, this.horse.x, this.horse.y - 50, '#ef4444', 70);
+            this.createParticles(this.horse.x, this.horse.y, 50, '#4b5563', 'spark'); 
+            this.createParticles(this.horse.x, this.horse.y, 30, '#ef4444', 'line');  
+        }
+        
+        this.updateUI();
+    }
+
+    shakeScreen(intensity) {
+        this.camera.shake = Math.max(this.camera.shake, intensity);
+    }
+
+    spawnText(str, x, y, color, size=32, type='normal') {
+        this.texts.push({
+            str, x, y, color, size, type,
+            vy: -4, life: 60, maxLife: 60,
+            rotation: type === 'comic' ? (Math.random() - 0.5) * 0.5 : 0 
+        });
+    }
+
+    createParticles(x, y, count, color, type='spark') {
+        for(let i=0; i<count; i++) {
+            let p = {
+                x, y,
+                vx: (Math.random() - 0.5) * 20,
+                vy: (Math.random() - 0.5) * 20,
+                life: 30 + Math.random() * 20,
+                maxLife: 30 + Math.random() * 20,
+                color,
+                type,
+                size: Math.random() * 8 + 4,
+                gravity: 0.6,
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 10
+            };
+            
+            if (type === 'coin') {
+                p.vx = (Math.random() - 0.5) * 25;
+                p.vy = -25 - Math.random() * 20;
+                p.gravity = 1.2;
+                p.life = 70;
+                p.size = 14;
+            } else if (type === 'shockwave') {
+                p.vx = 0; p.vy = 0; p.gravity = 0;
+                p.life = 20; p.maxLife = 20;
+                p.size = 10;
+                p.growth = 20; 
+            } else if (type === 'line') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.9; p.vy *= 0.9;
+            } else if (p.type === 'confetti') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rotation += p.rotSpeed;
+                p.vx *= 0.95; 
+            } else {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.9;
+                if (this.state === 'GROUND') p.x -= this.groundSpeed;
+            }
+            this.particles.push(p);
+        }
+    }
+
+    update() {
+        this.gameTick++;
+        
+        if (this.camera.shake > 0) {
+            this.camera.shake *= 0.9;
+            if (this.camera.shake < 0.5) this.camera.shake = 0;
+        }
+
+        // 地面捲動邏輯 (非滯空時)
+        // [修正] 起飛時也讓地面捲動，保持視覺連貫
+        if (this.state === 'GROUND') { // Only scroll in GROUND state
+            this.bgScroll += this.groundSpeed;
+        }
+
+        // Reload 倒數
+        if (this.hitCooldown > 0) {
+            this.hitCooldown--;
+            if (this.hitCooldown % 2 === 0) this.updateUI(); 
+        }
+
+        // === AUTO-BOT 邏輯 ===
+        if (this.auto.active) {
+            // 1. 地面狀態：尋找合適倍率起飛
+            if (this.state === 'GROUND') {
+                const target = this.getTargetSpring();
+                if (target && target.active && target.mul >= this.auto.minMul) {
+                    if (!this.autoDelay) this.autoDelay = Math.random() * 5;
+                    this.autoDelay--;
+                    if (this.autoDelay <= 0) {
+                        this.attemptLaunch(target);
+                        this.autoDelay = 0;
+                    }
+                }
+            }
+            // 2. 空中狀態：自動開槍
+            else if (this.state === 'SKY' && !this.isFiring && this.hitCooldown === 0) {
+                if (this.balance >= this.betAmount) {
+                    this.startShootingRound(0, 0);
+                    if (this.auto.rounds < 9999) {
+                        this.auto.rounds--;
+                        this.updateAutoStatusBtn();
+                        if (this.auto.rounds <= 0) this.stopAuto();
+                    }
+                } else {
+                    this.stopAuto(); 
+                    this.spawnText(I18N[this.lang].noMoney, this.width/2, this.height/2, '#ef4444', 60);
+                }
+            }
+        }
+        
+        // 馬的物理更新 (略過 EXPLODING 狀態以免位置跑掉)
+        if (this.state !== 'EXPLODING') {
+            const targetScale = 1.0;
+            const stiffness = 0.2; 
+            const damping = 0.8;            
+            const forceX = (targetScale - this.horse.animScaleX) * stiffness;
+            this.horse.scaleVx += forceX;
+            this.horse.scaleVx *= damping;
+            this.horse.animScaleX += this.horse.scaleVx;
+            const forceY = (targetScale - this.horse.animScaleY) * stiffness;
+            this.horse.scaleVy += forceY;
+            this.horse.scaleVy *= damping;
+            this.horse.animScaleY += this.horse.scaleVy;
+        }
+
+        if (this.horse.faceTimer > 0) this.horse.faceTimer--;
+
+        // 狀態機邏輯
+        if (this.state === 'GROUND') {
+            this.horse.y = this.horseBaseY + Math.sin(this.gameTick * 0.2) * 6;
+            this.horse.x = this.width * 0.3; 
+            this.springSpawnTimer++;
+            if (this.springSpawnTimer > 22) { 
+                this.spawnSpring();
+                this.springSpawnTimer = 0;
+                this.springSpawnTimer -= Math.random() * 10; 
+            }
+            for (let i = this.springs.length - 1; i >= 0; i--) {
+                let s = this.springs[i];
+                s.x -= this.groundSpeed; // Move only in GROUND
+                if (s.compress > 0) s.compress *= 0.8;
+                s.pulse = Math.sin(this.gameTick * 0.2) * 0.1 + 1; 
+                if (s.x < -200) this.springs.splice(i, 1);
+            }
+            if (this.gameTick % 15 === 0) {
+                this.updateUI();
+                this.updateRoadmapUI();
+            }
+        }
+        else if (this.state === 'LAUNCHING') {
+            let targetY = this.height * 0.3;
+            this.horse.y += (targetY - this.horse.y) * 0.08;
+            this.horse.x = this.width * 0.3; 
+            // DO NOT move springs x
+            if (Math.abs(this.horse.y - targetY) < 20) {
+                this.state = 'SKY';
+            }
+        }
+        else if (this.state === 'SKY') {
+            this.horse.moveTimer--;
+            if (this.horse.moveTimer <= 0) {
+                this.horse.targetX = this.width * 0.2 + Math.random() * (this.width * 0.6);
+                this.horse.targetY = this.height * 0.15 + Math.random() * (this.height * 0.4);
+                this.horse.moveTimer = 40 + Math.random() * 40; 
+            }
+            let dx = this.horse.targetX - this.horse.x;
+            let dy = this.horse.targetY - this.horse.y;
+            this.horse.x += dx * 0.05;
+            this.horse.y += dy * 0.05;
+            if (this.horse.state === 'SPIN') {
+                this.horse.angle += 0.4; 
+                this.horse.spinTimer--;
+                if (this.horse.spinTimer <= 0) {
+                    this.horse.state = 'FLY';
+                    this.horse.angle = 0;
+                }
+            } else {
+                this.horse.wobble += 0.05;
+                this.horse.angle = Math.sin(this.horse.wobble) * 0.1;
+            }
+            if (!this.isFiring && this.hitCooldown === 0) {
+                this.skyTimer--;
+            }
+            this.updateUI();
+            if (this.skyTimer <= 0) {
+                this.explodePinata(false);
+            }
+        }
+        else if (this.state === 'FALLING') {
+            let targetY = this.horseBaseY;
+            this.horse.y += (targetY - this.horse.y) * 0.06;
+            let targetX = this.width * 0.3;
+            this.horse.x += (targetX - this.horse.x) * 0.06;
+            this.horse.angle += 0.2; 
+            if (Math.abs(this.horse.y - targetY) < 20) {
+                this.state = 'GROUND';
+                this.currentMultiplier = 1; 
+                this.horse.y = this.horseBaseY;
+                this.horse.state = 'RUN';
+                this.horse.angle = 0;
+                this.horse.x = this.width * 0.3;
+                this.shakeScreen(15);
+                this.createParticles(this.horse.x, this.horse.y+80, 50, '#5c4033', 'spark');
+               
+                // [修正] 降落時，清除所有舊的路途殘留，確保從新路途開始
+                this.springs = []; 
+                this.springSpawnTimer = -20; // 稍微延遲讓新路途生成
+                this.updateUI();
+            }
+        }
+        // EXPLODING 狀態邏輯 (大獎滯空表演)
+        else if (this.state === 'EXPLODING') {
+            this.explosionTimer--;
+            
+            // 持續震動
+            this.shakeScreen(5);
+            
+            // 持續噴發粒子
+            if (this.gameTick % 2 === 0) {
+                this.createParticles(this.horse.x, this.horse.y, 2, '#FACC15', 'coin');
+                this.createParticles(this.horse.x, this.horse.y, 1, '#fff', 'spark');
+            }
+
+            // 馬旋轉爆炸感
+            this.horse.angle += 0.5;
+            this.horse.animScaleX = 1.5 + Math.sin(this.gameTick) * 0.2;
+            this.horse.animScaleY = 1.5 + Math.cos(this.gameTick) * 0.2;
+
+            // 時間到，切換至墜落
+            if (this.explosionTimer <= 0) {
+                this.state = 'FALLING';
+                this.horse.angle = 0;
+                this.flashAlpha = 0.5; // 再次閃光提醒開始墜落
+            }
+        }
+        else {
+            this.horse.tongueOut = 0;
+            this.horse.buttWiggle = 0;
+        }
+
+        this.audio.setSkyMode(this.state === 'SKY' || this.state === 'LAUNCHING' || this.state === 'EXPLODING');
+
+        // 雲層移動
+        this.clouds.forEach(c => {
+            c.x -= c.speed;
+            if (c.x < -200) {
+                c.x = this.width + 200;
+                if (this.state === 'SKY') {
+                        c.y = Math.random() * this.height; 
+                } else {
+                        c.y = Math.random() * (this.height * 0.4); 
+                }
+            }
+        });
+
+        // 射擊循環
+        if (this.isFiring && this.fireQueue > 0) {
+            this.fireTimer++;
+            if (this.fireTimer >= 3) { 
+                this.spawnBullet();
+                this.fireTimer = 0;
+            }
+        }
+
+        // 子彈更新
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            let b = this.bullets[i];
+            let dx = this.horse.x - b.x;
+            let dy = this.horse.y - b.y;
+            let angle = Math.atan2(dy, dx);
+            b.x += Math.cos(angle) * b.speed;
+            b.y += Math.sin(angle) * b.speed;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 60) {
+                this.bulletHit(b);
+                this.bullets.splice(i, 1);
+            } else if (b.y < -100 || b.x < -100 || b.x > this.width + 100) {
+                this.bullets.splice(i, 1);
+            }
+        }
+
+        this.updateParticles();
+        this.updateTexts();
+    }
+
+    updateParticles() {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            p.life--;
+            
+            if (p.type === 'coin') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+            } else if (p.type === 'shockwave') {
+                p.size += p.growth; 
+                p.growth *= 0.9;
+            } else if (p.type === 'line') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.9; p.vy *= 0.9;
+            } else if (p.type === 'confetti') {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rotation += p.rotSpeed;
+                p.vx *= 0.95; 
+            } else {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.9;
+                if (this.state === 'GROUND') p.x -= this.groundSpeed;
+            }
+            if (p.life <= 0) this.particles.splice(i, 1);
+        }
+    }
+
+    // [修改] 文字物理更新：支援 BIG_WIN 的特殊漂浮與脈衝效果
+    updateTexts() {
+        for (let i = this.texts.length - 1; i >= 0; i--) {
+            let t = this.texts[i];
+
+            if (t.type === 'BIG_WIN') {
+                // [新增] 大獎文字的特殊物理
+                t.life -= 0.5; // 生命流逝較慢 (停留更久)
+                t.y += -0.5;   // 緩慢上升，而不是快速飛走
+               
+                // 增加一個 pulse 屬性做心跳動畫
+                if (!t.pulse) t.pulse = 0;
+                t.pulse += 0.1;
+                // 計算動態大小：基礎大小 + 正弦波浮動
+                t.currentSize = t.size + Math.sin(t.pulse) * 10;
+               
+            } else {
+                // 普通文字原有邏輯
+                t.y += t.vy;
+                t.life--;
+                t.vy *= 0.92;
+                t.currentSize = t.size; // 普通文字保持原大小邏輯
+
+                if (t.type === 'comic') {
+                    if (t.life > 50) t.currentSize += 2;
+                    else if (t.life < 10) t.currentSize *= 0.8;
+                } else {
+                    if (this.state === 'GROUND') t.x -= 4;
+                }
+            }
+
+            if (t.life <= 0) this.texts.splice(i, 1);
+        }
+    }
+
+    draw() {
+        let shakeX = (Math.random() - 0.5) * this.camera.shake;
+        let shakeY = (Math.random() - 0.5) * this.camera.shake;
+
+        this.ctx.save();
+        this.ctx.translate(shakeX, shakeY);
+
+        this.drawBackground();
+        
+        // [修正] 起飛和墜落狀態也要繪製地面元素，以確保連貫感
+        if (this.state === 'GROUND' || this.state === 'LAUNCHING' || this.state === 'FALLING') {
+            this.drawGroundElements();
+        }
+        
+        if (this.state === 'SKY' || this.state === 'EXPLODING') { 
+            this.drawPinata();
+        } else {
+            this.drawHorse();
+        }
+        
+        this.bullets.forEach(b => {
+            this.ctx.save();
+            this.ctx.translate(b.x, b.y);
+            const dx = this.horse.x - b.x;
+            const dy = this.horse.y - b.y;
+            const angle = Math.atan2(dy, dx);
+            this.ctx.rotate(angle);
+             
+            if (b.betAmount === 1) {
+                this.ctx.fillStyle = '#4ade80';
+                this.ctx.beginPath(); this.ctx.arc(0, 0, 8, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.fillStyle = '#bbf7d0';
+                this.ctx.beginPath(); this.ctx.arc(-3, -3, 3, 0, Math.PI*2); this.ctx.fill();
+            } else if (b.betAmount === 10) {
+                this.ctx.rotate(Math.PI/2);
+                this.ctx.fillStyle = '#3b82f6';
+                this.ctx.beginPath(); this.ctx.roundRect(-15, -25, 30, 50, 10); this.ctx.fill();
+                this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 5;
+                this.ctx.beginPath(); this.ctx.moveTo(-15, -10); this.ctx.lineTo(0, -25); this.ctx.lineTo(15, -10); this.ctx.stroke();
+            } else if (b.betAmount === 50) {
+                this.ctx.fillStyle = '#b91c1c'; this.ctx.fillRect(-20, -12, 40, 24);
+                this.ctx.fillStyle = '#7f1d1d'; this.ctx.beginPath(); this.ctx.arc(-10, 0, 4, 0, Math.PI*2); this.ctx.arc(10, 0, 4, 0, Math.PI*2); this.ctx.fill();
+            } else if (b.betAmount === 100) {
+                this.ctx.fillStyle = '#22c55e'; this.ctx.fillRect(-20, -12, 40, 24);
+                this.ctx.strokeStyle = '#dcfce7'; this.ctx.lineWidth = 3; this.ctx.strokeRect(-20, -12, 40, 24);
+                this.ctx.fillStyle = '#dcfce7'; this.ctx.font = 'bold 16px Arial'; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText('$', 0, 2);
+            } else {
+                this.ctx.fillStyle = '#e5e7eb'; this.ctx.beginPath(); this.ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.fillStyle = '#ef4444'; this.ctx.beginPath(); this.ctx.moveTo(15, -7); this.ctx.lineTo(30, 0); this.ctx.lineTo(15, 7); this.ctx.fill();
+                this.ctx.fillStyle = '#374151'; this.ctx.beginPath(); this.ctx.moveTo(-15, -8); this.ctx.lineTo(-25, -15); this.ctx.lineTo(-20, -2); this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.moveTo(-15, 8); this.ctx.lineTo(-25, 15); this.ctx.lineTo(-20, 2); this.ctx.fill();
+                this.ctx.strokeStyle = '#f59e0b'; this.ctx.lineWidth = 4; this.ctx.beginPath(); this.ctx.moveTo(-25, 0); this.ctx.lineTo(-40 - Math.random()*10, 0); this.ctx.stroke();
+            }
+            this.ctx.restore();
+        });
+
+        this.drawEffects();
+
+        if (this.flashAlpha > 0) {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${this.flashAlpha})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            this.flashAlpha *= 0.85; 
+            if (this.flashAlpha < 0.01) this.flashAlpha = 0;
+        }
+        
+        if ((this.state === 'SKY' || this.state === 'EXPLODING') && this.winStreak >= 2) {
+            this.ctx.save();
+            this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            this.ctx.font = '900 120px "Black Ops One"';
+            this.ctx.translate(this.width/2, this.height/2 + 200);
+            this.ctx.rotate(-0.1);
+            this.ctx.fillText(I18N[this.lang].streak, 0, 50); // Using I18N here
+            this.ctx.fillText(`${this.winStreak}`, 0, -50);
+            this.ctx.restore();
+        }
+
+        this.ctx.restore();
+    }
+
+    drawBackground() {
+        let grd = this.ctx.createLinearGradient(0, 0, 0, this.height);
+        
+        if (this.state === 'GROUND') {
+            grd.addColorStop(0, "#1e40af");
+            grd.addColorStop(1, "#60a5fa");
+        } else if (this.state === 'SKY' || this.state === 'LAUNCHING' || this.state === 'EXPLODING') {
+            if (this.horse.faceTimer > 0) {
+                const hue = (this.gameTick * 20) % 360;
+                grd = this.ctx.createLinearGradient(0, 0, 0, this.height);
+                grd.addColorStop(0, `hsl(${hue}, 70%, 20%)`);
+                grd.addColorStop(1, `hsl(${hue + 60}, 70%, 40%)`);
+            } else {
+                if (this.currentMultiplier >= 1000) {
+                    grd.addColorStop(0, "#000000"); grd.addColorStop(1, "#2e1065");
+                } else if (this.currentMultiplier >= 50) {
+                    grd.addColorStop(0, "#451a03"); grd.addColorStop(1, "#b45309");
+                } else {
+                    grd.addColorStop(0, "#4a044e"); grd.addColorStop(1, "#c026d3");
+                }
+               
+                if (this.winStreak >= 3) {
+                    this.ctx.save();
+                    this.ctx.globalCompositeOperation = 'overlay';
+                }
+            }
+        } else {
+            grd.addColorStop(0, "#1d4ed8"); grd.addColorStop(1, "#93c5fd");
+        }
+        this.ctx.fillStyle = grd;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+        
+        if ((this.state === 'SKY' || this.state === 'EXPLODING') && this.winStreak >= 3) {
+            this.ctx.fillStyle = `rgba(255, 0, 0, ${0.1 + Math.sin(this.gameTick*0.2)*0.05})`;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+        }
+
+        if (this.state === 'SKY' || this.state === 'LAUNCHING' || this.state === 'EXPLODING') {
+            this.ctx.fillStyle = 'white';
+            for(let i=0; i<30; i++) {
+                let sx = (this.gameTick * 2 + i * 137) % this.width;
+                let sy = (i * 93) % this.height;
+                this.ctx.globalAlpha = 0.5 + Math.sin(this.gameTick * 0.1 + i) * 0.5;
+                this.ctx.fillRect(sx, sy, 3, 3);
+            }
+            this.ctx.globalAlpha = 1.0;
+        }
+
+        this.clouds.forEach(c => {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${c.alpha})`;
+            this.ctx.beginPath();
+            this.ctx.arc(c.x, c.y, c.size, 0, Math.PI*2);
+            this.ctx.arc(c.x + c.size*0.7, c.y + c.size*0.2, c.size*0.6, 0, Math.PI*2);
+            this.ctx.arc(c.x - c.size*0.7, c.y + c.size*0.2, c.size*0.6, 0, Math.PI*2);
+            this.ctx.fill();
+        });
+
+        if (this.state === 'LAUNCHING') {
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            this.ctx.lineWidth = 4;
+            this.ctx.beginPath();
+            for(let i=0; i<this.height; i+=150) {
+                let xOffset = (this.gameTick * 40 + i) % this.width;
+                this.ctx.moveTo(xOffset, i);
+                this.ctx.lineTo(xOffset + 200, i);
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    drawGroundElements() {
+        this.ctx.fillStyle = '#166534';
+        this.ctx.fillRect(0, this.groundLevel, this.width, this.height - this.groundLevel);
+        this.ctx.fillStyle = '#14532d';
+        let stripeWidth = 80;
+        let offset = -(this.bgScroll % stripeWidth);
+        for (let x = offset; x < this.width; x += stripeWidth) {
+            this.ctx.beginPath(); this.ctx.moveTo(x, this.height); this.ctx.lineTo(x + 50, this.groundLevel); this.ctx.lineTo(x + 20, this.groundLevel); this.ctx.lineTo(x - 30, this.height); this.ctx.fill();
+        }
+        this.ctx.fillStyle = '#facc15';
+        let dashWidth = 100; let dashGap = 100;
+        let dashOffset = -(this.bgScroll % (dashWidth + dashGap));
+        for (let x = dashOffset; x < this.width; x += (dashWidth + dashGap)) {
+            this.ctx.fillRect(x, this.groundLevel + 20, dashWidth, 15);
+        }
+        this.springs.forEach(s => {
+            if (!s.active) this.ctx.globalAlpha = 0.5;
+            if (s.mul >= 500) {
+                this.ctx.save();
+                this.ctx.translate(s.x, s.y);
+                this.ctx.shadowBlur = 30;
+                this.ctx.shadowColor = s.mul >= 10000 ? '#00ffff' : '#ffd700';
+                this.ctx.rotate(this.gameTick * 0.05);
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + Math.sin(this.gameTick * 0.1) * 0.1})`;
+                this.ctx.beginPath();
+                for(let i=0; i<8; i++) { this.ctx.rotate(Math.PI/4); this.ctx.rect(-60, -5, 120, 10); }
+                this.ctx.fill();
+                this.ctx.rotate(-this.gameTick * 0.05);
+                let grad = this.ctx.createLinearGradient(0, 0, 0, -200);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.5)'); grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                this.ctx.fillStyle = grad; this.ctx.fillRect(-40, -200, 80, 200);
+                this.ctx.restore();
+            }
+            this.ctx.fillStyle = '#1f2937'; this.ctx.beginPath(); this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5); this.ctx.fill();
+            this.ctx.strokeStyle = '#9ca3af'; this.ctx.lineWidth = 12; this.ctx.lineCap = 'round';
+            this.ctx.beginPath();
+            let y = s.y; let h = s.h; let ph = h * s.pulse - s.compress; ph = Math.max(10, ph);
+            this.ctx.moveTo(s.x - 40, y); this.ctx.lineTo(s.x + 40, y - ph*0.3); this.ctx.lineTo(s.x - 40, y - ph*0.6); this.ctx.lineTo(s.x + 40, y - ph); this.ctx.moveTo(s.x, y - ph);
+            this.ctx.stroke();
+            let boxY = s.y - ph - 25; let boxW = 110; let boxH = 70;
+            this.ctx.save(); this.ctx.translate(s.x, boxY); let scaleY = 1 - (s.compress / 60); this.ctx.scale(s.pulse, s.pulse * scaleY);
+            this.ctx.shadowBlur = s.glow ? 50 : 30; this.ctx.shadowColor = s.color;
+            this.ctx.fillStyle = s.color; this.ctx.beginPath(); this.ctx.roundRect(-boxW/2, -boxH/2, boxW, boxH, 15); this.ctx.fill();
+            this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 4; this.ctx.stroke(); this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = s.textColor;
+            let fontSize = 48; if (s.label.length >= 4) fontSize = 36;
+            this.ctx.font = `900 ${fontSize}px "Black Ops One"`; this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle'; this.ctx.fillText(s.label, 0, 4);
+            this.ctx.restore(); this.ctx.globalAlpha = 1.0;
+        });
+    }
+
+    drawPinata() {
+        this.ctx.save();
+        this.ctx.translate(this.horse.x, this.horse.y);
+        let scaleX = this.horse.scale * 1.8 * this.horse.animScaleX;
+        let scaleY = this.horse.scale * 1.8 * this.horse.animScaleY;
+        this.ctx.scale(scaleX, scaleY); 
+        this.ctx.rotate(this.horse.angle);
+
+        if (this.winStreak >= 3) {
+            this.ctx.shadowBlur = 20 + Math.sin(this.gameTick*0.5)*10; this.ctx.shadowColor = '#ef4444';
+        }
+
+        this.ctx.strokeStyle = '#fff'; this.ctx.lineWidth = 2; this.ctx.beginPath(); this.ctx.moveTo(0, -60); this.ctx.lineTo(0, -1000); this.ctx.stroke();
+
+        let colors = ['#ec4899', '#a855f7', '#3b82f6', '#22c55e', '#eab308'];
+        let isMetal = false; let isGold = false; let isCosmic = false;
+
+        if (this.currentMultiplier >= 1000) {
+            isCosmic = true; colors = ['#000', '#1e1b4b', '#312e81', '#4338ca', '#000']; 
+        } else if (this.currentMultiplier >= 50) {
+            isGold = true; colors = ['#f59e0b', '#fbbf24', '#fcd34d', '#b45309', '#78350f']; 
+        } else if (this.currentMultiplier >= 10) {
+            isMetal = true; colors = ['#1e293b', '#334155', '#475569', '#06b6d4', '#0891b2'];
+        }
+        
+        if (this.winStreak >= 3) { colors[0] = '#ef4444'; colors[1] = '#b91c1c'; }
+        
+        for(let i=0; i<5; i++) {
+            this.ctx.fillStyle = colors[i % colors.length];
+            let offset = Math.sin(this.gameTick * 0.2 + i) * 2;
+            this.ctx.beginPath(); this.ctx.roundRect(-35 + offset, -30 + i*12, 70, 15, 2); this.ctx.fill();
+            if (isGold) { this.ctx.strokeStyle = '#fef08a'; this.ctx.lineWidth = 1; this.ctx.stroke(); }
+            if (isMetal) { this.ctx.strokeStyle = '#06b6d4'; this.ctx.lineWidth = 2; this.ctx.shadowBlur = 5; this.ctx.shadowColor = '#06b6d4'; this.ctx.beginPath(); this.ctx.moveTo(-35 + offset + 10, -30 + i*12 + 7); this.ctx.lineTo(-35 + offset + 60, -30 + i*12 + 7); this.ctx.stroke(); this.ctx.shadowBlur = 0; }
+        }
+
+        if (isCosmic) {
+            this.ctx.shadowBlur = 30; this.ctx.shadowColor = '#8b5cf6'; this.ctx.strokeStyle = 'white'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, 80, 0, Math.PI*2); this.ctx.stroke(); this.ctx.shadowBlur = 0;
+        }
+
+        this.ctx.save(); this.ctx.translate(35, -20); this.ctx.rotate(-0.2); this.ctx.fillStyle = colors[0]; this.ctx.beginPath(); this.ctx.roundRect(-10, -30, 40, 30, 5); this.ctx.fill();
+        
+        if (this.winStreak >= 3) {
+            this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#ffff00'; this.ctx.fillStyle = '#fff'; this.ctx.beginPath(); this.ctx.moveTo(10, -18); this.ctx.lineTo(22, -12); this.ctx.lineTo(10, -6); this.ctx.fill(); this.ctx.shadowBlur = 0;
+        } else if (isMetal) {
+            this.ctx.fillStyle = '#06b6d4'; this.ctx.shadowBlur = 15; this.ctx.shadowColor = '#06b6d4'; this.ctx.beginPath(); this.ctx.rect(10, -20, 20, 8); this.ctx.fill(); this.ctx.shadowBlur = 0;
+        } else {
+            if (this.horse.faceTimer > 0) {
+                this.ctx.strokeStyle = isCosmic ? 'cyan' : 'black'; this.ctx.beginPath(); this.ctx.moveTo(12, -18); this.ctx.lineTo(18, -12); this.ctx.moveTo(18, -18); this.ctx.lineTo(12, -12); this.ctx.stroke();
+            } else {
+                this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(15, -15, 6, 0, Math.PI*2); this.ctx.fill();
+                this.ctx.fillStyle = 'black'; this.ctx.beginPath(); let lookX = Math.sin(this.gameTick * 0.05) * 2; this.ctx.arc(17 + lookX, -15, 2, 0, Math.PI*2); this.ctx.fill();
+            }
+        }
+        
+        this.ctx.fillStyle = colors[1]; this.ctx.beginPath(); this.ctx.moveTo(0, -30); this.ctx.lineTo(10, -50); this.ctx.lineTo(20, -30); this.ctx.fill();
+        this.ctx.restore();
+
+        let legWiggle = 0;
+        if (this.horse.faceTimer > 0) legWiggle = Math.sin(this.gameTick * 1.5) * 20; 
+        else if (this.horse.buttWiggle > 0) legWiggle = Math.sin(this.gameTick * 0.5) * 15 * this.horse.buttWiggle;
+
+        this.ctx.fillStyle = colors[4];
+        this.ctx.save(); this.ctx.translate(-20, 30); this.ctx.rotate(legWiggle * 0.05); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.restore();
+        this.ctx.save(); this.ctx.translate(20, 30); this.ctx.rotate(-legWiggle * 0.05); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.restore();
+        this.ctx.fillStyle = colors[2]; this.ctx.beginPath(); this.ctx.moveTo(-35, -10); this.ctx.lineTo(-55, 10 + legWiggle); this.ctx.lineTo(-45, 20 + legWiggle); this.ctx.fill();
+        this.ctx.restore();
+    }
+    
+    // Draw Horse Function Re-added Here
+    drawHorse() {
+        this.ctx.save();
+        this.ctx.translate(this.horse.x, this.horse.y);
+        this.ctx.scale(this.horse.scale, this.horse.scale); 
+        this.ctx.rotate(this.horse.angle);
+
+        if (this.state === 'GROUND') {
+            this.ctx.fillStyle = 'rgba(0,0,0,0.3)'; this.ctx.beginPath(); this.ctx.ellipse(0, 45, 40, 8, 0, 0, Math.PI*2); this.ctx.fill();
+        }
+
+        const bob = Math.sin(this.gameTick * 0.4) * 3; 
+        const legSwing = Math.sin(this.gameTick * 0.8) * 0.8; 
+        
+        this.ctx.save(); this.ctx.fillStyle = '#5D4037'; this.ctx.translate(-20, 10 + bob); this.ctx.rotate(-legSwing); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.translate(0, 30); this.ctx.rotate(legSwing * 0.5 + 0.5); this.ctx.fillRect(-4, 0, 8, 20); this.ctx.restore();
+        this.ctx.save(); this.ctx.fillStyle = '#5D4037'; this.ctx.translate(20, 10 + bob); this.ctx.rotate(legSwing); this.ctx.fillRect(-5, 0, 10, 30); this.ctx.translate(0, 30); this.ctx.rotate(-legSwing * 0.5 + 0.5); this.ctx.fillRect(-4, 0, 8, 20); this.ctx.restore();
+
+        this.ctx.fillStyle = '#854d0e'; this.ctx.beginPath(); this.ctx.roundRect(-40, -20 + bob, 80, 40, 20); this.ctx.fill();
+
+        this.ctx.save(); this.ctx.translate(-40, -10 + bob); this.ctx.rotate(Math.sin(this.gameTick * 0.5) * 0.5 + 0.5); this.ctx.fillStyle = '#3f1f10'; this.ctx.beginPath(); this.ctx.moveTo(0, 0); this.ctx.quadraticCurveTo(-20, 10, -10, 30); this.ctx.lineTo(0, 10); this.ctx.fill(); this.ctx.restore();
+
+        this.ctx.save(); this.ctx.translate(30, -15 + bob); this.ctx.rotate(-0.5 + Math.sin(this.gameTick * 0.4) * 0.1); this.ctx.fillStyle = '#854d0e'; this.ctx.fillRect(-10, -30, 20, 40); this.ctx.translate(0, -30); this.ctx.beginPath(); this.ctx.roundRect(-12, -20, 35, 25, 8); this.ctx.fill();
+        this.ctx.fillStyle = '#3f1f10'; this.ctx.beginPath(); this.ctx.moveTo(-5, -20); this.ctx.lineTo(0, -35); this.ctx.lineTo(5, -20); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.moveTo(-10, 0); this.ctx.quadraticCurveTo(-20, 20, -10, 40); this.ctx.lineTo(10, 0); this.ctx.fill();
+        this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(5, -12, 5, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.fillStyle = 'black'; this.ctx.beginPath(); this.ctx.arc(7, -12, 2, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.restore();
+
+        if (this.horse.state !== 'RUN') {
+            this.ctx.save(); this.ctx.translate(5, bob - 15); let flap = Math.sin(this.gameTick * 0.8) * 0.5; this.ctx.scale(1, 1 - flap * 0.5);
+            this.ctx.fillStyle = '#ffffff'; this.ctx.beginPath(); this.ctx.moveTo(0, 0); this.ctx.lineTo(-40, -60); this.ctx.lineTo(30, -25); this.ctx.fill();
+            this.ctx.strokeStyle = '#cbd5e1'; this.ctx.lineWidth = 2; this.ctx.stroke(); this.ctx.restore();
+        }
+        this.ctx.restore();
+    }
+
+    // [修改] 繪圖效果：區分普通文字與 BIG_WIN 文字，實現分層渲染
+    drawEffects() {
+        this.particles.forEach(p => {
+            this.ctx.save();
+            this.ctx.globalAlpha = p.life / 50;
+            this.ctx.translate(p.x, p.y);
+            if (p.type === 'coin') {
+                this.ctx.fillStyle = '#FACC15'; this.ctx.strokeStyle = '#B45309'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.fill(); this.ctx.stroke();
+                this.ctx.fillStyle = 'white'; this.ctx.beginPath(); this.ctx.arc(-3, -3, 2, 0, Math.PI*2); this.ctx.fill();
+            } else if (p.type === 'line') {
+                this.ctx.fillStyle = p.color; this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            } else if (p.type === 'shockwave') {
+                this.ctx.strokeStyle = p.color; this.ctx.lineWidth = 4; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.stroke();
+            } else if (p.type === 'confetti') {
+                this.ctx.fillStyle = p.color; this.ctx.rotate(p.rotation * Math.PI / 180); this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            } else {
+                this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.fill();
+            }
+            this.ctx.restore();
+        });
+
+        // 2. 繪製文字 (進行了分層處理)
+        // 先畫普通文字
+        this.texts.forEach(t => {
+            if (t.type === 'BIG_WIN') return; // 大獎文字稍後單獨畫
+
+            this.ctx.save();
+            this.ctx.globalAlpha = Math.max(0, t.life / t.maxLife);
+            // 使用 updateTexts 中計算的 currentSize
+            let size = t.currentSize || t.size; 
+            
+            // 使用 Emoji 字型以確保渲染
+            this.ctx.font = `900 ${size}px "Black Ops One", "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+            this.ctx.lineJoin = 'round';
+            this.ctx.textAlign = 'center'; // 統一置中比較好控制
+
+            // 確保 x, y 是文字中心
+            this.ctx.strokeStyle = 'black'; 
+            this.ctx.lineWidth = 6; 
+            this.ctx.strokeText(t.str, t.x, t.y); 
+            this.ctx.fillStyle = t.color; 
+            this.ctx.fillText(t.str, t.x, t.y);
+            this.ctx.restore();
+        });
+
+        // 3. [新增] 獨立繪製 BIG_WIN 文字 (確保在最上層)
+        const bigWinText = this.texts.find(t => t.type === 'BIG_WIN');
+        if (bigWinText) {
+            this.ctx.save();
+            
+            // A. 繪製背景遮罩 (讓文字更突出)
+            // 創建一個徑向漸層，中心透明，向外變黑
+            let g = this.ctx.createRadialGradient(
+                bigWinText.x, bigWinText.y, 50, 
+                bigWinText.x, bigWinText.y, this.width * 0.8
+            );
+            g.addColorStop(0, 'rgba(0,0,0,0.4)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            this.ctx.fillStyle = g;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+
+            // B. 繪製大獎文字
+            this.ctx.globalAlpha = Math.min(1, bigWinText.life / 20); // 淡出效果
+            let size = bigWinText.currentSize;
+            this.ctx.font = `900 ${size}px "Black Ops One", sans-serif`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+
+            // 強烈的光暈
+            this.ctx.shadowBlur = 40;
+            this.ctx.shadowColor = '#FACC15';
+            
+            // 粗黑描邊
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 15; 
+            this.ctx.strokeText(bigWinText.str, bigWinText.x, bigWinText.y);
+            
+            // 白色內描邊 (增加層次感)
+            this.ctx.shadowBlur = 0; // 內描邊不需要光暈
+            this.ctx.strokeStyle = '#FFFFFF';
+            this.ctx.lineWidth = 4;
+            this.ctx.strokeText(bigWinText.str, bigWinText.x, bigWinText.y);
+
+            // 金色主體
+            this.ctx.fillStyle = '#FACC15';
+            this.ctx.fillText(bigWinText.str, bigWinText.x, bigWinText.y);
+
+            // 頂部高光 (模擬金屬質感)
+            this.ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            this.ctx.fillText(bigWinText.str, bigWinText.x, bigWinText.y - 2);
+
+            this.ctx.restore();
+        }
+    }
+
+    loop(timestamp) {
+        requestAnimationFrame((t) => this.loop(t));
+        if (!this.lastFrameTime) { this.lastFrameTime = timestamp; return; }
+        const elapsed = timestamp - this.lastFrameTime;
+        if (elapsed > this.frameInterval) {
+            this.lastFrameTime = timestamp - (elapsed % this.frameInterval);
+            this.update();
+            this.draw();
+        }
+    }
+}
+
+window.onload = () => {
+    window.game = new Game();
+};
+</script>
+</body>
+</html>
             touch-action: none; user-select: none; -webkit-user-select: none;
         }
 
