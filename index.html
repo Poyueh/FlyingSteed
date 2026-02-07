@@ -222,18 +222,27 @@
 
         <!-- 歷史報表 Modal -->
         <div id="historyModal" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl transition-opacity duration-300 opacity-0 pointer-events-none">
-            <div class="bg-gray-900 w-full h-full flex flex-col shadow-2xl transform scale-100 transition-transform duration-300">
-                <div class="flex justify-between items-center p-6 border-b border-gray-800 bg-gray-900/50">
-                    <!-- [修改] 標題改為文字，使用 ID 方便切換語言 -->
-                    <div id="lblHistoryTitle" class="text-white text-3xl font-black ui-font tracking-wider">
+            <!-- [修改] 增加 relative 以便絕對定位按鈕 -->
+            <div class="bg-gray-900 w-full h-full flex flex-col shadow-2xl transform scale-100 transition-transform duration-300 relative">
+                
+                <!-- 關閉按鈕 -->
+                <!-- [修正] 
+                     1. 還原灰色樣式與 SVG 圖示
+                     2. z-index 設為 100 確保最上層
+                     3. 位置設為 top-8 right-8 避開邊緣死區
+                     4. 保留 w-24 h-24 大尺寸點擊區
+                -->
+                <button onclick="game.toggleHistory(false)" class="absolute top-8 right-8 z-[100] bg-gray-800 w-24 h-24 rounded-full flex items-center justify-center border-4 border-gray-600 shadow-2xl hover:bg-gray-700 active:scale-95 transition-transform cursor-pointer pointer-events-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="flex justify-center items-center p-6 border-b border-gray-800 bg-gray-900/50 relative z-10">
+                    <!-- [修改] 標題改為文字，使用 ID 方便切換語言，置中顯示 -->
+                    <div id="lblHistoryTitle" class="text-white text-4xl font-black ui-font tracking-wider">
                         历史报表
                     </div>
-                    <!-- [修改] 關閉按鈕：固定寬高(w-20 h-20)、Flex置中、SVG pointer-events-none -->
-                    <button onclick="game.toggleHistory(false)" class="bg-gray-800/80 w-20 h-20 rounded-full flex items-center justify-center text-gray-200 hover:text-white hover:bg-gray-700 active:scale-90 transition-all border-2 border-gray-700 shadow-lg backdrop-blur-sm group pointer-events-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 group-hover:rotate-90 transition-transform duration-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
                 </div>
                 
                 <!-- Table Header (Text) -->
@@ -959,7 +968,7 @@ class Game {
             scale: 2.2,
             targetX: 0, targetY: 0,
             moveTimer: 0,
-            pinataHits: 0,          
+            pinataHits: 0,           
             wobble: 0,
             animScaleX: 1, 
             animScaleY: 1,
@@ -1985,7 +1994,7 @@ class Game {
         if (this.state !== 'EXPLODING') {
             const targetScale = 1.0;
             const stiffness = 0.2; 
-            const damping = 0.8;           
+            const damping = 0.8;            
             const forceX = (targetScale - this.horse.animScaleX) * stiffness;
             this.horse.scaleVx += forceX;
             this.horse.scaleVx *= damping;
