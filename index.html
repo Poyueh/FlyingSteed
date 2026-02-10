@@ -195,7 +195,7 @@
                     <div id="lblBalanceTitle" class="text-yellow-400 text-lg font-bold mb-1 ui-font tracking-wider">BALANCE</div>
                     <div class="text-4xl text-white ui-font text-shadow tracking-tight" id="balanceDisplay">$5,000.00</div>
                 </div>
-               
+                
                 <!-- 倍率顯示 -->
                 <div class="flex flex-col items-end gap-3 transform scale-90 origin-top-right">
                     <div class="bg-black/70 backdrop-blur-md px-6 py-4 rounded-3xl border-r-8 border-blue-500 shadow-xl min-w-[120px] text-right flex flex-col items-end">
@@ -436,19 +436,19 @@
                     <div class="text-yellow-400 mb-3 flex justify-center">
                         <span id="lblAutoRange" class="text-2xl font-bold ui-font">Target Range</span>
                     </div>
-                    
+                   
                     <div class="range-slider-container mt-4 mb-8 px-4 pointer-events-auto">
                         <!-- Track Background -->
                         <div class="absolute left-4 right-4 h-3 bg-gray-700 rounded-full"></div>
                         <!-- Highlight Range (Dynamic) -->
                         <div id="rangeHighlight" class="absolute h-3 bg-yellow-500 rounded-full transition-all duration-75"></div>
-                        
+                       
                         <!-- Input Min -->
                         <input type="range" id="rangeMin" min="0" max="9" step="1" value="0" class="range-input left-0 right-0 mx-4">
-                        
+                       
                         <!-- Input Max -->
                         <input type="range" id="rangeMax" min="0" max="9" step="1" value="9" class="range-input left-0 right-0 mx-4">
-                        
+                       
                         <!-- Labels below -->
                         <div class="absolute -bottom-8 left-4 right-4 flex justify-between text-gray-400 font-bold ui-font text-sm pointer-events-none">
                             <span>x2</span>
@@ -458,13 +458,13 @@
                             <span>MAX</span>
                         </div>
                     </div>
-                    
+                   
                     <!-- Display Current Range Value -->
                     <div class="text-center mb-2">
                         <span id="lblAutoRangeVal" class="text-yellow-400 text-3xl font-black ui-font tracking-wide bg-gray-800/80 px-6 py-2 rounded-xl border border-yellow-500/30 shadow-lg">x2 - MAX</span>
                     </div>
                 </div>
-                
+             
                 <div class="flex gap-4">
                     <button id="btnCancel" onclick="game.toggleAutoPanel(false)" class="flex-1 bg-gray-700 text-white font-black py-6 rounded-2xl hover:bg-gray-600 text-2xl border-b-4 border-gray-900 active:border-b-0 active:translate-y-1 transition-all flex justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -584,7 +584,7 @@
 </div>
 
 <script>
-// Define the bet list constant
+// ... existing constants ...
 const BET_LIST = [
     0.20, 0.40, 0.60, 0.80,
     1.00, 1.20, 1.40, 1.60, 1.80, 2.00,
@@ -601,7 +601,7 @@ const I18N = {
         helpGoalDesc: "Your mission is to ride the Flying Horse to the skies! Observe the roadmap, time your launch perfectly on high multipliers, and destroy the Pinata in mid-air to claim massive rewards. It's a thrill ride of timing and luck!",
         
         helpControlsTitle: "🎮 Controls",
-        helpControlsLaunch: "<strong class='text-white'>Launch:</strong> Watch the bottom 'Roadmap' carefully. It shows upcoming spring multipliers. When a high multiplier (like x10, x50) slides into the activation zone (under the horse), <strong>TAP ANYWHERE</strong> immediately to launch!",
+        helpControlsLaunch: "<strong class='text-white'>Launch:</strong> Watch the bottom 'Roadmap' carefully. It shows upcoming spring multipliers. When a high multiplier (like x10, x50) slides into the activation zone (under the horse), <strong>TAP ANYWHERE</strong> immediately to launch! <span class='text-yellow-400'>(Costs 1 Bet)</span>",
         helpControlsShoot: "<strong class='text-white'>Shoot:</strong> Once airborne, your horse will fly towards the Pinata. <strong>TAP RAPIDLY</strong> anywhere on the screen to fire bullets. You have limited ammo (6 shots per reload), so make them count! Hitting the Pinata drops coins.",
         helpControlsJackpot: "<strong class='text-white'>Jackpot:</strong> Deplete the Pinata's health or land the final blow to trigger the <strong>JACKPOT</strong>! You win the multiplier x your bet. If time runs out or you miss too much, you fall back to the ground.",
         
@@ -618,6 +618,7 @@ const I18N = {
         legendary: "LEGENDARY!",
         boost: "BOOST!",
         misfire: "JAM!",
+        jammed: "WARNING!", 
         miss: "MISS",
         streakLost: "STREAK LOST",
         clink: "CLINK!",
@@ -625,17 +626,15 @@ const I18N = {
         streak: "STREAK",
         bigWin: "BIG WIN",
         rounds: "Rounds",
-        minMul: "Target Range", // Updated
+        minMul: "Target Range", 
         music: "Music",
         sound: "Sound",
         language: "Language",
         betAmount: "Bet Amount",
         historyReport: "History Report",
         
-        // [新增] 餘額標題
         balanceTitle: "BALANCE",
 
-        // History Column Headers
         colSerial: "Serial",
         colTime: "Time",
         colMul: "Mul",
@@ -648,7 +647,7 @@ const I18N = {
         helpGoalDesc: "您的任務是駕駛飛天神駒直衝雲霄！觀察路途預測，在最佳時機彈射起飛，並在空中擊碎彩馬 (Pinata) 贏取巨額倍數獎金。這是一場考驗眼力與手速的刺激冒險！",
         
         helpControlsTitle: "🎮 操作指南",
-        helpControlsLaunch: "<strong class='text-white'>觀察路途 (Roadmap)：</strong> 緊盯螢幕上方的路途預測。當您心儀的高倍數彈簧（如 x10, x50, MAX）移動到神駒腳下時，<strong>點擊螢幕任意處</strong>立即起飛！",
+        helpControlsLaunch: "<strong class='text-white'>觀察路途 (Roadmap)：</strong> 緊盯螢幕上方的路途預測。當您心儀的高倍數彈簧（如 x10, x50, MAX）移動到神駒腳下時，<strong>點擊螢幕任意處</strong>立即起飛！<span class='text-yellow-400'>(每次起飛扣除1倍押注)</span>",
         helpControlsShoot: "<strong class='text-white'>空中射擊 (Shoot)：</strong> 飛入空中後，<strong>快速點擊螢幕</strong>發射子彈攻擊彩馬。彈巢有 6 發子彈，射完需等待裝填。每次命中都有機會掉落額外金幣獎勵。",
         helpControlsJackpot: "<strong class='text-white'>贏取大獎 (Jackpot)：</strong> 在滯空時間結束前擊碎彩馬，即可獲得該次起飛倍數的超級大獎！若未能在時間內擊碎，神駒將會墜落地面，連勝紀錄也會中斷。",
         
@@ -665,6 +664,7 @@ const I18N = {
         legendary: "传奇!",
         boost: "爆发!",
         misfire: "炸裂!",
+        jammed: "警告!", 
         miss: "未命中",
         streakLost: "连胜中断",
         clink: "叮当!",
@@ -672,17 +672,15 @@ const I18N = {
         streak: "连胜",
         bigWin: "大奖",
         rounds: "局数",
-        minMul: "目标范围", // Updated
+        minMul: "目标范围", 
         music: "音乐",
         sound: "音效",
         language: "语言",
         betAmount: "押注额",
         historyReport: "历史报表",
 
-        // [新增] 餘額標題
         balanceTitle: "余额",
 
-        // History Column Headers
         colSerial: "序号",
         colTime: "时间",
         colMul: "倍数",
@@ -692,6 +690,7 @@ const I18N = {
     }
 };
 
+// ... existing AudioController ...
 class AudioController {
     constructor() {
         this.ctx = null;
@@ -774,6 +773,12 @@ class AudioController {
     playJump() {
         if (!this.sfxEnabled) return;
         this.playTone(150, 'square', 0.1, 0.1, 600); 
+    }
+
+    playLaunchFail() {
+        if (!this.sfxEnabled) return;
+        this.playNoise(0.3, 0.4); // 類似機械故障的雜訊
+        this.playTone(60, 'sawtooth', 0.4, 0.3); // 低頻悶響
     }
 
     playHit() {
@@ -884,7 +889,7 @@ class AudioController {
     }
 }
 
-// ... existing MathModel code ...
+// ... MathModel code ...
 class MathModel {
     constructor(targetRTP = 0.96) {
         this.targetRTP = targetRTP;
@@ -892,15 +897,42 @@ class MathModel {
         this.spinCount = 0;
     }
 
+    // [新增] 起飛判定邏輯 (含贏分計算)
+    getLaunchResult(betAmount) {
+        // 設定起飛贏獎的機率 (Base Game Hit Rate)
+        // 為了平衡，中獎率設為 40% 左右
+        const hitRate = 0.40; 
+        const isWin = Math.random() < hitRate;
+        let winAmount = 0;
+
+        if (isWin) {
+            // 隨機贏分倍率 (1.5x ~ 5.0x)
+            const rand = Math.random();
+            let mul = 1.5;
+            if (rand < 0.5) mul = 1.5;
+            else if (rand < 0.8) mul = 2.0;
+            else if (rand < 0.95) mul = 3.0;
+            else mul = 5.0; // Big Launch Win
+
+            winAmount = betAmount * mul;
+        }
+        
+        return { isWin, winAmount };
+    }
+
     getResult(multiplier, hits) {
         this.spinCount++;
         this.cyclePhase += 0.2; 
         const luckFactor = 1.0 + Math.sin(this.cyclePhase) * 0.2;
-        let smallWinChance = 0.40 * luckFactor; 
+        
+        // [調整] 稍微提高滯空時的小獎機率，補償起飛成本
+        let smallWinChance = 0.45 * luckFactor; 
+        
         const jackpotRTPContribution = this.targetRTP - (smallWinChance * 0.5); 
         let jackpotChance = jackpotRTPContribution / multiplier;
         jackpotChance = Math.max(0.000001, Math.min(0.5, jackpotChance));
         jackpotChance *= luckFactor;
+        
         let baseRisk = 0.02; 
         if (multiplier >= 50) baseRisk = 0.04;
         let explodeRisk = baseRisk + (hits * 0.015);
@@ -926,6 +958,7 @@ class MathModel {
 }
 
 class Game {
+    // ... existing constructor ...
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -938,7 +971,7 @@ class Game {
         // Lang
         this.lang = 'en';
 
-        // History [修改：讀取 LocalStorage]
+        // History
         this.gameHistory = [];
         try {
             const savedHist = localStorage.getItem('cp_history_v2');
@@ -1095,7 +1128,7 @@ class Game {
         }, 100);
     }
 
-    // Toggle Settings Modal
+    // ... existing UI toggle methods ...
     toggleSettings(show) {
         const modal = document.getElementById('settingsModal');
         if (show) {
@@ -1109,7 +1142,6 @@ class Game {
         }
     }
 
-    // Toggle History Modal
     toggleHistory(show) {
         const modal = document.getElementById('historyModal');
         if (show) {
@@ -1124,7 +1156,6 @@ class Game {
         }
     }
 
-    // [新增] 漢堡選單切換
     toggleMenu() {
         this.isMenuOpen = !this.isMenuOpen;
         const menu = document.getElementById('sideMenu');
@@ -1139,7 +1170,6 @@ class Game {
         }
     }
 
-    // [修改] 歷史記錄：增加儲存與上限控制
     recordHistory(winAmount) {
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
@@ -1163,7 +1193,6 @@ class Game {
         } catch (e) { console.error("Storage full", e); }
     }
 
-    // [修改] 渲染歷史記錄：全螢幕樣式與顏色邏輯
     renderHistory() {
         const list = document.getElementById('historyList');
         let html = '';
@@ -1268,33 +1297,30 @@ class Game {
         this.updateUI(); 
     }
 
-    // [新增] 切換說明視窗
     toggleHelp(show) {
         const modal = document.getElementById('helpModal');
         const content = document.getElementById('helpContent');
         if (show) {
             modal.style.pointerEvents = 'auto';
             modal.style.opacity = '1';
-            // Remove scale effect for fullscreen modal, just opacity
         } else {
             modal.style.opacity = '0';
             modal.style.pointerEvents = 'none';
         }
     }
 
-    // 切換自動設定面板顯隱
     toggleAutoPanel(show) {
         const panel = document.getElementById('autoPanel');
         const content = document.getElementById('autoPanelContent');
         if (show) {
             if (this.auto.active) {
-                this.stopAuto(); // 如果正在跑，點擊按鈕則停止
+                this.stopAuto(); 
             } else {
                 panel.style.pointerEvents = 'auto';
                 panel.style.opacity = '1';
                 content.style.transform = 'scale(1)';
                 this.updateAutoPanelUI();
-                this.updateAutoSliderUI(); // Sync slider UI
+                this.updateAutoSliderUI(); 
             }
         } else {
             panel.style.opacity = '0';
@@ -1303,11 +1329,8 @@ class Game {
         }
     }
 
-    // 設定自動參數
     setAutoRounds(val) { this.auto.maxRounds = val; this.updateAutoPanelUI(); }
-    // setAutoMinMul Removed in favor of slider logic
 
-    // Init Range Slider Listeners
     initAutoSlider() {
         const rangeMin = document.getElementById('rangeMin');
         const rangeMax = document.getElementById('rangeMax');
@@ -1338,32 +1361,20 @@ class Game {
         const highlight = document.getElementById('rangeHighlight');
         const lblVal = document.getElementById('lblAutoRangeVal');
 
-        // Set inputs to current auto values (find index)
         const minIdx = MUL_STEPS.indexOf(this.auto.minMul);
         const maxIdx = MUL_STEPS.indexOf(this.auto.maxMul);
-        
-        // Guard if slider is being dragged, we don't want to force set value and jitter
-        // But for open/initial state we do. 
-        // Simple approach: Always set width/pos based on input values which are source of truth in UI
         
         const percent1 = (rangeMin.value / 9) * 100;
         const percent2 = (rangeMax.value / 9) * 100;
         
         highlight.style.left = `${percent1}%`;
-        highlight.style.width = `${percent2 - percent1}%`; // Adjust based on container padding logic usually, but here strict %
+        highlight.style.width = `${percent2 - percent1}%`; 
         
-        // Since input has margin, the visual bar needs to match thumb center. 
-        // Standard range input logic: thumb is centered at value.
-        // Let's refine highlight logic to match thumb centers.
-        // Thumbs are 32px.
-        
-        // Simple Text Update
         let minText = this.auto.minMul >= 1000 ? (this.auto.minMul===10000?'MAX':'1K') : `x${this.auto.minMul}`;
         let maxText = this.auto.maxMul >= 1000 ? (this.auto.maxMul===10000?'MAX':'1K') : `x${this.auto.maxMul}`;
         lblVal.innerText = `${minText} - ${maxText}`;
     }
 
-    // 更新面板按鈕樣式
     updateAutoPanelUI() {
         document.querySelectorAll('.auto-opt-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -1373,7 +1384,6 @@ class Game {
         });
     }
 
-    // 開始自動
     startAuto() {
         this.auto.active = true;
         this.auto.rounds = this.auto.maxRounds;
@@ -1381,13 +1391,11 @@ class Game {
         this.updateAutoStatusBtn();
     }
 
-    // 停止自動
     stopAuto() {
         this.auto.active = false;
         this.updateAutoStatusBtn();
     }
 
-    // [修改] 更新主介面 AUTO 按鈕狀態：使用遮罩顯示詳細資訊
     updateAutoStatusBtn() {
         const btn = document.getElementById('autoToggleBtn');
         const badge = document.getElementById('autoActiveBadge');
@@ -1397,30 +1405,26 @@ class Game {
         
         if (this.auto.active) {
             badge.classList.remove('hidden');
-            defaultContent.classList.add('opacity-0'); // 隱藏預設文字
+            defaultContent.classList.add('opacity-0'); 
             
-            // 更新數值
             roundsSpan.innerText = this.auto.rounds >= 9999 ? "∞" : this.auto.rounds;
             
             let minText = this.auto.minMul >= 1000 ? (this.auto.minMul===10000?'MAX':'1K') : `x${this.auto.minMul}`;
             let maxText = this.auto.maxMul >= 1000 ? (this.auto.maxMul===10000?'MAX':'1K') : `x${this.auto.maxMul}`;
             
-            // Shorten if range is small or max
             if (this.auto.maxMul === 10000) {
                  mulSpan.innerText = `${minText}+`;
             } else {
                  mulSpan.innerText = `${minText}-${maxText}`;
-                 mulSpan.style.fontSize = "0.9rem"; // Shrink if long
+                 mulSpan.style.fontSize = "0.9rem"; 
             }
             
-            // 變綠色
             btn.classList.remove('border-blue-500/50');
             btn.classList.add('border-green-500', 'shadow-[0_0_15px_#22c55e]');
         } else {
             badge.classList.add('hidden');
-            defaultContent.classList.remove('opacity-0'); // 顯示預設文字
+            defaultContent.classList.remove('opacity-0');
 
-            // 還原藍色
             btn.classList.add('border-blue-500/50');
             btn.classList.remove('border-green-500', 'shadow-[0_0_15px_#22c55e]');
         }
@@ -1504,9 +1508,6 @@ class Game {
         const pastContainer = document.getElementById('roadmapPast');
         const futureContainer = document.getElementById('roadmapFuture');
         
-        // [修正] 路途 UI 顯示邏輯
-        // 移除 s.active 的判斷，只根據位置來顯示
-        // 這解決了點擊起飛瞬間 (active=false) 導致路途 UI 誤判為空而跳轉到下一個的問題
         const activeSprings = this.springs.filter(s => s.x > 180);
         
         const showPast = this.roadmapPast.slice(-5);
@@ -1578,22 +1579,18 @@ class Game {
         }
     }
 
-    // [新增] 押注微調邏輯 (支援長按)
     startAdjustBet(delta) {
         if (this.hitCooldown > 0 || this.isFiring) return;
         
-        // 立即執行一次
         this.adjustBet(delta);
         
-        // 清除舊的計時器
         this.stopAdjustBet();
 
-        // 設置延遲後開始快速連發
         this.betAdjustTimeout = setTimeout(() => {
             this.betAdjustInterval = setInterval(() => {
                 this.adjustBet(delta);
-            }, 50); // 50ms 快速連發
-        }, 400); // 400ms 長按判定
+            }, 50); 
+        }, 400); 
     }
 
     stopAdjustBet() {
@@ -1613,28 +1610,22 @@ class Game {
         this.setBet(this.betAmount);
     }
 
-    // [修改] 下注功能：增加選取狀態切換
     setBet(amount) {
         if (this.hitCooldown > 0 || this.isFiring) return; 
         
-        // Find index in list if setting directly via chips
         const index = BET_LIST.indexOf(amount);
         if (index !== -1) {
             this.betIndex = index;
             this.betAmount = amount;
         }
         
-        // 更新按鈕樣式 (僅當數值完全匹配時才亮起預設按鈕)
         document.querySelectorAll('.neon-btn').forEach(btn => {
             const btnVal = parseFloat(btn.dataset.bet); 
-            // 浮點數比較容許微小誤差
             if (Math.abs(btnVal - amount) < 0.001) btn.classList.add('selected');
             else btn.classList.remove('selected');
         });
 
         const display = document.getElementById('currentBetDisplay');
-        // 只有大幅變動時才搖晃，避免微調時過度閃爍 (可選)
-        // 這裡保持搖晃以提供反饋
         display.classList.remove('shake');
         void display.offsetWidth;
         display.classList.add('shake');
@@ -1646,7 +1637,6 @@ class Game {
         
         let displayMul = this.currentMultiplier;
         let displayColor = '#60a5fa'; 
-        // Label logic simplified as text is removed
 
         if (this.state === 'GROUND') {
             const target = this.getTargetSpring();
@@ -1665,12 +1655,10 @@ class Game {
         mulDisplay.innerText = 'x' + displayMul;
         mulDisplay.style.color = displayColor;
         
-        // Color the icon to match target
         document.getElementById('bonusLabelIcon').className = `mb-1 ${this.auto.active ? 'text-green-400' : 'text-blue-300'} opacity-80`;
         
         document.getElementById('currentBetDisplay').innerText = this.formatCurrency(this.betAmount);
 
-        // UI 元素引用
         const skyHUD = document.getElementById('skyHUD');
         const groundControls = document.getElementById('groundControls');
         const hitUI = document.getElementById('hitCooldownUI');
@@ -1695,31 +1683,26 @@ class Game {
                 bulletsLoaded = Math.floor(progress * 6); 
                 rotation = bulletsLoaded * 60;
                 
-                ammoIconDiv.innerHTML = ''; // Empty during reload
+                ammoIconDiv.innerHTML = ''; 
                 betPanel.classList.add('processing');
 
-                // 顯示 Reload 條
                 reloadHintBar.style.opacity = 1;
                 reloadHintBar.style.transform = "translateY(0)";
 
             } else if (this.isFiring) {
-                // 射擊中
                 bulletsLoaded = 0;
                 rotation = this.gameTick * 30; 
                 ammoIconDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>';
                 betPanel.classList.add('processing');
                 
-                // 隱藏 Reload 條
                 reloadHintBar.style.opacity = 0;
                 reloadHintBar.style.transform = "translateY(1rem)";
             } else {
-                // 就緒
                 bulletsLoaded = 6;
                 rotation = 0;
                 ammoIconDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>';
                 betPanel.classList.remove('processing');
 
-                // 隱藏 Reload 條
                 reloadHintBar.style.opacity = 0;
                 reloadHintBar.style.transform = "translateY(1rem)";
             }
@@ -1760,7 +1743,6 @@ class Game {
         if (x < 0 || x > this.width || y < 0 || y > this.height) return;
 
         if (this.state === 'GROUND') {
-            // 點擊任意處起飛，鎖定「當前顯示」的彈簧
             const target = this.getTargetSpring();
             if (target) {
                 this.attemptLaunch(target);
@@ -1801,39 +1783,92 @@ class Game {
         this.updateRoadmapUI(); 
     }
 
+    // [修改] 起飛邏輯：先扣款，再決定成敗
     attemptLaunch(spring) {
-        this.updateUI();
-        this.audio.playJump();
-
-        this.createParticles(spring.x, spring.y + 10, 1, 'rgba(255,255,255,0.8)', 'shockwave');
-        this.createParticles(spring.x, spring.y, 20, spring.color, 'spark');
-        spring.compress = 20;
-        spring.active = false; 
-
-        // [修正] 起飛時，保留當前彈簧，清除其他彈簧，讓畫面聚焦
-        // [關鍵邏輯]：找出畫面上位於當前目標右側的所有彈簧
-        const pendingSprings = this.springs.filter(s => s.x > spring.x);
-        
-        // 將這些彈簧「逆向」塞回 roadmapFuture 的最前端
-        // 這樣下次降落時，它們會依序重新生成
-        for (let i = pendingSprings.length - 1; i >= 0; i--) {
-            const s = pendingSprings[i];
-            // 重建資料結構塞回隊列
-            this.roadmapFuture.unshift({
-                mul: s.mul, 
-                color: s.color, 
-                textColor: s.textColor,
-                label: s.label, 
-                glow: s.glow
-            });
-            // 因為這些彈簧還沒真正「經過」，從 Past 移除比較合理 (雖然 Past 僅供參考)
-            this.roadmapPast.pop(); 
+        // 1. 餘額檢查
+        if (this.balance < this.betAmount) {
+            this.spawnText(I18N[this.lang].noMoney, this.horse.x, this.horse.y, '#ef4444', 50);
+            return;
         }
 
-        // 只保留當前這個起飛的彈簧
-        this.springs = [spring];
-        this.updateRoadmapUI(); // 立即更新 UI 顯示正確的預覽
+        // 2. 扣除起飛押注
+        this.balance -= this.betAmount;
+        this.saveBalance();
+        this.updateUI();
 
+        // 3. 設定本局 ID (Base Game Spin)
+        this.currentRoundId = Date.now().toString().slice(-6);
+        this.currentRoundBet = this.betAmount;
+        this.currentRoundMul = spring.mul; // 紀錄這局選的倍率
+
+        // 4. 判定起飛結果 (Base Game Result)
+        const result = this.math.getLaunchResult(this.betAmount);
+        const isSuccess = result.isWin;
+        const winAmount = result.winAmount;
+
+        // 共用：視覺反饋 (壓縮彈簧)
+        spring.compress = 20;
+        
+        // 共用：清除其他彈簧，保持畫面聚焦
+        const pendingSprings = this.springs.filter(s => s.x > spring.x);
+        for (let i = pendingSprings.length - 1; i >= 0; i--) {
+            const s = pendingSprings[i];
+            this.roadmapFuture.unshift({
+                mul: s.mul, color: s.color, textColor: s.textColor,
+                label: s.label, glow: s.glow
+            });
+            this.roadmapPast.pop(); 
+        }
+        this.springs = [spring];
+        this.updateRoadmapUI();
+
+        if (isSuccess) {
+            // === 成功起飛 (中獎) ===
+            this.audio.playJump();
+            this.audio.playSmallWin(); // 播放中獎音效
+
+            // 加錢
+            this.balance += winAmount;
+            this.saveBalance();
+            this.updateUI();
+
+            // 寫入歷史
+            this.recordHistory(winAmount);
+
+            // 特效
+            this.createParticles(spring.x, spring.y + 10, 1, 'rgba(255,255,255,0.8)', 'shockwave');
+            this.createParticles(spring.x, spring.y, 20, spring.color, 'spark');
+            // 金色粒子強化成功感
+            this.createParticles(spring.x, spring.y, 10, '#fbbf24', 'coin'); 
+            
+            // Show BOOST text
+            let label = spring.mul >= 1000 ? I18N[this.lang].legendary : `x${spring.mul} ${I18N[this.lang].boost}`;
+            this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
+
+            // 飄出贏分數字 (黃金色)
+            this.spawnText(`+${this.formatCurrency(winAmount)}`, this.width/2, this.height/2 - 80, '#fbbf24', 60);
+
+        } else {
+            // === 起飛失敗 (沒中獎) 但仍會飛 ===
+            this.audio.playLaunchFail();
+            this.shakeScreen(30); 
+            
+            // 寫入歷史 (輸)
+            this.recordHistory(0);
+
+            this.createParticles(spring.x, spring.y, 40, '#4b5563', 'smoke');
+            this.createParticles(spring.x, spring.y, 10, '#ef4444', 'spark');
+
+            // Show WARNING text
+            this.spawnText(I18N[this.lang].jammed, this.width/2, this.height/2, '#ef4444', 80);
+            
+            // Apply visual wobble to horse to indicate rough start
+            this.horse.wobble = 20; 
+        }
+
+        spring.active = false;
+
+        // 5. Always Fly
         setTimeout(() => {
             this.state = 'LAUNCHING';
             this.currentMultiplier = spring.mul;
@@ -1849,14 +1884,7 @@ class Game {
             this.horse.scaleVx = 0;
             this.horse.scaleVy = 0;
 
-            this.shakeScreen(20);
-            
-            // 重置彈簧生成計時器，讓降落後稍微延遲才出現新彈簧
-            this.springSpawnTimer = -30;
-
-            let label = spring.mul >= 1000 ? I18N[this.lang].legendary : `x${spring.mul} ${I18N[this.lang].boost}`;
-            this.spawnText(label, this.width/2, this.height/2, spring.color, 100);
-            
+            // Extra particles during flight for rough launch?
             for(let i=0; i<30; i++) {
                 this.particles.push({
                     type: 'line',
@@ -1865,12 +1893,15 @@ class Game {
                     vx: -30 - Math.random()*30,
                     vy: 0,
                     life: 45,
-                    color: 'white',
+                    color: isSuccess ? 'white' : '#ef4444', // Red lines for rough launch
                     w: 100, h: 4
                 });
             }
+            
+            // Reset spawn timer for ground
+            this.springSpawnTimer = -30;
 
-        }, 50);
+        }, 50); // Short delay
     }
 
     startShootingRound(inputX, inputY) {
@@ -2073,7 +2104,8 @@ class Game {
                 size: Math.random() * 8 + 4,
                 gravity: 0.6,
                 rotation: Math.random() * 360,
-                rotSpeed: (Math.random() - 0.5) * 10
+                rotSpeed: (Math.random() - 0.5) * 10,
+                growth: 0 // Default growth
             };
             
             if (type === 'coin') {
@@ -2082,6 +2114,14 @@ class Game {
                 p.gravity = 1.2;
                 p.life = 70;
                 p.size = 14;
+            } else if (type === 'smoke') { // [修正] 煙霧初始化
+                p.vx = (Math.random() - 0.5) * 5; // 稍微減慢水平擴散
+                p.vy = -Math.random() * 5 - 2;    // 向上飄
+                p.gravity = -0.1; 
+                p.life = 60;
+                p.maxLife = 60;
+                p.size = Math.random() * 20 + 10;
+                p.growth = 0.5; // 設定變大速度
             } else if (type === 'shockwave') {
                 p.vx = 0; p.vy = 0; p.gravity = 0;
                 p.life = 20; p.maxLife = 20;
@@ -2342,6 +2382,17 @@ class Game {
                 p.x += p.vx;
                 p.y += p.vy;
                 p.vy += p.gravity;
+            } else if (p.type === 'smoke') { // [修正] 煙霧物理更新
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.size += p.growth;
+                p.vx *= 0.95; 
+                
+                // 讓煙霧隨地面移動 (包含 GROUND 和 LAUNCHING 狀態)
+                if (this.state === 'GROUND' || this.state === 'LAUNCHING') {
+                    p.x -= this.groundSpeed;
+                }
             } else if (p.type === 'shockwave') {
                 p.size += p.growth; 
                 p.growth *= 0.9;
@@ -2500,7 +2551,7 @@ class Game {
                 } else {
                     grd.addColorStop(0, "#4a044e"); grd.addColorStop(1, "#c026d3");
                 }
-                
+               
                 if (this.winStreak >= 3) {
                     this.ctx.save();
                     this.ctx.globalCompositeOperation = 'overlay';
@@ -2583,7 +2634,8 @@ class Game {
                 this.ctx.fillStyle = grad; this.ctx.fillRect(-40, -200, 80, 200);
                 this.ctx.restore();
             }
-            this.ctx.fillStyle = '#1f2937'; this.ctx.beginPath(); this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5); this.ctx.fill();
+            this.ctx.fillStyle = s.active ? '#1f2937' : '#4b5563'; // 失效時變灰
+            this.ctx.beginPath(); this.ctx.roundRect(s.x - s.w/2, s.y, s.w, 20, 5); this.ctx.fill();
             this.ctx.strokeStyle = '#9ca3af'; this.ctx.lineWidth = 12; this.ctx.lineCap = 'round';
             this.ctx.beginPath();
             let y = s.y; let h = s.h; let ph = h * s.pulse - s.compress; ph = Math.max(10, ph);
@@ -2720,6 +2772,9 @@ class Game {
                 this.ctx.strokeStyle = p.color; this.ctx.lineWidth = 4; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.stroke();
             } else if (p.type === 'confetti') {
                 this.ctx.fillStyle = p.color; this.ctx.rotate(p.rotation * Math.PI / 180); this.ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+            } else if (p.type === 'smoke') { // [新增] 黑煙繪製
+                this.ctx.fillStyle = `rgba(50, 50, 50, ${p.life / 50})`;
+                this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.fill();
             } else {
                 this.ctx.fillStyle = p.color; this.ctx.beginPath(); this.ctx.arc(0, 0, p.size, 0, Math.PI*2); this.ctx.fill();
             }
@@ -2817,5 +2872,3 @@ window.onload = () => {
     window.game = new Game();
 };
 </script>
-</body>
-</html>
